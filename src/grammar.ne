@@ -1,7 +1,7 @@
 @preprocessor typescript
 
 @{%
-import {test} from "./nodes";
+import { test } from "./nodes";
 console.log(test);
 %}
 
