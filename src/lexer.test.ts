@@ -182,6 +182,14 @@ describe("comments", () => {
     ]);
   });
 
+  it("lexes two single line comments", () => {
+    expect(types(tokens(lexer, "// some\n// comment"))).to.deep.equal([
+      "comment",
+      "lb",
+      "comment",
+    ]);
+  });
+
   it("lexes multiline comment on one line", () => {
     expect(types(tokens(lexer, "/* some comment */"))).to.deep.equal([
       "multiline_comment",
@@ -196,5 +204,11 @@ describe("comments", () => {
     expect(types(tokens(lexer, "/*\nsome\ncomment\n*/"))).to.deep.equal([
       "multiline_comment",
     ]);
+  });
+
+  it("lexes two multiline comments", () => {
+    expect(
+      types(tokens(lexer, "/* some comment */\n/*\nsome\ncomment\n*/"))
+    ).to.deep.equal(["multiline_comment", "lb", "multiline_comment"]);
   });
 });
