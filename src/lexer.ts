@@ -31,6 +31,7 @@ export const keywords = [
   "false",
 ] as const;
 
+// TODO identifier test and return statement
 export const lexer = moo.compile({
   ws: /[ \t]+/,
   lb: { match: /\n/, lineBreaks: true },

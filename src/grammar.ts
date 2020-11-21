@@ -3,8 +3,13 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
+declare var float: any;
+declare var int: any;
 
-import {test} from "./nodes";
+import { test } from "./nodes";
+import { lexer } from "./lexer";
+// cast the moo lexer to the nearley lexer
+const nearleyLexer = (lexer as unknown) as NearleyLexer;
 console.log(test);
 
 interface NearleyToken {  value: any;
@@ -34,19 +39,12 @@ interface Grammar {
 };
 
 const grammar: Grammar = {
-  Lexer: undefined,
+  Lexer: nearleyLexer,
   ParserRules: [
-    {"name": "main$ebnf$1$subexpression$1", "symbols": ["statement", {"literal":"\n"}]},
-    {"name": "main$ebnf$1", "symbols": ["main$ebnf$1$subexpression$1"]},
-    {"name": "main$ebnf$1$subexpression$2", "symbols": ["statement", {"literal":"\n"}]},
-    {"name": "main$ebnf$1", "symbols": ["main$ebnf$1", "main$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "main", "symbols": ["main$ebnf$1"]},
-    {"name": "statement$string$1", "symbols": [{"literal":"f"}, {"literal":"o"}, {"literal":"o"}], "postprocess": (d) => d.join('')},
-    {"name": "statement", "symbols": ["statement$string$1"]},
-    {"name": "statement$string$2", "symbols": [{"literal":"b"}, {"literal":"a"}, {"literal":"r"}], "postprocess": (d) => d.join('')},
-    {"name": "statement", "symbols": ["statement$string$2"]}
+    {"name": "number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)]},
+    {"name": "number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": id}
   ],
-  ParserStart: "main",
+  ParserStart: "number",
 };
 
 export default grammar;
