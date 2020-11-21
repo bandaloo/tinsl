@@ -166,3 +166,35 @@ describe("operators", () => {
     );
   });
 });
+
+describe("comments", () => {
+  it("lexes single line comment", () => {
+    expect(types(tokens(lexer, "// some comment"))).to.deep.equal(["comment"]);
+  });
+
+  it("lexes empty single line comment", () => {
+    expect(types(tokens(lexer, "//"))).to.deep.equal(["comment"]);
+  });
+
+  it("lexes nested single line comment", () => {
+    expect(types(tokens(lexer, "// some // comment"))).to.deep.equal([
+      "comment",
+    ]);
+  });
+
+  it("lexes multiline comment on one line", () => {
+    expect(types(tokens(lexer, "/* some comment */"))).to.deep.equal([
+      "multiline_comment",
+    ]);
+  });
+
+  it("lexes empty multiline comment", () => {
+    expect(types(tokens(lexer, "/**/"))).to.deep.equal(["multiline_comment"]);
+  });
+
+  it("lexes multiline comment on multiple lines", () => {
+    expect(types(tokens(lexer, "/*\nsome\ncomment\n*/"))).to.deep.equal([
+      "multiline_comment",
+    ]);
+  });
+});

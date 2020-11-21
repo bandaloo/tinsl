@@ -34,6 +34,8 @@ export const keywords = [
 export const lexer = moo.compile({
   ws: /[ \t]+/,
   lb: { match: /\n/, lineBreaks: true },
+  comment: /\/\/.*?$/,
+  multiline_comment: /\/\*[^]*\*\//,
   float: /[+-]?(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
   int: /[-+]?[0-9]+/,
   assign_plus: "+=",
@@ -80,7 +82,6 @@ export const lexer = moo.compile({
   colon: ":",
   semicolon: ";",
   period: ".",
-  comment: /\/\/.*?$/,
   identifier: {
     match: /[_a-zA-Z][_a-zA-Z0-9]+/,
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw-" + k, k]))),
