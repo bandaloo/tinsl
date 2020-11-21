@@ -29,9 +29,9 @@ export const keywords = [
   "ivec4",
   "true",
   "false",
+  "return",
 ] as const;
 
-// TODO identifier test and return statement
 export const lexer = moo.compile({
   ws: /[ \t]+/,
   lb: { match: /\n/, lineBreaks: true },

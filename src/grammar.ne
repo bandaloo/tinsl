@@ -16,20 +16,20 @@ Main ->
 # order of operations
 Paren ->
     %lparen _ AddSub _ %rparen {% d => d[2] %}
-  | Number {% id %}
+  | Number                     {% id %}
 
 MultDiv ->
-    MultDiv _ %mult _ Paren  {% d => [d[0], "*", d[4]] %}
-  | MultDiv _ %div _ Paren   {% d => [d[0], "/", d[4]] %}
-  | Paren                    {% id %}
+    MultDiv _ %mult _ Paren {% d => [d[0], "*", d[4]] %}
+  | MultDiv _ %div _ Paren  {% d => [d[0], "/", d[4]] %}
+  | Paren                   {% id %}
 
 AddSub ->
-    AddSub _ %add _ MultDiv  {% d => [d[0], "+", d[4]] %}
-  | AddSub _ %sub _ MultDiv  {% d => [d[0], "-", d[4]] %}
+    AddSub _ %add _ MultDiv {% d => [d[0], "+", d[4]] %}
+  | AddSub _ %sub _ MultDiv {% d => [d[0], "-", d[4]] %}
   | MultDiv
 
 Number ->
-    %float  {% d => ["float", d[0].value] %}
+    %float {% d => ["float", d[0].value] %}
   | %int   {% d => ["int", d[0].value] %}
 
 _ -> %ws:*

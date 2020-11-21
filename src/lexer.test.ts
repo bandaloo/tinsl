@@ -212,3 +212,21 @@ describe("comments", () => {
     ).to.deep.equal(["multiline_comment", "lb", "multiline_comment"]);
   });
 });
+
+describe("identifiers", () => {
+  it("lexes an identifier", () => {
+    expect(
+      types(tokens(lexer, "_some_arb1traryIdentifier_123"))
+    ).to.deep.equal(["identifier"]);
+  });
+
+  it("lexes an identifier and number", () => {
+    expect(
+      types(tokens(lexer, "99some_arb1traryIdentifier_123"))
+    ).to.deep.equal(["int", "identifier"]);
+  });
+
+  it("lexes identifier containing keywords", () => {
+    expect(types(tokens(lexer, "for_a_while"))).to.deep.equal(["identifier"]);
+  });
+});
