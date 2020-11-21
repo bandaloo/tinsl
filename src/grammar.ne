@@ -29,7 +29,7 @@ AddSub ->
   | MultDiv
 
 Number ->
-    %float {% d => ["float", d[0].value] %}
-  | %int   {% d => ["int", d[0].value] %}
+    %float {% d => ["float", d[0].value, d[0].line] %}
+  | %int   {% d => ["int", d[0].value, d[0].line] %}
 
 _ -> %ws:*

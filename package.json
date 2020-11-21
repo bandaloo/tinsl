@@ -4,7 +4,8 @@
   "description": "language for multipass texture-to-texture effects",
   "main": "index.js",
   "scripts": {
-    "test": "mocha -r ts-node/register src/**/*.test.ts"
+    "test": "mocha -r ts-node/register src/**/*.test.ts",
+    "grammar": "nearleyc src/grammar.ne -o src/grammar.ts"
   },
   "keywords": [
     "glsl",

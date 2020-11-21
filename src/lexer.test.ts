@@ -104,8 +104,8 @@ describe("operators", () => {
   });
 
   it("lexes bitwise operators", () => {
-    expect(types(tokens(lexer, "& ^ | << >>"))).to.deep.equal(
-      separate(["band", "bxor", "bor", "blshift", "brshift"])
+    expect(types(tokens(lexer, "& ^ | << >> ~"))).to.deep.equal(
+      separate(["band", "bxor", "bor", "blshift", "brshift", "bnot"])
     );
   });
 
