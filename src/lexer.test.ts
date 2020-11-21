@@ -87,7 +87,7 @@ describe("operators", () => {
 
   it("lexes arithmetic operators", () => {
     expect(types(tokens(lexer, "+ - * / %"))).to.deep.equal(
-      separate(["plus", "minus", "mult", "div", "modulo"])
+      separate(["add", "sub", "mult", "div", "modulo"])
     );
   });
 
@@ -121,8 +121,8 @@ describe("operators", () => {
     ).to.deep.equal(
       separate([
         "assignment",
-        "assign_plus",
-        "assign_minus",
+        "assign_add",
+        "assign_sub",
         "assign_mult",
         "assign_div",
         "assign_modulo",

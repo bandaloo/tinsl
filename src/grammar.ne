@@ -10,6 +10,26 @@ console.log(test);
 
 @lexer nearleyLexer
 
-#main -> _ add_sub _ {% function(d) {return d[1]; } %}
+Main ->
+    _ AddSub _ {% d => d[1] %}
 
-number -> %float | %int {% id %}
+# order of operations
+Paren ->
+    %lparen _ AddSub _ %rparen {% d => d[2] %}
+  | Number {% id %}
+
+MultDiv ->
+    MultDiv _ %mult _ Paren  {% d => [d[0], "*", d[4]] %}
+  | MultDiv _ %div _ Paren   {% d => [d[0], "/", d[4]] %}
+  | Paren                    {% id %}
+
+AddSub ->
+    AddSub _ %add _ MultDiv  {% d => [d[0], "+", d[4]] %}
+  | AddSub _ %sub _ MultDiv  {% d => [d[0], "-", d[4]] %}
+  | MultDiv
+
+Number ->
+    %float  {% d => ["float", d[0].value] %}
+  | %int   {% d => ["int", d[0].value] %}
+
+_ -> %ws:*

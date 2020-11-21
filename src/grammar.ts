@@ -3,8 +3,15 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
+declare var lparen: any;
+declare var rparen: any;
+declare var mult: any;
+declare var div: any;
+declare var add: any;
+declare var sub: any;
 declare var float: any;
 declare var int: any;
+declare var ws: any;
 
 import { test } from "./nodes";
 import { lexer } from "./lexer";
@@ -41,10 +48,22 @@ interface Grammar {
 const grammar: Grammar = {
   Lexer: nearleyLexer,
   ParserRules: [
-    {"name": "number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)]},
-    {"name": "number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": id}
+    {"name": "Main", "symbols": ["_", "AddSub", "_"], "postprocess": (d) => d[1]},
+    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "AddSub", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
+    {"name": "Paren", "symbols": ["Number"], "postprocess": id},
+    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Paren"], "postprocess": d => [d[0], "*", d[4]]},
+    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Paren"], "postprocess": d => [d[0], "/", d[4]]},
+    {"name": "MultDiv", "symbols": ["Paren"], "postprocess": id},
+    {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("add") ? {type: "add"} : add), "_", "MultDiv"], "postprocess": d => [d[0], "+", d[4]]},
+    {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "MultDiv"], "postprocess": d => [d[0], "-", d[4]]},
+    {"name": "AddSub", "symbols": ["MultDiv"]},
+    {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => ["float", d[0].value]},
+    {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => ["int", d[0].value]},
+    {"name": "_$ebnf$1", "symbols": []},
+    {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", (nearleyLexer.has("ws") ? {type: "ws"} : ws)], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "_", "symbols": ["_$ebnf$1"]}
   ],
-  ParserStart: "number",
+  ParserStart: "Main",
 };
 
 export default grammar;
