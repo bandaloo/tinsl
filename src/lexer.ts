@@ -1,6 +1,6 @@
 import * as moo from "moo";
 
-const keywords = [
+export const keywords = [
   "if",
   "else",
   "for",

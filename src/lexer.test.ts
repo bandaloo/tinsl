@@ -1,8 +1,8 @@
 import chai, { expect } from "chai";
 import chaiExclude from "chai-exclude";
-import { lexer } from "./lexer";
+import { keywords, lexer } from "./lexer";
 
-import type { Token, Lexer } from "moo";
+import { Token, Lexer } from "moo";
 
 /** returns types of all tokens */
 const types = (tokens: Token[]) => tokens.map((t) => t.type);
@@ -144,5 +144,25 @@ describe("operators", () => {
 
   it("lexes increment and decrement operators", () => {
     expect(types(tokens(lexer, "++--"))).to.deep.equal(["incr", "decr"]);
+  });
+
+  it("lexes access operators", () => {
+    expect(types(tokens(lexer, ". ->"))).to.deep.equal(
+      separate(["period", "arrow"])
+    );
+  });
+
+  it("lexes separation tokens", () => {
+    expect(types(tokens(lexer, "\t \n;"))).to.deep.equal([
+      "ws",
+      "lb",
+      "semicolon",
+    ]);
+  });
+
+  it("lexes keywords", () => {
+    expect(types(tokens(lexer, keywords.join(" ")))).to.deep.equal(
+      separate(keywords.map((s) => "kw-" + s))
+    );
   });
 });
