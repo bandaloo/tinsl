@@ -10,7 +10,17 @@ console.log(test);
 
 @lexer nearleyLexer
 
+#Main ->
+#    FuncDecl
+#  | ProcDecl
+#  | Define
+#  | RenderOp
+
+#FuncDecl ->
+#    Type
+
 Main ->
+    #(___ AddSub):* __lbc__ {% d => {console.log("d0 [" + d[0] + "]"); return d[0]} %}
     _ AddSub _ {% d => d[1] %}
 
 # order of operations
@@ -32,4 +42,8 @@ Number ->
     %float {% d => ["float", d[0].value, d[0].line] %}
   | %int   {% d => ["int", d[0].value, d[0].line] %}
 
+# required whitespace
+__ -> %ws:+
+
+# optional whitespace
 _ -> %ws:*

@@ -59,6 +59,9 @@ const grammar: Grammar = {
     {"name": "AddSub", "symbols": ["MultDiv"]},
     {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => ["float", d[0].value, d[0].line]},
     {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => ["int", d[0].value, d[0].line]},
+    {"name": "__$ebnf$1", "symbols": [(nearleyLexer.has("ws") ? {type: "ws"} : ws)]},
+    {"name": "__$ebnf$1", "symbols": ["__$ebnf$1", (nearleyLexer.has("ws") ? {type: "ws"} : ws)], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "__", "symbols": ["__$ebnf$1"]},
     {"name": "_$ebnf$1", "symbols": []},
     {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", (nearleyLexer.has("ws") ? {type: "ws"} : ws)], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "_", "symbols": ["_$ebnf$1"]}

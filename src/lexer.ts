@@ -41,6 +41,7 @@ export const keywords = [
   "fn",
   "pr",
   "let",
+  "def",
   // reserved by glsl but not allowed in tinsl (for now)
   "in",
   "out",
@@ -104,8 +105,13 @@ export const keywords = [
 ] as const;
 
 export const lexer = moo.compile({
+  lbc: {
+    // TODO second part of this might not be necessary
+    match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,
+    lineBreaks: true,
+  },
   ws: /[ \t]+/,
-  lb: { match: /\n/, lineBreaks: true },
+  //lb: { match: /\n/, lineBreaks: true },
   comment: /\/\/.*?$/,
   multiline_comment: /\/\*[^]*?\*\//,
   float: /[+-]?(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
