@@ -74,7 +74,7 @@ export interface ProcCall {
   arguments: Expr[];
 }
 
-export interface RenderOp {
+export interface RenderBlock {
   id: "renderop";
   inChannel: Token | null;
   outChannel: Token;
@@ -82,5 +82,5 @@ export interface RenderOp {
 }
 
 export interface Program {
-  body: (ProcDecl | FuncDecl | RenderOp)[];
+  body: (ProcDecl | FuncDecl | RenderBlock)[];
 }

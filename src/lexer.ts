@@ -106,7 +106,6 @@ export const keywords = [
 
 export const lexer = moo.compile({
   lbc: {
-    // TODO second part of this might not be necessary
     match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,
     lineBreaks: true,
   },
