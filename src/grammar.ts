@@ -26,6 +26,9 @@ declare var lte: any;
 declare var gte: any;
 declare var eq: any;
 declare var neq: any;
+declare var band: any;
+declare var bxor: any;
+declare var bor: any;
 declare var float: any;
 declare var lbc: any;
 declare var ws: any;
@@ -93,8 +96,8 @@ const grammar: Grammar = {
           loopNumBl !== null ? loopNumBl[3] : null
         )
             },
-    {"name": "BlockLevel", "symbols": ["Equality"], "postprocess": id},
-    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Equality", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
+    {"name": "BlockLevel", "symbols": ["BitOr"], "postprocess": id},
+    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "BitOr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Number"], "postprocess": id},
     {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": d => ["~", d[2]]},
     {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": d => ["!", d[2]]},
@@ -117,6 +120,12 @@ const grammar: Grammar = {
     {"name": "Equality", "symbols": ["Equality", "_", (nearleyLexer.has("eq") ? {type: "eq"} : eq), "_", "Relational"], "postprocess": d => [d[0], "==", d[4]]},
     {"name": "Equality", "symbols": ["Equality", "_", (nearleyLexer.has("neq") ? {type: "neq"} : neq), "_", "Relational"], "postprocess": d => [d[0], "!=", d[4]]},
     {"name": "Equality", "symbols": ["Relational"], "postprocess": id},
+    {"name": "BitAnd", "symbols": ["BitAnd", "_", (nearleyLexer.has("band") ? {type: "band"} : band), "_", "Equality"], "postprocess": d => [d[0], "&", d[4]]},
+    {"name": "BitAnd", "symbols": ["Equality"], "postprocess": id},
+    {"name": "BitXor", "symbols": ["BitXor", "_", (nearleyLexer.has("bxor") ? {type: "bxor"} : bxor), "_", "BitAnd"], "postprocess": d => [d[0], "^", d[4]]},
+    {"name": "BitXor", "symbols": ["BitAnd"], "postprocess": id},
+    {"name": "BitOr", "symbols": ["BitOr", "_", (nearleyLexer.has("bor") ? {type: "bor"} : bor), "_", "BitXor"], "postprocess": d => [d[0], "|", d[4]]},
+    {"name": "BitOr", "symbols": ["BitXor"], "postprocess": id},
     {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => ["float", d[0].value]},
     {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => ["int", d[0].value]},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

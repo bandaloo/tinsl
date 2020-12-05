@@ -30,11 +30,11 @@ RenderBlock ->
     %}
 
 BlockLevel ->
-    Equality {% id %}
+    BitOr {% id %}
 
 # order of operations
 Paren ->
-    %lparen _ Equality _ %rparen {% d => d[2] %}
+    %lparen _ BitOr _ %rparen {% d => d[2] %}
   | Number                     {% id %}
 
 Unary ->
@@ -69,6 +69,18 @@ Equality ->
     Equality _ %eq _ Relational  {% d => [d[0], "==", d[4]] %}
   | Equality _ %neq _ Relational {% d => [d[0], "!=", d[4]] %}
   | Relational                   {% id %}
+
+BitAnd ->
+    BitAnd _ %band _ Equality {% d => [d[0], "&", d[4]] %}
+  | Equality                  {% id %}
+
+BitXor ->
+    BitXor _ %bxor _ BitAnd {% d => [d[0], "^", d[4]] %}
+  | BitAnd                 {% id %}
+
+BitOr ->
+    BitOr _ %bor _ BitXor {% d => [d[0], "|", d[4]] %}
+  | BitXor                 {% id %}
 
 # .line to access line
 Number ->
