@@ -30,11 +30,11 @@ RenderBlock ->
     %}
 
 BlockLevel ->
-    BitShift {% id %}
+    Equality {% id %}
 
 # order of operations
 Paren ->
-    %lparen _ BitShift _ %rparen {% d => d[2] %}
+    %lparen _ Equality _ %rparen {% d => d[2] %}
   | Number                     {% id %}
 
 Unary ->
@@ -57,6 +57,18 @@ BitShift ->
     BitShift _ %blshift _ AddSub {% d => [d[0], "<<", d[4]] %}
   | BitShift _ %brshift _ AddSub {% d => [d[0], ">>", d[4]] %}
   | AddSub                       {% id %}
+
+Relational ->
+    Relational _ %lt _ BitShift  {% d => [d[0], "<", d[4]] %}
+  | Relational _ %gt _ BitShift  {% d => [d[0], ">", d[4]] %}
+  | Relational _ %lte _ BitShift {% d => [d[0], "<=", d[4]] %}
+  | Relational _ %gte _ BitShift {% d => [d[0], ">=", d[4]] %}
+  | BitShift                     {% id %}
+
+Equality ->
+    Equality _ %eq _ Relational  {% d => [d[0], "==", d[4]] %}
+  | Equality _ %neq _ Relational {% d => [d[0], "!=", d[4]] %}
+  | Relational                   {% id %}
 
 # .line to access line
 Number ->
