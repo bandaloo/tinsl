@@ -11,6 +11,7 @@ declare var lbrace: any;
 declare var rbrace: any;
 declare var lparen: any;
 declare var rparen: any;
+declare var bnot: any;
 declare var mult: any;
 declare var div: any;
 declare var add: any;
@@ -23,8 +24,6 @@ declare var multiline_comment: any;
 
 import { RenderBlock } from "./nodes";
 import { lexer } from "./lexer";
-import util from "util"; // TODO remove this
-// cast the moo lexer to the nearley lexer
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 interface NearleyToken {  value: any;
@@ -87,9 +86,11 @@ const grammar: Grammar = {
     {"name": "BlockLevel", "symbols": ["AddSub"], "postprocess": id},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "AddSub", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Number"], "postprocess": id},
-    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Paren"], "postprocess": d => [d[0], "*", d[4]]},
-    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Paren"], "postprocess": d => [d[0], "/", d[4]]},
-    {"name": "MultDiv", "symbols": ["Paren"], "postprocess": id},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "AddSub"], "postprocess": d => ["~", d[2]]},
+    {"name": "Unary", "symbols": ["Paren"], "postprocess": id},
+    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Unary"], "postprocess": d => [d[0], "*", d[4]]},
+    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Unary"], "postprocess": d => [d[0], "/", d[4]]},
+    {"name": "MultDiv", "symbols": ["Unary"], "postprocess": id},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("add") ? {type: "add"} : add), "_", "MultDiv"], "postprocess": d => [d[0], "+", d[4]]},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "MultDiv"], "postprocess": d => [d[0], "-", d[4]]},
     {"name": "AddSub", "symbols": ["MultDiv"]},

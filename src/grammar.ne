@@ -37,10 +37,14 @@ Paren ->
     %lparen _ AddSub _ %rparen {% d => d[2] %}
   | Number                     {% id %}
 
+Unary ->
+    %bnot _ AddSub {% d => ["~", d[2]] %}
+  | Paren          {% id %}
+
 MultDiv ->
-    MultDiv _ %mult _ Paren {% d => [d[0], "*", d[4]] %}
-  | MultDiv _ %div _ Paren  {% d => [d[0], "/", d[4]] %}
-  | Paren                   {% id %}
+    MultDiv _ %mult _ Unary {% d => [d[0], "*", d[4]] %}
+  | MultDiv _ %div _ Unary  {% d => [d[0], "/", d[4]] %}
+  | Unary                   {% id %}
 
 AddSub ->
     AddSub _ %add _ MultDiv {% d => [d[0], "+", d[4]] %}
