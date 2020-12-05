@@ -5,7 +5,8 @@ import { RenderBlock, BinaryExpr, UnaryExpr, IntExpr, FloatExpr } from "./nodes"
 import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
-//const bin = (d: any]) => new BinaryExpr(d[2], d[0], d[4]);
+const bin = (d: any) => new BinaryExpr(d[2], d[0], d[4]);
+const un = (d: any) => new UnaryExpr(d[0], d[2]);
 %}
 
 @lexer nearleyLexer
@@ -40,66 +41,63 @@ Paren ->
   | Number                      {% id %}
 
 Unary ->
-    %add _ Unary  {% d => new UnaryExpr(d[0], d[2]) %}
-  | %sub _ Unary  {% d => new UnaryExpr(d[0], d[2]) %}
-  | %bnot _ Unary {% d => new UnaryExpr(d[0], d[2]) %}
-  | %not _ Unary  {% d => new UnaryExpr(d[0], d[2]) %}
+    %add _ Unary  {% un %}
+  | %sub _ Unary  {% un %}
+  | %bnot _ Unary {% un %}
+  | %not _ Unary  {% un %}
   | Paren         {% id %}
 
 MultDiv ->
-    MultDiv _ %mult _ Unary   {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | MultDiv _ %div _ Unary    {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | MultDiv _ %modulo _ Unary {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    MultDiv _ %mult _ Unary   {% bin %}
+  | MultDiv _ %div _ Unary    {% bin %}
+  | MultDiv _ %modulo _ Unary {% bin %}
   | Unary                     {% id %}
 
 AddSub ->
-    AddSub _ %add _ MultDiv {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | AddSub _ %sub _ MultDiv {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    AddSub _ %add _ MultDiv {% bin %}
+  | AddSub _ %sub _ MultDiv {% bin %}
   | MultDiv                 {% id %}
 
 BitShift ->
-    BitShift _ %blshift _ AddSub {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | BitShift _ %brshift _ AddSub {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    BitShift _ %blshift _ AddSub {% bin %}
+  | BitShift _ %brshift _ AddSub {% bin %}
   | AddSub                       {% id %}
 
 Relational ->
-    Relational _ %lt _ BitShift  {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | Relational _ %gt _ BitShift  {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | Relational _ %lte _ BitShift {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | Relational _ %gte _ BitShift {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    Relational _ %lt _ BitShift  {% bin %}
+  | Relational _ %gt _ BitShift  {% bin %}
+  | Relational _ %lte _ BitShift {% bin %}
+  | Relational _ %gte _ BitShift {% bin %}
   | BitShift                     {% id %}
 
 Equality ->
-    Equality _ %eq _ Relational  {% d => new BinaryExpr(d[2], d[0], d[4]) %}
-  | Equality _ %neq _ Relational {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    Equality _ %eq _ Relational  {% bin %}
+  | Equality _ %neq _ Relational {% bin %}
   | Relational                   {% id %}
 
 BitAnd ->
-    BitAnd _ %band _ Equality {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    BitAnd _ %band _ Equality {% bin %}
   | Equality                  {% id %}
 
 BitXor ->
-    BitXor _ %bxor _ BitAnd {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    BitXor _ %bxor _ BitAnd {% bin %}
   | BitAnd                  {% id %}
 
 BitOr ->
-    BitOr _ %bor _ BitXor {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    BitOr _ %bor _ BitXor {% bin %}
   | BitXor                {% id %}
 
 LogicAnd ->
-    LogicAnd _ %and _ BitOr {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    LogicAnd _ %and _ BitOr {% bin %}
   | BitOr                   {% id %}
 
 LogicOr ->
-    LogicOr _ %or _ LogicAnd {% d => new BinaryExpr(d[2], d[0], d[4]) %}
+    LogicOr _ %or _ LogicAnd {% bin %}
   | LogicAnd                 {% id %}
 
-# .line to access line
 Number ->
     %float {% d => new FloatExpr(d[0]) %}
   | %int   {% d => new IntExpr(d[0]) %}
-
-#_lb_ -> (__ %lbc __):*
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+
