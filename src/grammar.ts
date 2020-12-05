@@ -15,8 +15,11 @@ declare var bnot: any;
 declare var not: any;
 declare var mult: any;
 declare var div: any;
+declare var modulo: any;
 declare var add: any;
 declare var sub: any;
+declare var blshift: any;
+declare var brshift: any;
 declare var float: any;
 declare var lbc: any;
 declare var ws: any;
@@ -84,18 +87,22 @@ const grammar: Grammar = {
           loopNumBl !== null ? loopNumBl[3] : null
         )
             },
-    {"name": "BlockLevel", "symbols": ["AddSub"], "postprocess": id},
-    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "AddSub", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
+    {"name": "BlockLevel", "symbols": ["BitShift"], "postprocess": id},
+    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "BitShift", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Number"], "postprocess": id},
     {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": d => ["~", d[2]]},
     {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": d => ["!", d[2]]},
     {"name": "Unary", "symbols": ["Paren"], "postprocess": id},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Unary"], "postprocess": d => [d[0], "*", d[4]]},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Unary"], "postprocess": d => [d[0], "/", d[4]]},
+    {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("modulo") ? {type: "modulo"} : modulo), "_", "Unary"], "postprocess": d => [d[0], "%", d[4]]},
     {"name": "MultDiv", "symbols": ["Unary"], "postprocess": id},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("add") ? {type: "add"} : add), "_", "MultDiv"], "postprocess": d => [d[0], "+", d[4]]},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "MultDiv"], "postprocess": d => [d[0], "-", d[4]]},
     {"name": "AddSub", "symbols": ["MultDiv"], "postprocess": id},
+    {"name": "BitShift", "symbols": ["BitShift", "_", (nearleyLexer.has("blshift") ? {type: "blshift"} : blshift), "_", "AddSub"], "postprocess": d => [d[0], "<<", d[4]]},
+    {"name": "BitShift", "symbols": ["BitShift", "_", (nearleyLexer.has("brshift") ? {type: "brshift"} : brshift), "_", "AddSub"], "postprocess": d => [d[0], ">>", d[4]]},
+    {"name": "BitShift", "symbols": ["AddSub"], "postprocess": id},
     {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => ["float", d[0].value]},
     {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => ["int", d[0].value]},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

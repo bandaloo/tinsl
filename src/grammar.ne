@@ -30,11 +30,11 @@ RenderBlock ->
     %}
 
 BlockLevel ->
-    AddSub {% id %}
+    BitShift {% id %}
 
 # order of operations
 Paren ->
-    %lparen _ AddSub _ %rparen {% d => d[2] %}
+    %lparen _ BitShift _ %rparen {% d => d[2] %}
   | Number                     {% id %}
 
 Unary ->
@@ -43,14 +43,20 @@ Unary ->
   | Paren         {% id %}
 
 MultDiv ->
-    MultDiv _ %mult _ Unary {% d => [d[0], "*", d[4]] %}
-  | MultDiv _ %div _ Unary  {% d => [d[0], "/", d[4]] %}
-  | Unary                   {% id %}
+    MultDiv _ %mult _ Unary   {% d => [d[0], "*", d[4]] %}
+  | MultDiv _ %div _ Unary    {% d => [d[0], "/", d[4]] %}
+  | MultDiv _ %modulo _ Unary {% d => [d[0], "%", d[4]] %}
+  | Unary                     {% id %}
 
 AddSub ->
     AddSub _ %add _ MultDiv {% d => [d[0], "+", d[4]] %}
   | AddSub _ %sub _ MultDiv {% d => [d[0], "-", d[4]] %}
   | MultDiv                 {% id %}
+
+BitShift ->
+    BitShift _ %blshift _ AddSub {% d => [d[0], "<<", d[4]] %}
+  | BitShift _ %brshift _ AddSub {% d => [d[0], ">>", d[4]] %}
+  | AddSub                       {% id %}
 
 # .line to access line
 Number ->
@@ -59,6 +65,7 @@ Number ->
 
 #_lb_ -> (__ %lbc __):*
 
+# TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+
 
 _ -> (%ws | %lbc | %comment | %multiline_comment):*
