@@ -30,15 +30,17 @@ RenderBlock ->
     %}
 
 BlockLevel ->
-    BitOr {% id %}
+    LogicOr {% id %}
 
 # order of operations
 Paren ->
-    %lparen _ BitOr _ %rparen {% d => d[2] %}
-  | Number                     {% id %}
+    %lparen _ LogicOr _ %rparen {% d => d[2] %}
+  | Number                      {% id %}
 
 Unary ->
-    %bnot _ Unary {% d => ["~", d[2]] %}
+    %add _ Unary  {% d => ["+", d[2]] %}
+  | %sub _ Unary  {% d => ["-", d[2]] %}
+  | %bnot _ Unary {% d => ["~", d[2]] %}
   | %not _ Unary  {% d => ["!", d[2]] %}
   | Paren         {% id %}
 
@@ -76,11 +78,19 @@ BitAnd ->
 
 BitXor ->
     BitXor _ %bxor _ BitAnd {% d => [d[0], "^", d[4]] %}
-  | BitAnd                 {% id %}
+  | BitAnd                  {% id %}
 
 BitOr ->
     BitOr _ %bor _ BitXor {% d => [d[0], "|", d[4]] %}
-  | BitXor                 {% id %}
+  | BitXor                {% id %}
+
+LogicAnd ->
+    LogicAnd _ %and _ BitOr {% d => [d[0], "&&", d[4]] %}
+  | BitOr                   {% id %}
+
+LogicOr ->
+    LogicOr _ %or _ LogicAnd {% d => [d[0], "||", d[4]] %}
+  | LogicAnd                 {% id %}
 
 # .line to access line
 Number ->
