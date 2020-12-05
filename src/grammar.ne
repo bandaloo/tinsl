@@ -21,9 +21,8 @@ TopLevel ->
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
-  (%int _ %arrow):? _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace _ %arrow _ %int {%
-    ([, , , , first, rest, ,]: any) => ["renderblock", [first, ...rest.map((e: any) => e[1])]]
-  %}
+  (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace _ %arrow _ %int
+    {% ([arrow, loop, once, , , , first, rest, ,]: any) => ["renderblock", [first, ...rest.map((e: any) => e[1])]] %}
 
 BlockLevel ->
     AddSub {% id %}

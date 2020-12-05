@@ -9,8 +9,8 @@ function commaSeparatedExprs(exprs: Expr[]) {
 }
 
 abstract class Node {
-  abstract parse(): string;
   abstract toJson(): object;
+  abstract parse(): string;
   toString() {
     return JSON.stringify(this.toJson());
   }
@@ -21,7 +21,58 @@ abstract class Expr extends Node {
   abstract getToken(): Token;
 }
 
-class BinaryExpr extends Expr {
+export class RenderBlock extends Node {
+  once: boolean;
+  inNum?: number;
+  outNum?: number;
+  loopNum?: number;
+  expressions: Expr[];
+
+  constructor(
+    once: boolean,
+    expressions: Expr[],
+    inNum?: number,
+    outNum?: number,
+    loopNum?: number
+  ) {
+    super();
+    this.once = once;
+    this.expressions = expressions;
+    this.inNum = inNum;
+    this.outNum = outNum;
+    this.loopNum = loopNum;
+  }
+
+  toJson(): object {
+    const info: string[] = [];
+    if (this.inNum !== undefined) {
+      info.push("" + this.inNum);
+      info.push("->");
+    }
+    if (this.loopNum !== undefined) {
+      info.push("loop");
+      info.push("" + this.loopNum);
+    }
+    if (this.once) {
+      info.push("once");
+    }
+    info.push(`{${this.expressions.length} ops}`);
+    if (this.outNum !== undefined) {
+      info.push("->");
+      info.push("" + this.loopNum);
+    }
+    return {
+      name: "render_block",
+      info: info.join(" "),
+    };
+  }
+
+  parse(): string {
+    return this.expressions.map((e) => e.parse()).join("");
+  }
+}
+
+export class BinaryExpr extends Expr {
   operator: Token;
   left: Expr;
   right: Expr;
@@ -55,7 +106,7 @@ class BinaryExpr extends Expr {
   }
 }
 
-class UnaryExpr extends Expr {
+export class UnaryExpr extends Expr {
   operator: Token;
   argument: Expr;
 
@@ -86,7 +137,7 @@ class UnaryExpr extends Expr {
   }
 }
 
-abstract class NumExpr extends Expr {
+export abstract class NumExpr extends Expr {
   value: Token;
 
   constructor(value: Token) {
@@ -107,7 +158,7 @@ abstract class NumExpr extends Expr {
   }
 }
 
-class FloatExpr extends NumExpr {
+export class FloatExpr extends NumExpr {
   toJson() {
     return {
       name: "float_expr",
@@ -116,7 +167,7 @@ class FloatExpr extends NumExpr {
   }
 }
 
-class IntExpr extends NumExpr {
+export class IntExpr extends NumExpr {
   toJson() {
     return {
       name: "int_expr",
@@ -125,7 +176,7 @@ class IntExpr extends NumExpr {
   }
 }
 
-abstract class CallExpression extends Expr {
+export abstract class CallExpression extends Expr {
   call: Token;
   args: Expr[];
 
@@ -148,19 +199,19 @@ abstract class CallExpression extends Expr {
   }
 }
 
-class VecExpr extends CallExpression {
+export class VecExpr extends CallExpression {
   toJson(): object {
     return { name: "vec_expr", call: this.call, args: this.args };
   }
 }
 
-class MatExpr extends CallExpression {
+export class MatExpr extends CallExpression {
   toJson(): object {
     return { name: "mat_expr", call: this.call, args: this.args };
   }
 }
 
-class FuncCallExpr extends CallExpression {
+export class FuncCallExpr extends CallExpression {
   toJson(): object {
     return { name: "func_call_expr", call: this.call, args: this.args };
   }
@@ -263,4 +314,4 @@ export function makeUnaryExpr(operator: Token, argument: Expr): UnaryExpr {
 }
 */
 
-export type { Node };
+export type { Node, Expr };
