@@ -12,6 +12,7 @@ declare var rbrace: any;
 declare var lparen: any;
 declare var rparen: any;
 declare var bnot: any;
+declare var not: any;
 declare var mult: any;
 declare var div: any;
 declare var add: any;
@@ -86,14 +87,15 @@ const grammar: Grammar = {
     {"name": "BlockLevel", "symbols": ["AddSub"], "postprocess": id},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "AddSub", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Number"], "postprocess": id},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "AddSub"], "postprocess": d => ["~", d[2]]},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": d => ["~", d[2]]},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": d => ["!", d[2]]},
     {"name": "Unary", "symbols": ["Paren"], "postprocess": id},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Unary"], "postprocess": d => [d[0], "*", d[4]]},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Unary"], "postprocess": d => [d[0], "/", d[4]]},
     {"name": "MultDiv", "symbols": ["Unary"], "postprocess": id},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("add") ? {type: "add"} : add), "_", "MultDiv"], "postprocess": d => [d[0], "+", d[4]]},
     {"name": "AddSub", "symbols": ["AddSub", "_", (nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "MultDiv"], "postprocess": d => [d[0], "-", d[4]]},
-    {"name": "AddSub", "symbols": ["MultDiv"]},
+    {"name": "AddSub", "symbols": ["MultDiv"], "postprocess": id},
     {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => ["float", d[0].value]},
     {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => ["int", d[0].value]},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

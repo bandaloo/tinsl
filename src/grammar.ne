@@ -38,8 +38,9 @@ Paren ->
   | Number                     {% id %}
 
 Unary ->
-    %bnot _ AddSub {% d => ["~", d[2]] %}
-  | Paren          {% id %}
+    %bnot _ Unary {% d => ["~", d[2]] %}
+  | %not _ Unary  {% d => ["!", d[2]] %}
+  | Paren         {% id %}
 
 MultDiv ->
     MultDiv _ %mult _ Unary {% d => [d[0], "*", d[4]] %}
@@ -49,7 +50,7 @@ MultDiv ->
 AddSub ->
     AddSub _ %add _ MultDiv {% d => [d[0], "+", d[4]] %}
   | AddSub _ %sub _ MultDiv {% d => [d[0], "-", d[4]] %}
-  | MultDiv
+  | MultDiv                 {% id %}
 
 # .line to access line
 Number ->
