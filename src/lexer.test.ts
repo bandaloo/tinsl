@@ -1,14 +1,10 @@
-import chai, { expect } from "chai";
-import chaiExclude from "chai-exclude";
+import { expect } from "chai";
 import { keywords, lexer } from "./lexer";
 
 import { Token, Lexer } from "moo";
 
 /** returns types of all tokens */
 const types = (tokens: Token[]) => tokens.map((t) => t.type);
-
-/** returns values of all tokens */
-const values = (tokens: Token[]) => tokens.map((t) => t.value);
 
 /** helper function to put "ws" between all elements in array */
 const separate = (arr: string[]) =>
@@ -28,44 +24,27 @@ const tokens = (lexer: Lexer, str: string) => {
 
 describe("numbers", () => {
   it("lexes ints", () => {
-    expect(
-      types(
-        tokens(lexer, "0 12 012 00012 +0 +12 +012 +00012 -0 -12 -012 -00012")
-      )
-    ).to.deep.equal(uniform("int", 12));
+    expect(types(tokens(lexer, "0 12 012 00012"))).to.deep.equal(
+      uniform("int", 4)
+    );
   });
 
   it("lexes floats left of decimal", () => {
-    expect(
-      types(
-        tokens(
-          lexer,
-          "0. 12. 012. 00012. +0. +12. +012. +00012. -0. -12. -012. -00012."
-        )
-      )
-    ).to.deep.equal(uniform("float", 12));
+    expect(types(tokens(lexer, "0. 12. 012. 00012."))).to.deep.equal(
+      uniform("float", 4)
+    );
   });
 
   it("lexes floats right of decimal", () => {
-    expect(
-      types(
-        tokens(
-          lexer,
-          ".0 .12 .012 .00012 +.0 +.12 +.012 +.00012 -.0 -.12 -.012 -.00012"
-        )
-      )
-    ).to.deep.equal(uniform("float", 12));
+    expect(types(tokens(lexer, ".0 .12 .012 .00012"))).to.deep.equal(
+      uniform("float", 4)
+    );
   });
 
   it("lexes floats both side of decimal", () => {
-    expect(
-      types(
-        tokens(
-          lexer,
-          "0.0 1.12 22.012 00123.00012 +0.0 +1.12 +22.012 +123.00012 -0.0 -1.12 -22.012 -123.00012"
-        )
-      )
-    ).to.deep.equal(uniform("float", 12));
+    expect(types(tokens(lexer, "0.0 1.12 22.012 00123.00012"))).to.deep.equal(
+      uniform("float", 4)
+    );
   });
 
   it("lexes `.` as period, not number", () => {
