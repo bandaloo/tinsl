@@ -3,6 +3,7 @@ import type { Token } from "moo";
 export const test = "test!";
 
 // TODO stricter types for operator string
+// TODO do we want a list of tokens for each node?
 
 function commaSeparatedExprs(exprs: Expr[]) {
   return exprs.map((s) => s.parse()).join();
@@ -21,19 +22,20 @@ abstract class Expr extends Node {
   abstract getToken(): Token;
 }
 
+// TODO token for renderblock
 export class RenderBlock extends Node {
   once: boolean;
-  inNum?: number;
-  outNum?: number;
-  loopNum?: number;
+  inNum: number | null;
+  outNum: number | null;
+  loopNum: number | null;
   expressions: Expr[];
 
   constructor(
     once: boolean,
     expressions: Expr[],
-    inNum?: number,
-    outNum?: number,
-    loopNum?: number
+    inNum: number | null,
+    outNum: number | null,
+    loopNum: number | null
   ) {
     super();
     this.once = once;
@@ -45,11 +47,11 @@ export class RenderBlock extends Node {
 
   toJson(): object {
     const info: string[] = [];
-    if (this.inNum !== undefined) {
+    if (this.inNum !== null) {
       info.push("" + this.inNum);
       info.push("->");
     }
-    if (this.loopNum !== undefined) {
+    if (this.loopNum !== null) {
       info.push("loop");
       info.push("" + this.loopNum);
     }
@@ -57,7 +59,7 @@ export class RenderBlock extends Node {
       info.push("once");
     }
     info.push(`{${this.expressions.length} ops}`);
-    if (this.outNum !== undefined) {
+    if (this.outNum !== null) {
       info.push("->");
       info.push("" + this.loopNum);
     }

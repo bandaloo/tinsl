@@ -154,7 +154,7 @@ describe("operators", () => {
 
   it("lexes keywords", () => {
     expect(types(tokens(lexer, keywords.join(" ")))).to.deep.equal(
-      separate(keywords.map((s) => "kw-" + s))
+      separate(keywords.map((s) => "kw_" + s))
     );
   });
 });

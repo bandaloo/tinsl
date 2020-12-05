@@ -21,12 +21,11 @@ declare var ws: any;
 declare var comment: any;
 declare var multiline_comment: any;
 
-import { test } from "./nodes";
+import { RenderBlock } from "./nodes";
 import { lexer } from "./lexer";
 import util from "util"; // TODO remove this
 // cast the moo lexer to the nearley lexer
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
-console.log(test);
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -76,7 +75,15 @@ const grammar: Grammar = {
     {"name": "RenderBlock$ebnf$4", "symbols": []},
     {"name": "RenderBlock$ebnf$4$subexpression$1", "symbols": ["__lb__", "BlockLevel"]},
     {"name": "RenderBlock$ebnf$4", "symbols": ["RenderBlock$ebnf$4", "RenderBlock$ebnf$4$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockLevel", "RenderBlock$ebnf$4", "_", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": ([arrow, loop, once, , , , first, rest, ,]: any) => ["renderblock", [first, ...rest.map((e: any) => e[1])]]},
+    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockLevel", "RenderBlock$ebnf$4", "_", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, , , , first, rest, , , , , , outNum]: any) =>
+        new RenderBlock(
+          onceBl !== null && onceBl[1] !== null,
+          [first, ...rest.map((e: any) => e[1])],
+          inNumBl !== null ? inNumBl[0] : null,
+          outNum,
+          loopNumBl !== null ? loopNumBl[3] : null
+        )
+            },
     {"name": "BlockLevel", "symbols": ["AddSub"], "postprocess": id},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "AddSub", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Number"], "postprocess": id},

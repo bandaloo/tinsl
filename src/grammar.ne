@@ -1,12 +1,9 @@
 @preprocessor typescript
 
 @{%
-import { test } from "./nodes";
+import { RenderBlock } from "./nodes";
 import { lexer } from "./lexer";
-import util from "util"; // TODO remove this
-// cast the moo lexer to the nearley lexer
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
-console.log(test);
 %}
 
 @lexer nearleyLexer
@@ -22,7 +19,15 @@ TopLevel ->
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
   (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace _ %arrow _ %int
-    {% ([arrow, loop, once, , , , first, rest, ,]: any) => ["renderblock", [first, ...rest.map((e: any) => e[1])]] %}
+    {% ([inNumBl, loopNumBl, onceBl, , , , first, rest, , , , , , outNum]: any) =>
+      new RenderBlock(
+        onceBl !== null && onceBl[1] !== null,
+        [first, ...rest.map((e: any) => e[1])],
+        inNumBl !== null ? inNumBl[0] : null,
+        outNum,
+        loopNumBl !== null ? loopNumBl[3] : null
+      )
+    %}
 
 BlockLevel ->
     AddSub {% id %}

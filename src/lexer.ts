@@ -42,6 +42,8 @@ export const keywords = [
   "pr",
   "let",
   "def",
+  "once",
+  "loop",
   // reserved by glsl but not allowed in tinsl (for now)
   "in",
   "out",
@@ -162,7 +164,7 @@ export const lexer = moo.compile({
   period: ".",
   identifier: {
     match: /[_a-zA-Z][_a-zA-Z0-9]+/,
-    type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw-" + k, k]))),
+    type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),
   },
 });
 
