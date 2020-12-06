@@ -21,7 +21,6 @@ function checkExpr(str: string, eql: object) {
     .to.deep.equal(eql);
 }
 
-/** creates a mock token */
 function tok(val: string): Token {
   return {
     toString: () => val,
@@ -34,15 +33,15 @@ function tok(val: string): Token {
   };
 }
 
+// useful ast snippets
+const onePlusTwoMinus3 = new BinaryExpr(
+  new BinaryExpr(new IntExpr(tok("1")), tok("+"), new IntExpr(tok("2"))),
+  tok("-"),
+  new IntExpr(tok("3"))
+);
+
 describe("expressions", () => {
   it("order of ops", () => {
-    checkExpr(
-      "1+2-3",
-      new BinaryExpr(
-        new BinaryExpr(new IntExpr(tok("1")), tok("+"), new IntExpr(tok("2"))),
-        tok("-"),
-        new IntExpr(tok("3"))
-      )
-    );
+    checkExpr("1+2-3", onePlusTwoMinus3);
   });
 });
