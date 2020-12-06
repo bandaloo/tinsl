@@ -58,8 +58,8 @@ import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
-const un = (d: any) => new UnaryExpr(d[0], d[2]);
-const post = (d: any) => new UnaryExpr(d[0], d[2], true);
+const pre = (d: any) => new UnaryExpr(d[0], d[2]);
+const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -127,12 +127,12 @@ const grammar: Grammar = {
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("incr") ? {type: "incr"} : incr)], "postprocess": post},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("decr") ? {type: "decr"} : decr)], "postprocess": post},
     {"name": "MiscPost", "symbols": ["Paren"], "postprocess": id},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("incr") ? {type: "incr"} : incr), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("decr") ? {type: "decr"} : decr), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("add") ? {type: "add"} : add), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": un},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("incr") ? {type: "incr"} : incr), "_", "Unary"], "postprocess": pre},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("decr") ? {type: "decr"} : decr), "_", "Unary"], "postprocess": pre},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("add") ? {type: "add"} : add), "_", "Unary"], "postprocess": pre},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "Unary"], "postprocess": pre},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": pre},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": pre},
     {"name": "Unary", "symbols": ["MiscPost"], "postprocess": id},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Unary"], "postprocess": bin},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Unary"], "postprocess": bin},

@@ -15,8 +15,8 @@ import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
-const un = (d: any) => new UnaryExpr(d[0], d[2]);
-const post = (d: any) => new UnaryExpr(d[0], d[2], true);
+const pre = (d: any) => new UnaryExpr(d[0], d[2]);
+const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 %}
 
 @lexer nearleyLexer
@@ -59,12 +59,12 @@ MiscPost ->
   | Paren                                    {% id %}
 
 Unary ->
-    %incr _ Unary {% un %}
-  | %decr _ Unary {% un %}
-  | %add _ Unary  {% un %}
-  | %sub _ Unary  {% un %}
-  | %bnot _ Unary {% un %}
-  | %not _ Unary  {% un %}
+    %incr _ Unary {% pre %}
+  | %decr _ Unary {% pre %}
+  | %add _ Unary  {% pre %}
+  | %sub _ Unary  {% pre %}
+  | %bnot _ Unary {% pre %}
+  | %not _ Unary  {% pre %}
   | MiscPost      {% id %}
 
 MultDiv ->
