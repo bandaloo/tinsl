@@ -139,6 +139,7 @@ export const lexer = moo.compile({
   eq: "==",
   neq: "!=",
   and: "&&",
+  xor: "^^",
   or: "||",
   band: "&",
   bxor: "^",
@@ -162,7 +163,7 @@ export const lexer = moo.compile({
   colon: ":",
   semicolon: ";",
   period: ".",
-  identifier: {
+  ident: {
     match: /[_a-zA-Z][_a-zA-Z0-9]+/,
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),
   },

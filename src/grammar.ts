@@ -11,6 +11,11 @@ declare var lbrace: any;
 declare var rbrace: any;
 declare var lparen: any;
 declare var rparen: any;
+declare var lbracket: any;
+declare var rbracket: any;
+declare var period: any;
+declare var incr: any;
+declare var decr: any;
 declare var add: any;
 declare var sub: any;
 declare var bnot: any;
@@ -31,18 +36,30 @@ declare var bxor: any;
 declare var bor: any;
 declare var and: any;
 declare var or: any;
+declare var comma: any;
 declare var float: any;
+declare var ident: any;
 declare var lbc: any;
 declare var ws: any;
 declare var comment: any;
 declare var multiline_comment: any;
 
-import { RenderBlock, BinaryExpr, UnaryExpr, IntExpr, FloatExpr } from "./nodes";
+import {
+  RenderBlock,
+  BinaryExpr,
+  UnaryExpr,
+  IntExpr,
+  FloatExpr,
+  SubscriptExpr,
+  CallExpr,
+  IdentExpr
+} from "./nodes";
 import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const un = (d: any) => new UnaryExpr(d[0], d[2]);
+const post = (d: any) => new UnaryExpr(d[0], d[2], true);
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -101,14 +118,22 @@ const grammar: Grammar = {
           loopNumBl !== null ? loopNumBl[3] : null
         )
             },
-    {"name": "BlockLevel", "symbols": ["LogicOr"], "postprocess": id},
-    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "LogicOr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
-    {"name": "Paren", "symbols": ["Number"], "postprocess": id},
+    {"name": "BlockLevel", "symbols": ["Expr"], "postprocess": id},
+    {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
+    {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Args", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new CallExpr(d[2], d[0], d[4])},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("period") ? {type: "period"} : period), "_", "Paren"], "postprocess": bin},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("incr") ? {type: "incr"} : incr)], "postprocess": post},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("decr") ? {type: "decr"} : decr)], "postprocess": post},
+    {"name": "MiscPost", "symbols": ["Paren"], "postprocess": id},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("incr") ? {type: "incr"} : incr), "_", "Unary"], "postprocess": un},
+    {"name": "Unary", "symbols": [(nearleyLexer.has("decr") ? {type: "decr"} : decr), "_", "Unary"], "postprocess": un},
     {"name": "Unary", "symbols": [(nearleyLexer.has("add") ? {type: "add"} : add), "_", "Unary"], "postprocess": un},
     {"name": "Unary", "symbols": [(nearleyLexer.has("sub") ? {type: "sub"} : sub), "_", "Unary"], "postprocess": un},
     {"name": "Unary", "symbols": [(nearleyLexer.has("bnot") ? {type: "bnot"} : bnot), "_", "Unary"], "postprocess": un},
     {"name": "Unary", "symbols": [(nearleyLexer.has("not") ? {type: "not"} : not), "_", "Unary"], "postprocess": un},
-    {"name": "Unary", "symbols": ["Paren"], "postprocess": id},
+    {"name": "Unary", "symbols": ["MiscPost"], "postprocess": id},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("mult") ? {type: "mult"} : mult), "_", "Unary"], "postprocess": bin},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("div") ? {type: "div"} : div), "_", "Unary"], "postprocess": bin},
     {"name": "MultDiv", "symbols": ["MultDiv", "_", (nearleyLexer.has("modulo") ? {type: "modulo"} : modulo), "_", "Unary"], "postprocess": bin},
@@ -135,10 +160,18 @@ const grammar: Grammar = {
     {"name": "BitOr", "symbols": ["BitXor"], "postprocess": id},
     {"name": "LogicAnd", "symbols": ["LogicAnd", "_", (nearleyLexer.has("and") ? {type: "and"} : and), "_", "BitOr"], "postprocess": bin},
     {"name": "LogicAnd", "symbols": ["BitOr"], "postprocess": id},
-    {"name": "LogicOr", "symbols": ["LogicOr", "_", (nearleyLexer.has("or") ? {type: "or"} : or), "_", "LogicAnd"], "postprocess": bin},
-    {"name": "LogicOr", "symbols": ["LogicAnd"], "postprocess": id},
-    {"name": "Number", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => new FloatExpr(d[0])},
-    {"name": "Number", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => new IntExpr(d[0])},
+    {"name": "LogicXor", "symbols": ["LogicXor", "_", (nearleyLexer.has("and") ? {type: "and"} : and), "_", "LogicAnd"], "postprocess": bin},
+    {"name": "LogicXor", "symbols": ["LogicAnd"], "postprocess": id},
+    {"name": "LogicOr", "symbols": ["LogicOr", "_", (nearleyLexer.has("or") ? {type: "or"} : or), "_", "LogicXor"], "postprocess": bin},
+    {"name": "LogicOr", "symbols": ["LogicXor"], "postprocess": id},
+    {"name": "Expr", "symbols": ["LogicOr"], "postprocess": id},
+    {"name": "Args$ebnf$1", "symbols": []},
+    {"name": "Args$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Expr"]},
+    {"name": "Args$ebnf$1", "symbols": ["Args$ebnf$1", "Args$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "Args", "symbols": ["Expr", "Args$ebnf$1"], "postprocess": d => [d[0], ...d[1].map((e: any) => e[2])]},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => new FloatExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => new IntExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},
     {"name": "__lb__$ebnf$1", "symbols": ["__lb__$ebnf$1$subexpression$1"]},
     {"name": "__lb__$ebnf$1$subexpression$2", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

@@ -1,12 +1,22 @@
-@preprocessor typescript
+@preprocessor typescript 
 
 @{%
-import { RenderBlock, BinaryExpr, UnaryExpr, IntExpr, FloatExpr } from "./nodes";
+import {
+  RenderBlock,
+  BinaryExpr,
+  UnaryExpr,
+  IntExpr,
+  FloatExpr,
+  SubscriptExpr,
+  CallExpr,
+  IdentExpr
+} from "./nodes";
 import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const un = (d: any) => new UnaryExpr(d[0], d[2]);
+const post = (d: any) => new UnaryExpr(d[0], d[2], true);
 %}
 
 @lexer nearleyLexer
@@ -33,19 +43,29 @@ RenderBlock ->
     %}
 
 BlockLevel ->
-    LogicOr {% id %}
+    Expr {% id %}
 
 # order of operations
 Paren ->
-    %lparen _ LogicOr _ %rparen {% d => d[2] %}
-  | Number                      {% id %}
+    %lparen _ Expr _ %rparen {% d => d[2] %}
+  | Atom                     {% id %}
+
+MiscPost ->
+    MiscPost _ %lbracket _ Paren _ %rbracket {% (d: any) => new SubscriptExpr(d[2], d[0], d[4]) %}
+  | MiscPost _ %lparen _ Args _ %rparen      {% (d: any) => new CallExpr(d[2], d[0], d[4]) %}
+  | MiscPost _ %period _ Paren               {% bin %}
+  | MiscPost _ %incr                         {% post %}
+  | MiscPost _ %decr                         {% post %}
+  | Paren                                    {% id %}
 
 Unary ->
-    %add _ Unary  {% un %}
+    %incr _ Unary {% un %}
+  | %decr _ Unary {% un %}
+  | %add _ Unary  {% un %}
   | %sub _ Unary  {% un %}
   | %bnot _ Unary {% un %}
   | %not _ Unary  {% un %}
-  | Paren         {% id %}
+  | MiscPost      {% id %}
 
 MultDiv ->
     MultDiv _ %mult _ Unary   {% bin %}
@@ -91,13 +111,23 @@ LogicAnd ->
     LogicAnd _ %and _ BitOr {% bin %}
   | BitOr                   {% id %}
 
-LogicOr ->
-    LogicOr _ %or _ LogicAnd {% bin %}
-  | LogicAnd                 {% id %}
+LogicXor ->
+    LogicXor _ %and _ LogicAnd {% bin %}
+  | LogicAnd                   {% id %}
 
-Number ->
+LogicOr ->
+    LogicOr _ %or _ LogicXor {% bin %}
+  | LogicXor                 {% id %}
+
+Expr -> LogicOr {% id %}
+
+Args ->
+  Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+
+Atom ->
     %float {% d => new FloatExpr(d[0]) %}
   | %int   {% d => new IntExpr(d[0]) %}
+  | %ident {% d => new IdentExpr(d[0]) %}
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+

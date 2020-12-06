@@ -111,11 +111,13 @@ export class BinaryExpr extends Expr {
 export class UnaryExpr extends Expr {
   operator: Token;
   argument: Expr;
+  postfix: boolean;
 
-  constructor(operator: Token, argument: Expr) {
+  constructor(operator: Token, argument: Expr, postfix = false) {
     super();
     this.operator = operator;
     this.argument = argument;
+    this.postfix = false;
   }
 
   getSubExpressions() {
@@ -178,12 +180,39 @@ export class IntExpr extends NumExpr {
   }
 }
 
-export abstract class CallExpression extends Expr {
-  call: Token;
+export class IdentExpr extends Expr {
+  token: Token;
+
+  constructor(token: Token) {
+    super();
+    this.token = token;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [];
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
+  }
+
+  toJson(): object {
+    throw new Error("Method not implemented.");
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+}
+
+export class CallExpr extends Expr {
+  open: Token;
+  call: Expr;
   args: Expr[];
 
-  constructor(call: Token, args: Expr[]) {
+  constructor(open: Token, call: Expr, args: Expr[]) {
     super();
+    this.open = open;
     this.call = call;
     this.args = args;
   }
@@ -193,29 +222,44 @@ export abstract class CallExpression extends Expr {
   }
 
   getToken(): Token {
-    return this.call;
+    return this.open;
   }
 
   parse(): string {
-    return `${this.call.text}(${commaSeparatedExprs(this.args)})`;
+    return `${this.call.parse}(${commaSeparatedExprs(this.args)})`;
+  }
+
+  toJson(): object {
+    return { name: "call_expr", call: this.open, args: this.args };
   }
 }
 
-export class VecExpr extends CallExpression {
-  toJson(): object {
-    return { name: "vec_expr", call: this.call, args: this.args };
-  }
-}
+export class SubscriptExpr extends Expr {
+  open: Token;
+  call: Expr;
+  index: Expr;
 
-export class MatExpr extends CallExpression {
-  toJson(): object {
-    return { name: "mat_expr", call: this.call, args: this.args };
+  constructor(open: Token, call: Expr, index: Expr) {
+    super();
+    this.open = open;
+    this.call = call;
+    this.index = index;
   }
-}
 
-export class FuncCallExpr extends CallExpression {
+  getSubExpressions(): Expr[] {
+    return [this.index];
+  }
+
+  getToken(): Token {
+    return this.open;
+  }
+
+  parse(): string {
+    return `${this.call.parse}[${this.index.parse()}]`;
+  }
+
   toJson(): object {
-    return { name: "func_call_expr", call: this.call, args: this.args };
+    return { name: "subscript_expr", call: this.call, index: this.index };
   }
 }
 

@@ -188,17 +188,17 @@ describe("identifiers", () => {
   it("lexes an identifier", () => {
     expect(
       types(tokens(lexer, "_some_arb1traryIdentifier_123"))
-    ).to.deep.equal(["identifier"]);
+    ).to.deep.equal(["ident"]);
   });
 
   it("lexes an identifier and number", () => {
     expect(
       types(tokens(lexer, "99some_arb1traryIdentifier_123"))
-    ).to.deep.equal(["int", "identifier"]);
+    ).to.deep.equal(["int", "ident"]);
   });
 
   it("lexes identifier containing keywords", () => {
-    expect(types(tokens(lexer, "for_a_while"))).to.deep.equal(["identifier"]);
+    expect(types(tokens(lexer, "for_a_while"))).to.deep.equal(["ident"]);
   });
 });
 
