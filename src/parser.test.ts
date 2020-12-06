@@ -39,8 +39,8 @@ describe("expressions", () => {
     checkExpr(
       "1+2-3",
       new BinaryExpr(
+        new BinaryExpr(new IntExpr(tok("1")), tok("+"), new IntExpr(tok("2"))),
         tok("-"),
-        new BinaryExpr(tok("+"), new IntExpr(tok("1")), new IntExpr(tok("2"))),
         new IntExpr(tok("3"))
       )
     );

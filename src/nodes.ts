@@ -75,14 +75,14 @@ export class RenderBlock extends Node {
 }
 
 export class BinaryExpr extends Expr {
-  operator: Token;
   left: Expr;
+  operator: Token;
   right: Expr;
 
-  constructor(operator: Token, left: Expr, right: Expr) {
+  constructor(left: Expr, operator: Token, right: Expr) {
     super();
-    this.operator = operator;
     this.left = left;
+    this.operator = operator;
     this.right = right;
   }
 
@@ -97,8 +97,8 @@ export class BinaryExpr extends Expr {
   toJson() {
     return {
       name: "binary_expr",
-      operator: this.operator,
       left: this.left.toJson(),
+      operator: this.operator,
       right: this.right.toJson(),
     };
   }

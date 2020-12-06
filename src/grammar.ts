@@ -41,7 +41,7 @@ import { RenderBlock, BinaryExpr, UnaryExpr, IntExpr, FloatExpr } from "./nodes"
 import { lexer } from "./lexer";
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
-const bin = (d: any) => new BinaryExpr(d[2], d[0], d[4]);
+const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const un = (d: any) => new UnaryExpr(d[0], d[2]);
 
 interface NearleyToken {  value: any;
