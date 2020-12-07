@@ -121,14 +121,14 @@ export const lexer = moo.compile({
   assign_sub: "-=",
   assign_mult: "*=",
   assign_div: "/=",
-  assign_modulo: "%=",
-  assign_band: "&=",
-  assign_bxor: "^=",
-  assign_bor: "|=",
+  assign_modulo: "%=", // TODO reserved
+  assign_band: "&=", // TODO reserved
+  assign_bxor: "^=", // TODO reserved
+  assign_bor: "|=", // TODO reserved
   incr: "++",
   decr: "--",
-  assign_blshift: "<<=",
-  assign_brshift: ">>=",
+  assign_blshift: "<<=", // TODO reserved
+  assign_brshift: ">>=", // TODO reserved
   blshift: "<<",
   brshift: ">>",
   arrow: "->",
@@ -168,6 +168,8 @@ export const lexer = moo.compile({
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),
   },
 });
+
+// TODO tilde is reserved apparently (p. 40)
 
 /*
 lexer.reset("vec4 color = vec4(1., 0.1, 3.0, 0.);\n");

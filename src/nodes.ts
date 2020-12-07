@@ -141,7 +141,7 @@ export class UnaryExpr extends Expr {
   }
 }
 
-export abstract class NumExpr extends Expr {
+export abstract class AtomExpr extends Expr {
   value: Token;
 
   constructor(value: Token) {
@@ -160,48 +160,33 @@ export abstract class NumExpr extends Expr {
   parse() {
     return this.value.text;
   }
+
+  protected jsonHelper(name: string) {
+    return { name: name, value: this.value.text };
+  }
 }
 
-export class FloatExpr extends NumExpr {
+export class FloatExpr extends AtomExpr {
   toJson() {
-    return {
-      name: "float_expr",
-      value: this.value.text,
-    };
+    return this.jsonHelper("float_expr");
   }
 }
 
-export class IntExpr extends NumExpr {
+export class IntExpr extends AtomExpr {
   toJson() {
-    return {
-      name: "int_expr",
-      value: this.value.text,
-    };
+    return this.jsonHelper("int_expr");
   }
 }
 
-export class IdentExpr extends Expr {
-  token: Token;
-
-  constructor(token: Token) {
-    super();
-    this.token = token;
+export class IdentExpr extends AtomExpr {
+  toJson() {
+    return this.jsonHelper("ident_expr");
   }
+}
 
-  getSubExpressions(): Expr[] {
-    return [];
-  }
-
-  getToken(): Token {
-    throw new Error("Method not implemented.");
-  }
-
-  toJson(): object {
-    throw new Error("Method not implemented.");
-  }
-
-  parse(): string {
-    throw new Error("Method not implemented.");
+export class BoolExpr extends AtomExpr {
+  toJson() {
+    return this.jsonHelper("bool_expr");
   }
 }
 

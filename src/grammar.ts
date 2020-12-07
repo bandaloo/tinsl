@@ -35,10 +35,13 @@ declare var band: any;
 declare var bxor: any;
 declare var bor: any;
 declare var and: any;
+declare var xor: any;
 declare var or: any;
 declare var comma: any;
 declare var float: any;
 declare var ident: any;
+declare var kw_true: any;
+declare var kw_false: any;
 declare var lbc: any;
 declare var ws: any;
 declare var comment: any;
@@ -52,9 +55,11 @@ import {
   FloatExpr,
   SubscriptExpr,
   CallExpr,
-  IdentExpr
+  IdentExpr,
+  BoolExpr,
 } from "./nodes";
 import { lexer } from "./lexer";
+
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
@@ -122,7 +127,9 @@ const grammar: Grammar = {
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
-    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Args", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new CallExpr(d[2], d[0], d[4])},
+    {"name": "MiscPost$ebnf$1", "symbols": ["Args"], "postprocess": id},
+    {"name": "MiscPost$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "MiscPost$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new CallExpr(d[2], d[0], d[4] !== null ? d[4] : [])},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("period") ? {type: "period"} : period), "_", "Paren"], "postprocess": bin},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("incr") ? {type: "incr"} : incr)], "postprocess": post},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("decr") ? {type: "decr"} : decr)], "postprocess": post},
@@ -160,7 +167,7 @@ const grammar: Grammar = {
     {"name": "BitOr", "symbols": ["BitXor"], "postprocess": id},
     {"name": "LogicAnd", "symbols": ["LogicAnd", "_", (nearleyLexer.has("and") ? {type: "and"} : and), "_", "BitOr"], "postprocess": bin},
     {"name": "LogicAnd", "symbols": ["BitOr"], "postprocess": id},
-    {"name": "LogicXor", "symbols": ["LogicXor", "_", (nearleyLexer.has("and") ? {type: "and"} : and), "_", "LogicAnd"], "postprocess": bin},
+    {"name": "LogicXor", "symbols": ["LogicXor", "_", (nearleyLexer.has("xor") ? {type: "xor"} : xor), "_", "LogicAnd"], "postprocess": bin},
     {"name": "LogicXor", "symbols": ["LogicAnd"], "postprocess": id},
     {"name": "LogicOr", "symbols": ["LogicOr", "_", (nearleyLexer.has("or") ? {type: "or"} : or), "_", "LogicXor"], "postprocess": bin},
     {"name": "LogicOr", "symbols": ["LogicXor"], "postprocess": id},
@@ -172,6 +179,8 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => new FloatExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => new IntExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_true") ? {type: "kw_true"} : kw_true)], "postprocess": d => new BoolExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_false") ? {type: "kw_false"} : kw_false)], "postprocess": d => new BoolExpr(d[0])},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},
     {"name": "__lb__$ebnf$1", "symbols": ["__lb__$ebnf$1$subexpression$1"]},
     {"name": "__lb__$ebnf$1$subexpression$2", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

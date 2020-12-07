@@ -9,9 +9,11 @@ import {
   FloatExpr,
   SubscriptExpr,
   CallExpr,
-  IdentExpr
+  IdentExpr,
+  BoolExpr,
 } from "./nodes";
 import { lexer } from "./lexer";
+
 const nearleyLexer = (lexer as unknown) as NearleyLexer;
 
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
@@ -52,7 +54,7 @@ Paren ->
 
 MiscPost ->
     MiscPost _ %lbracket _ Paren _ %rbracket {% (d: any) => new SubscriptExpr(d[2], d[0], d[4]) %}
-  | MiscPost _ %lparen _ Args _ %rparen      {% (d: any) => new CallExpr(d[2], d[0], d[4]) %}
+  | MiscPost _ %lparen _ Args:? _ %rparen    {% (d: any) => new CallExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
   | MiscPost _ %period _ Paren               {% bin %}
   | MiscPost _ %incr                         {% post %}
   | MiscPost _ %decr                         {% post %}
@@ -112,7 +114,7 @@ LogicAnd ->
   | BitOr                   {% id %}
 
 LogicXor ->
-    LogicXor _ %and _ LogicAnd {% bin %}
+    LogicXor _ %xor _ LogicAnd {% bin %}
   | LogicAnd                   {% id %}
 
 LogicOr ->
@@ -125,9 +127,11 @@ Args ->
   Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
 
 Atom ->
-    %float {% d => new FloatExpr(d[0]) %}
-  | %int   {% d => new IntExpr(d[0]) %}
-  | %ident {% d => new IdentExpr(d[0]) %}
+    %float    {% d => new FloatExpr(d[0]) %}
+  | %int      {% d => new IntExpr(d[0]) %}
+  | %ident    {% d => new IdentExpr(d[0]) %}
+  | %kw_true  {% d => new BoolExpr(d[0]) %}
+  | %kw_false {% d => new BoolExpr(d[0]) %}
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+
