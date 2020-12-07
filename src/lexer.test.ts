@@ -203,19 +203,19 @@ describe("identifiers", () => {
 });
 
 describe("whitespace", () => {
-  it("single newline linebreak chunk", () => {
+  it("lexes single newline linebreak chunk", () => {
     expect(types(tokens(lexer, "\n"))).to.deep.equal(["lbc"]);
   });
 
-  it("multiple newline linebreak chunk", () => {
+  it("lexes multiple newline linebreak chunk", () => {
     expect(types(tokens(lexer, "\n\n\n"))).to.deep.equal(["lbc"]);
   });
 
-  it("multiple newline linebreak chunk inner spaces", () => {
+  it("lexes multiple newline linebreak chunk inner spaces", () => {
     expect(types(tokens(lexer, "\n \n\n \n"))).to.deep.equal(["lbc"]);
   });
 
-  it("multiple newline linebreak chunk outer spaces", () => {
+  it("lexes multiple newline linebreak chunk outer spaces", () => {
     expect(types(tokens(lexer, "  \n \n\n \n  "))).to.deep.equal(["lbc"]);
   });
 });
