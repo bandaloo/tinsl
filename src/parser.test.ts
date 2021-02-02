@@ -122,6 +122,20 @@ const vec = (...args: number[]) =>
     args.map((n) => new FloatExpr(tok(n + ".")))
   );
 
+const mat = (redundant: boolean, ...args: number[][]) =>
+  new ConstructorExpr(
+    tok("("),
+    new TypeName(
+      tok(
+        "mat" +
+          (!redundant && args.length === args[0].length
+            ? args.length
+            : args.length + "x" + args[0].length)
+      )
+    ),
+    args.flat().map((n) => new FloatExpr(tok(n + ".")))
+  );
+
 describe("order of ops", () => {
   it("parses in reverse precedence logical or, xor, and", () => {
     checkExpr("true || false ^^ true && false", logicReverse);
@@ -173,6 +187,24 @@ describe("call expressions", () => {
 
   it("parses vec4 constructor call", () => {
     checkExpr("vec2(0., 1., 2., 3.)", vec(0, 1, 2, 3));
+  });
+
+  it("parses mat2 constructor call", () => {
+    checkExpr("mat2(0., 1., 2., 3.)", mat(false, [0, 1], [2, 3]));
+  });
+
+  it("parses mat3 constructor call", () => {
+    checkExpr(
+      "mat3(0., 1., 2., 3., 4., 5., 6., 7., 8.)",
+      mat(false, [0, 1, 2], [3, 4, 5], [6, 7, 8])
+    );
+  });
+
+  it("parses mat4 constructor call", () => {
+    checkExpr(
+      "mat4(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.)",
+      mat(false, [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15])
+    );
   });
 });
 
