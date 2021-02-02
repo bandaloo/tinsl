@@ -17,7 +17,7 @@ abstract class Node {
 
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
-  abstract getToken(): Token;
+  abstract getToken(): Token; // TODO change this to tokens?
 }
 
 // TODO token for renderblock
@@ -243,6 +243,36 @@ export class SubscriptExpr extends Expr {
 
   toJson(): object {
     return { name: "subscript_expr", call: this.call, index: this.index };
+  }
+}
+
+export class Decl extends Node {
+  constant: boolean;
+  type: Token;
+  id: Token;
+  expr: Expr;
+
+  constructor(constant: boolean, type: Token, id: Token, expr: Expr) {
+    super();
+    this.constant = constant;
+    this.type = type;
+    this.id = id;
+    this.expr = expr;
+  }
+
+  toJson(): object {
+    return {
+      name: "decl",
+      type: this.type,
+      id: this.id,
+      expr: this.expr,
+    };
+  }
+
+  parse(): string {
+    return `${this.constant ? "const " : ""}${this.type.text}${this.id.text}=${
+      this.expr.parse
+    };`;
   }
 }
 

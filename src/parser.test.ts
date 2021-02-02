@@ -3,7 +3,15 @@ import chaiExclude from "chai-exclude";
 import * as nearley from "nearley";
 import grammar from "./grammar";
 import { Token } from "moo";
-import { BinaryExpr, BoolExpr, IntExpr, UnaryExpr } from "./nodes";
+import {
+  BinaryExpr,
+  BoolExpr,
+  Decl,
+  FloatExpr,
+  IdentExpr,
+  IntExpr,
+  UnaryExpr,
+} from "./nodes";
 
 chai.use(chaiExclude);
 
@@ -141,5 +149,14 @@ describe("order of ops", () => {
 
   it("parses prefix unary expressions", () => {
     checkExpr("(+1 < -2 + ~3) == (!true || !false)", oneTwoThreeForwardUnary);
+  });
+});
+
+describe("variable declarations", () => {
+  it("parses non-constant variable declaration", () => {
+    checkExpr(
+      "const float foo = 1.",
+      new Decl(true, tok("float"), tok("foo"), new FloatExpr(tok("1.")))
+    );
   });
 });

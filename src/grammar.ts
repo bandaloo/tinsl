@@ -37,6 +37,22 @@ declare var bor: any;
 declare var and: any;
 declare var xor: any;
 declare var or: any;
+declare var kw_float: any;
+declare var kw_vec2: any;
+declare var kw_vec3: any;
+declare var kw_vec4: any;
+declare var kw_mat2: any;
+declare var kw_mat3: any;
+declare var kw_mat4: any;
+declare var kw_mat2x2: any;
+declare var kw_mat2x3: any;
+declare var kw_mat2x4: any;
+declare var kw_mat3x2: any;
+declare var kw_mat3x3: any;
+declare var kw_mat3x4: any;
+declare var kw_mat4x2: any;
+declare var kw_mat4x3: any;
+declare var kw_mat4x4: any;
 declare var comma: any;
 declare var float: any;
 declare var ident: any;
@@ -59,6 +75,7 @@ import {
   CallExpr,
   IdentExpr,
   BoolExpr,
+  Decl
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -124,7 +141,7 @@ const grammar: Grammar = {
           outNum,
           loopNumBl !== null ? loopNumBl[3] : null
         )
-            },
+              },
     {"name": "BlockLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "BlockLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
@@ -175,6 +192,22 @@ const grammar: Grammar = {
     {"name": "LogicOr", "symbols": ["LogicOr", "_", (nearleyLexer.has("or") ? {type: "or"} : or), "_", "LogicXor"], "postprocess": bin},
     {"name": "LogicOr", "symbols": ["LogicXor"], "postprocess": id},
     {"name": "Expr", "symbols": ["LogicOr"], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec4") ? {type: "kw_vec4"} : kw_vec4)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2") ? {type: "kw_mat2"} : kw_mat2)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3") ? {type: "kw_mat3"} : kw_mat3)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4") ? {type: "kw_mat4"} : kw_mat4)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x2") ? {type: "kw_mat2x2"} : kw_mat2x2)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x3") ? {type: "kw_mat2x3"} : kw_mat2x3)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x4") ? {type: "kw_mat2x4"} : kw_mat2x4)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x2") ? {type: "kw_mat3x2"} : kw_mat3x2)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x3") ? {type: "kw_mat3x3"} : kw_mat3x3)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x4") ? {type: "kw_mat3x4"} : kw_mat3x4)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x2") ? {type: "kw_mat4x2"} : kw_mat4x2)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x3") ? {type: "kw_mat4x3"} : kw_mat4x3)], "postprocess": id},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x4") ? {type: "kw_mat4x4"} : kw_mat4x4)], "postprocess": id},
     {"name": "Args$ebnf$1", "symbols": []},
     {"name": "Args$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Expr"]},
     {"name": "Args$ebnf$1", "symbols": ["Args$ebnf$1", "Args$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
@@ -187,9 +220,9 @@ const grammar: Grammar = {
     {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
     {"name": "Decl$ebnf$1", "symbols": ["Decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Decl$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "Decl$subexpression$1", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
+    {"name": "Decl$subexpression$1", "symbols": ["TypeName", "_"]},
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
-    {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": id},
+    {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5])},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},
     {"name": "__lb__$ebnf$1", "symbols": ["__lb__$ebnf$1$subexpression$1"]},
     {"name": "__lb__$ebnf$1$subexpression$2", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},
