@@ -1,4 +1,5 @@
 import type { Token } from "moo";
+import { stringify } from "querystring";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -17,6 +18,7 @@ abstract class Node {
 
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
+  // TODO move this up to Node class?
   abstract getToken(): Token; // TODO change this to tokens?
 }
 
@@ -213,7 +215,40 @@ export class CallExpr extends Expr {
   }
 
   toJson(): object {
-    return { name: "call_expr", call: this.open, args: this.args };
+    return { name: "call_expr", call: this.call.parse(), args: this.args };
+  }
+}
+
+export class ConstructorExpr extends Expr {
+  open: Token;
+  type: TypeName;
+  args: Expr[];
+
+  constructor(open: Token, type: TypeName, args: Expr[]) {
+    super();
+    this.open = open;
+    this.type = type;
+    this.args = args;
+  }
+
+  getSubExpressions(): Expr[] {
+    return this.args;
+  }
+
+  getToken(): Token {
+    return this.open;
+  }
+
+  parse(): string {
+    return `${this.type.parse()}(${commaSeparatedExprs(this.args)})`;
+  }
+
+  toJson(): object {
+    return {
+      name: "constructor_expr",
+      type: this.type.parse(),
+      args: this.args,
+    };
   }
 }
 
@@ -248,11 +283,11 @@ export class SubscriptExpr extends Expr {
 
 export class Decl extends Node {
   constant: boolean;
-  type: Token;
+  type: TypeName;
   id: Token;
   expr: Expr;
 
-  constructor(constant: boolean, type: Token, id: Token, expr: Expr) {
+  constructor(constant: boolean, type: TypeName, id: Token, expr: Expr) {
     super();
     this.constant = constant;
     this.type = type;
@@ -270,9 +305,29 @@ export class Decl extends Node {
   }
 
   parse(): string {
-    return `${this.constant ? "const " : ""}${this.type.text}${this.id.text}=${
-      this.expr.parse
-    };`;
+    return `${this.constant ? "const " : ""}${this.type.parse()}${
+      this.id.text
+    }=${this.expr.parse};`;
+  }
+}
+
+export class TypeName extends Node {
+  type: Token;
+
+  constructor(type: Token) {
+    super();
+    this.type = type;
+  }
+
+  toJson(): object {
+    return {
+      name: "type_name",
+      type: this.type,
+    };
+  }
+
+  parse(): string {
+    return this.type.text;
   }
 }
 

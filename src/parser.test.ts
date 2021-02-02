@@ -6,10 +6,13 @@ import { Token } from "moo";
 import {
   BinaryExpr,
   BoolExpr,
+  CallExpr,
+  ConstructorExpr,
   Decl,
   FloatExpr,
   IdentExpr,
   IntExpr,
+  TypeName,
   UnaryExpr,
 } from "./nodes";
 
@@ -112,6 +115,13 @@ const oneTwoThreeForwardUnary = new BinaryExpr(
   )
 );
 
+const vec = (...args: number[]) =>
+  new ConstructorExpr(
+    tok("("),
+    new TypeName(tok("vec" + args.length)),
+    args.map((n) => new FloatExpr(tok(n + ".")))
+  );
+
 describe("order of ops", () => {
   it("parses in reverse precedence logical or, xor, and", () => {
     checkExpr("true || false ^^ true && false", logicReverse);
@@ -152,11 +162,39 @@ describe("order of ops", () => {
   });
 });
 
+describe("call expressions", () => {
+  it("parses vec2 constructor call", () => {
+    checkExpr("vec2(0., 1.)", vec(0, 1));
+  });
+
+  it("parses vec3 constructor call", () => {
+    checkExpr("vec3(0., 1., 2.)", vec(0, 1, 2));
+  });
+
+  it("parses vec4 constructor call", () => {
+    checkExpr("vec2(0., 1., 2., 3.)", vec(0, 1, 2, 3));
+  });
+});
+
 describe("variable declarations", () => {
-  it("parses non-constant variable declaration", () => {
+  it("parses constant variable declaration float", () => {
     checkExpr(
       "const float foo = 1.",
-      new Decl(true, tok("float"), tok("foo"), new FloatExpr(tok("1.")))
+      new Decl(
+        true,
+        new TypeName(tok("float")),
+        tok("foo"),
+        new FloatExpr(tok("1."))
+      )
     );
   });
+
+  /*
+  it("parses constant variable declaration float", () => {
+    checkExpr(
+      "const vec2 foo = vec2(1., 2.)",
+      new Decl(true, tok("vec2"), tok("foo"), new CallExpr(tok("("), ))
+    );
+  });
+  */
 });

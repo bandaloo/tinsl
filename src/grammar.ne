@@ -11,7 +11,9 @@ import {
   CallExpr,
   IdentExpr,
   BoolExpr,
-  Decl
+  Decl,
+  TypeName,
+  ConstructorExpr
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -20,6 +22,7 @@ const nearleyLexer = (lexer as unknown) as NearleyLexer;
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
+const typ = (d: any) => new TypeName(d);
 %}
 
 @lexer nearleyLexer
@@ -125,23 +128,24 @@ LogicOr ->
 
 Expr -> LogicOr {% id %}
 
+# TODO float constructor call shouldn't be possible 
 TypeName ->
-    %kw_float  {% id %}
-  | %kw_vec2   {% id %}
-  | %kw_vec3   {% id %}
-  | %kw_vec4   {% id %}
-  | %kw_mat2   {% id %}
-  | %kw_mat3   {% id %}
-  | %kw_mat4   {% id %}
-  | %kw_mat2x2 {% id %}
-  | %kw_mat2x3 {% id %}
-  | %kw_mat2x4 {% id %}
-  | %kw_mat3x2 {% id %}
-  | %kw_mat3x3 {% id %}
-  | %kw_mat3x4 {% id %}
-  | %kw_mat4x2 {% id %}
-  | %kw_mat4x3 {% id %}
-  | %kw_mat4x4 {% id %}
+    %kw_float  {% typ %}
+  | %kw_vec2   {% typ %}
+  | %kw_vec3   {% typ %}
+  | %kw_vec4   {% typ %}
+  | %kw_mat2   {% typ %}
+  | %kw_mat3   {% typ %}
+  | %kw_mat4   {% typ %}
+  | %kw_mat2x2 {% typ %}
+  | %kw_mat2x3 {% typ %}
+  | %kw_mat2x4 {% typ %}
+  | %kw_mat3x2 {% typ %}
+  | %kw_mat3x3 {% typ %}
+  | %kw_mat3x4 {% typ %}
+  | %kw_mat4x2 {% typ %}
+  | %kw_mat4x3 {% typ %}
+  | %kw_mat4x4 {% typ %}
 
 Args ->
   Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
@@ -152,6 +156,8 @@ Atom ->
   | %ident    {% d => new IdentExpr(d[0]) %}
   | %kw_true  {% d => new BoolExpr(d[0]) %}
   | %kw_false {% d => new BoolExpr(d[0]) %}
+  | TypeName _ %lparen _ Args:? _ %rparen
+      {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
 
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
