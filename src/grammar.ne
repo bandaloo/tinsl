@@ -46,6 +46,7 @@ RenderBlock ->
 
 BlockLevel ->
     Expr {% id %}
+  | Decl {% id %}
 
 # order of operations
 Paren ->
@@ -132,6 +133,9 @@ Atom ->
   | %ident    {% d => new IdentExpr(d[0]) %}
   | %kw_true  {% d => new BoolExpr(d[0]) %}
   | %kw_false {% d => new BoolExpr(d[0]) %}
+
+Decl ->
+    (%kw_const _):? (%ident _) (%ident _) %assignment _ Expr {% id %}
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+

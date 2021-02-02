@@ -1,7 +1,5 @@
 import type { Token } from "moo";
 
-export const test = "test!";
-
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
 

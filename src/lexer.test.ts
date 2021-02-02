@@ -200,6 +200,10 @@ describe("identifiers", () => {
   it("lexes identifier containing keywords", () => {
     expect(types(tokens(lexer, "for_a_while"))).to.deep.equal(["ident"]);
   });
+
+  it("single character identifier", () => {
+    expect(types(tokens(lexer, "b"))).to.deep.equal(["ident"]);
+  });
 });
 
 describe("whitespace", () => {
