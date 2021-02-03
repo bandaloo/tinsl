@@ -38,13 +38,14 @@ TopLevel ->
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
     (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace _ %arrow _ %int
-      {% ([inNumBl, loopNumBl, onceBl, , , , first, rest, , , , , , outNum]: any) =>
+      {% ([inNumBl, loopNumBl, onceBl, , open, , first, rest, , , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[1] !== null,
           [first, ...rest.map((e: any) => e[1])],
           inNumBl !== null ? inNumBl[0] : null,
           outNum,
-          loopNumBl !== null ? loopNumBl[3] : null
+          loopNumBl !== null ? loopNumBl[3] : null,
+          open
         )
       %}
 
@@ -161,7 +162,7 @@ Atom ->
 
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
-      {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5]) %}
+      {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+

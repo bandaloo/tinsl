@@ -11,6 +11,7 @@ function commaSeparatedExprs(exprs: Expr[]) {
 abstract class Node {
   abstract toJson(): object;
   abstract parse(): string;
+  abstract getToken(): Token; // TODO change this to tokens?
   toString() {
     return JSON.stringify(this.toJson());
   }
@@ -19,7 +20,6 @@ abstract class Node {
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
   // TODO move this up to Node class?
-  abstract getToken(): Token; // TODO change this to tokens?
 }
 
 // TODO token for renderblock
@@ -29,13 +29,15 @@ export class RenderBlock extends Node {
   outNum: number | null;
   loopNum: number | null;
   expressions: Expr[];
+  open: Token;
 
   constructor(
     once: boolean,
     expressions: Expr[],
     inNum: number | null,
     outNum: number | null,
-    loopNum: number | null
+    loopNum: number | null,
+    open: Token
   ) {
     super();
     this.once = once;
@@ -43,6 +45,7 @@ export class RenderBlock extends Node {
     this.inNum = inNum;
     this.outNum = outNum;
     this.loopNum = loopNum;
+    this.open = open;
   }
 
   toJson(): object {
@@ -71,6 +74,10 @@ export class RenderBlock extends Node {
 
   parse(): string {
     return this.expressions.map((e) => e.parse()).join("");
+  }
+
+  getToken(): Token {
+    return this.open;
   }
 }
 
@@ -286,13 +293,21 @@ export class Decl extends Node {
   type: TypeName;
   id: Token;
   expr: Expr;
+  assign: Token;
 
-  constructor(constant: boolean, type: TypeName, id: Token, expr: Expr) {
+  constructor(
+    constant: boolean,
+    type: TypeName,
+    id: Token,
+    expr: Expr,
+    assign: Token
+  ) {
     super();
     this.constant = constant;
     this.type = type;
     this.id = id;
     this.expr = expr;
+    this.assign = assign;
   }
 
   toJson(): object {
@@ -308,6 +323,10 @@ export class Decl extends Node {
     return `${this.constant ? "const " : ""}${this.type.parse()}${
       this.id.text
     }=${this.expr.parse};`;
+  }
+
+  getToken(): Token {
+    return this.assign;
   }
 }
 
@@ -328,6 +347,10 @@ export class TypeName extends Node {
 
   parse(): string {
     return this.type.text;
+  }
+
+  getToken(): Token {
+    return this.type;
   }
 }
 

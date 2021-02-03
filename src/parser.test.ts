@@ -206,6 +206,66 @@ describe("call expressions", () => {
       mat(false, [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15])
     );
   });
+
+  it("parses mat2x2 constructor call", () => {
+    checkExpr("mat2x2(0., 1., 2., 3.)", mat(true, [0, 1], [2, 3]));
+  });
+
+  it("parses mat2x3 constructor call", () => {
+    checkExpr(
+      "mat2x2(0., 1., 2., 3., 4., 5.)",
+      mat(true, [0, 1], [2, 3], [4, 5])
+    );
+  });
+
+  it("parses mat2x4 constructor call", () => {
+    checkExpr(
+      "mat2x2(0., 1., 2., 3., 4., 5., 6., 7.)",
+      mat(true, [0, 1], [2, 3], [4, 5], [6, 7])
+    );
+  });
+
+  it("parses mat3x2 constructor call", () => {
+    checkExpr(
+      "mat3x3(0., 1., 2., 3., 4., 5.)",
+      mat(true, [0, 1, 2], [3, 4, 5])
+    );
+  });
+
+  it("parses mat3x3 constructor call", () => {
+    checkExpr(
+      "mat3x3(0., 1., 2., 3., 4., 5., 6., 7., 8.)",
+      mat(true, [0, 1, 2], [3, 4, 5], [6, 7, 8])
+    );
+  });
+
+  it("parses mat3x4 constructor call", () => {
+    checkExpr(
+      "mat3x3(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
+      mat(true, [0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11])
+    );
+  });
+
+  it("parses mat4x2 constructor call", () => {
+    checkExpr(
+      "mat4x4(0., 1., 2., 3., 4., 5., 6., 7.)",
+      mat(true, [0, 1, 2, 3], [4, 5, 6, 7])
+    );
+  });
+
+  it("parses mat4x3 constructor call", () => {
+    checkExpr(
+      "mat4x4(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
+      mat(true, [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11])
+    );
+  });
+
+  it("parses mat4x4 constructor call", () => {
+    checkExpr(
+      "mat4x4(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.)",
+      mat(true, [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15])
+    );
+  });
 });
 
 describe("variable declarations", () => {
@@ -216,7 +276,8 @@ describe("variable declarations", () => {
         true,
         new TypeName(tok("float")),
         tok("foo"),
-        new FloatExpr(tok("1."))
+        new FloatExpr(tok("1.")),
+        tok("=")
       )
     );
   });
