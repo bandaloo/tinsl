@@ -55,6 +55,13 @@ BlockLevel ->
   | Decl   {% id %}
   | Assign {% id %}
 
+Decl ->
+    (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
+      {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
+
+Assign ->
+    Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
+
 # order of operations
 Paren ->
     %lparen _ Expr _ %rparen {% d => d[2] %}
@@ -162,23 +169,18 @@ Atom ->
   | TypeName _ %lparen _ Args:? _ %rparen
       {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
 
-Decl ->
-    (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
-      {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
-
-Assign ->
-    Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[5]) %}
-
 AssignSymbol ->
-    %assignment    {% id %}
-  | %assign_add    {% id %}
-  | %assign_sub    {% id %}
-  | %assign_mult   {% id %}
-  | %assign_div    {% id %}
-  | %assign_modulo {% id %}
-  | %assign_band   {% id %}
-  | %assign_bxor   {% id %}
-  | %assign_bor    {% id %}
+    %assignment     {% id %}
+  | %assign_add     {% id %}
+  | %assign_sub     {% id %}
+  | %assign_mult    {% id %}
+  | %assign_div     {% id %}
+  | %assign_modulo  {% id %}
+  | %assign_band    {% id %}
+  | %assign_bxor    {% id %}
+  | %assign_bor     {% id %}
+  | %assign_blshift {% id %}
+  | %assign_brshift {% id %}
 
 # TODO confirm how multiline comments figure into this
 __lb__ -> (_sws_ %lbc _sws_):+

@@ -4,6 +4,7 @@ import * as nearley from "nearley";
 import grammar from "./grammar";
 import { Token } from "moo";
 import {
+  Assign,
   BinaryExpr,
   BoolExpr,
   CallExpr,
@@ -135,6 +136,9 @@ const mat = (redundant: boolean, ...args: number[][]) =>
     ),
     args.flat().map((n) => new FloatExpr(tok(n + ".")))
   );
+
+const assignFloat = (left: string, symbol: string, right: string) =>
+  new Assign(new IdentExpr(tok(left)), tok(symbol), new FloatExpr(tok(right)));
 
 const vec2Decl = new Decl(
   true,
@@ -300,5 +304,39 @@ describe("variable declarations", () => {
 
   it("parses declaration with newlines", () => {
     checkExpr("\nconst\nvec2\nbar\n=\nvec2(1.,2.)\n", vec2Decl);
+  });
+});
+
+describe("assignment", () => {
+  it("parses direct assignment", () => {
+    checkExpr("foo = 1.", assignFloat("foo", "=", "1."));
+  });
+
+  it("parses all relative assignment float", () => {
+    checkExpr("foo += 1.", assignFloat("foo", "+=", "1."));
+    checkExpr("foo -= 1.", assignFloat("foo", "-=", "1."));
+    checkExpr("foo *= 1.", assignFloat("foo", "*=", "1."));
+    checkExpr("foo /= 1.", assignFloat("foo", "/=", "1."));
+    checkExpr("foo %= 1.", assignFloat("foo", "%=", "1."));
+    checkExpr("foo &= 1.", assignFloat("foo", "&=", "1."));
+    checkExpr("foo ^= 1.", assignFloat("foo", "^=", "1."));
+    checkExpr("foo |= 1.", assignFloat("foo", "|=", "1."));
+    checkExpr("foo <<= 1.", assignFloat("foo", "<<=", "1."));
+    checkExpr("foo >>= 1.", assignFloat("foo", ">>=", "1."));
+  });
+
+  it("parses assignment vec2", () => {
+    checkExpr(
+      "foo.xy = vec2(1., 2.)",
+      new Assign(
+        new BinaryExpr(
+          new IdentExpr(tok("foo")),
+          tok("."),
+          new IdentExpr(tok("xy"))
+        ),
+        tok("="),
+        vec(1, 2)
+      )
+    );
   });
 });
