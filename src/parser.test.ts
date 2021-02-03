@@ -136,6 +136,14 @@ const mat = (redundant: boolean, ...args: number[][]) =>
     args.flat().map((n) => new FloatExpr(tok(n + ".")))
   );
 
+const vec2Decl = new Decl(
+  true,
+  new TypeName(tok("float")),
+  tok("bar"),
+  vec(1, 2),
+  tok("=")
+);
+
 describe("order of ops", () => {
   it("parses in reverse precedence logical or, xor, and", () => {
     checkExpr("true || false ^^ true && false", logicReverse);
@@ -269,11 +277,11 @@ describe("call expressions", () => {
 });
 
 describe("variable declarations", () => {
-  it("parses constant variable declaration float", () => {
+  it("parses non-constant variable declaration float", () => {
     checkExpr(
-      "const float foo = 1.",
+      "float foo = 1.",
       new Decl(
-        true,
+        false,
         new TypeName(tok("float")),
         tok("foo"),
         new FloatExpr(tok("1.")),
@@ -282,12 +290,15 @@ describe("variable declarations", () => {
     );
   });
 
-  /*
-  it("parses constant variable declaration float", () => {
-    checkExpr(
-      "const vec2 foo = vec2(1., 2.)",
-      new Decl(true, tok("vec2"), tok("foo"), new CallExpr(tok("("), ))
-    );
+  it("parses constant variable declaration vec2", () => {
+    checkExpr("const vec2 bar = vec2(1., 2.)", vec2Decl);
   });
-  */
+
+  it("parses declaration with minimal whitespace", () => {
+    checkExpr("const vec2 bar=vec2(1.,2.)", vec2Decl);
+  });
+
+  it("parses declaration with newlines", () => {
+    checkExpr("\nconst\nvec2\nbar\n=\nvec2(1.,2.)\n", vec2Decl);
+  });
 });

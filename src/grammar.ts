@@ -60,6 +60,14 @@ declare var kw_true: any;
 declare var kw_false: any;
 declare var kw_const: any;
 declare var assignment: any;
+declare var assign_add: any;
+declare var assign_sub: any;
+declare var assign_mult: any;
+declare var assign_div: any;
+declare var assign_modulo: any;
+declare var assign_band: any;
+declare var assign_bxor: any;
+declare var assign_bor: any;
 declare var lbc: any;
 declare var ws: any;
 declare var comment: any;
@@ -77,7 +85,8 @@ import {
   BoolExpr,
   Decl,
   TypeName,
-  ConstructorExpr
+  ConstructorExpr,
+  Assign
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -148,6 +157,7 @@ const grammar: Grammar = {
               },
     {"name": "BlockLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "BlockLevel", "symbols": ["Decl"], "postprocess": id},
+    {"name": "BlockLevel", "symbols": ["Assign"], "postprocess": id},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
@@ -230,6 +240,16 @@ const grammar: Grammar = {
     {"name": "Decl$subexpression$1", "symbols": ["TypeName", "_"]},
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
     {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3])},
+    {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[5])},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assignment") ? {type: "assignment"} : assignment)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_add") ? {type: "assign_add"} : assign_add)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_sub") ? {type: "assign_sub"} : assign_sub)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_mult") ? {type: "assign_mult"} : assign_mult)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_div") ? {type: "assign_div"} : assign_div)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_modulo") ? {type: "assign_modulo"} : assign_modulo)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_band") ? {type: "assign_band"} : assign_band)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_bxor") ? {type: "assign_bxor"} : assign_bxor)], "postprocess": id},
+    {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_bor") ? {type: "assign_bor"} : assign_bor)], "postprocess": id},
     {"name": "__lb__$ebnf$1$subexpression$1", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},
     {"name": "__lb__$ebnf$1", "symbols": ["__lb__$ebnf$1$subexpression$1"]},
     {"name": "__lb__$ebnf$1$subexpression$2", "symbols": ["_sws_", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "_sws_"]},

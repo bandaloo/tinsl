@@ -1,5 +1,5 @@
 import type { Token } from "moo";
-import { stringify } from "querystring";
+import { stringify } from "querystring"; // TODO what was this for
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -288,7 +288,7 @@ export class SubscriptExpr extends Expr {
   }
 }
 
-export class Decl extends Node {
+export class Decl extends Expr {
   constant: boolean;
   type: TypeName;
   id: Token;
@@ -310,6 +310,10 @@ export class Decl extends Node {
     this.assign = assign;
   }
 
+  getSubExpressions(): Expr[] {
+    return [this.expr];
+  }
+
   toJson(): object {
     return {
       name: "decl",
@@ -322,7 +326,7 @@ export class Decl extends Node {
   parse(): string {
     return `${this.constant ? "const " : ""}${this.type.parse()}${
       this.id.text
-    }=${this.expr.parse};`;
+    }=${this.expr.parse}`;
   }
 
   getToken(): Token {
@@ -330,6 +334,43 @@ export class Decl extends Node {
   }
 }
 
+// we will reject invalid left-hand assignments not in the grammar but in a
+// second pass; this will lead to better error messages
+export class Assign extends Expr {
+  left: Expr;
+  assign: Token;
+  right: Expr;
+
+  constructor(left: Expr, assign: Token, right: Expr) {
+    super();
+    this.left = left;
+    this.assign = assign;
+    this.right = right;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [this.left, this.right];
+  }
+
+  toJson(): object {
+    return {
+      name: "assign",
+      left: this.left,
+      right: this.right,
+      assign: this.assign,
+    };
+  }
+
+  parse(): string {
+    return `${this.left.parse()}${this.assign.text}${this.right.parse()}`;
+  }
+
+  getToken(): Token {
+    return this.assign;
+  }
+}
+
+// TODO better name is type specifier
 export class TypeName extends Node {
   type: Token;
 

@@ -12,7 +12,7 @@ const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 //parser.feed("{ something()++\narr[1] }->0");
 //parser.feed("{true && false}->0");
 //parser.feed("{-1||0&&1&2^3|4}->0");
-parser.feed("{something a = 1.}->0");
+parser.feed("{something = 1.}->0");
 //parser.feed("{1}->0");
 console.log(
   util.inspect(parser.results, {
