@@ -4,6 +4,8 @@ import { stringify } from "querystring"; // TODO what was this for
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
 
+// TODO check the json conversion functions for tokens
+
 function commaSeparatedExprs(exprs: Expr[]) {
   return exprs.map((s) => s.parse()).join();
 }
@@ -28,7 +30,7 @@ export class RenderBlock extends Node {
   inNum: number | null;
   outNum: number | null;
   loopNum: number | null;
-  expressions: Expr[];
+  expressions: Expr[]; // TODO rename to body
   open: Token;
 
   constructor(
@@ -372,26 +374,83 @@ export class Assign extends Expr {
 
 // TODO better name is type specifier
 export class TypeName extends Node {
-  type: Token;
+  token: Token;
 
-  constructor(type: Token) {
+  constructor(token: Token) {
     super();
-    this.type = type;
+    this.token = token;
   }
 
   toJson(): object {
     return {
       name: "type_name",
-      type: this.type,
+      type: this.token,
     };
   }
 
   parse(): string {
-    return this.type.text;
+    return this.token.text;
   }
 
   getToken(): Token {
-    return this.type;
+    return this.token;
+  }
+}
+
+export class Param extends Node {
+  type: TypeName;
+  id: Token;
+  def: Expr | null;
+
+  constructor(type: TypeName, id: Token, def: Expr) {
+    super();
+    this.type = type;
+    this.id = id;
+    this.def = def;
+  }
+
+  toJson(): object {
+    return { name: "param", type: this.type, id: this.id };
+  }
+
+  parse(): string {
+    return `${this.type.parse()} ${this.id.text}`;
+  }
+
+  getToken(): Token {
+    return this.id;
+  }
+}
+
+export class FuncDef extends Node {
+  type: TypeName;
+  id: Token;
+  params: Param[];
+  body: Expr[];
+
+  constructor(type: TypeName, id: Token, params: Param[], body: Expr[]) {
+    super();
+    this.type = type;
+    this.id = id;
+    this.params = params;
+    this.body = body;
+  }
+
+  toJson(): object {
+    return {
+      name: "func_def",
+      id: this.id,
+      params: this.params,
+      body: this.body,
+    };
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
   }
 }
 

@@ -14,7 +14,9 @@ import {
   Decl,
   TypeName,
   ConstructorExpr,
-  Assign
+  Assign,
+  Param,
+  FuncDef
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -35,6 +37,15 @@ Main ->
 
 TopLevel ->
     RenderBlock {% id %}
+  | DefBlock    {% id %}
+
+DefBlock ->
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace
+      {% ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
+          typ, id, params === null ? null : params[1], [first, ...rest.map((e: any) => e[1])],
+        )
+      %}
+
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
@@ -138,6 +149,7 @@ LogicOr ->
 
 Expr -> LogicOr {% id %}
 
+# TODO int?
 # TODO float constructor call shouldn't be possible 
 TypeName ->
     %kw_float  {% typ %}
@@ -157,8 +169,16 @@ TypeName ->
   | %kw_mat4x3 {% typ %}
   | %kw_mat4x4 {% typ %}
 
+# TODO repeated code here
 Args ->
-  Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+    Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+
+Params ->
+    Param (%comma _ Param):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+
+Param ->
+    TypeName _ %ident (_ %assignment _ Expr):?
+      {% d => new Param(d[0], d[2], d[3] === null ? null : d[3][3]) %}
 
 Atom ->
     %float    {% d => new FloatExpr(d[0]) %}

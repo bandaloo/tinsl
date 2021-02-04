@@ -3,17 +3,17 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
+declare var ident: any;
+declare var lparen: any;
+declare var rparen: any;
+declare var lbrace: any;
+declare var rbrace: any;
 declare var int: any;
 declare var arrow: any;
 declare var kw_loop: any;
 declare var kw_once: any;
-declare var lbrace: any;
-declare var rbrace: any;
 declare var kw_const: any;
-declare var ident: any;
 declare var assignment: any;
-declare var lparen: any;
-declare var rparen: any;
 declare var lbracket: any;
 declare var rbracket: any;
 declare var period: any;
@@ -88,7 +88,9 @@ import {
   Decl,
   TypeName,
   ConstructorExpr,
-  Assign
+  Assign,
+  Param,
+  FuncDef
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -135,6 +137,17 @@ const grammar: Grammar = {
         ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
           },
     {"name": "TopLevel", "symbols": ["RenderBlock"], "postprocess": id},
+    {"name": "TopLevel", "symbols": ["DefBlock"], "postprocess": id},
+    {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params", "_"]},
+    {"name": "DefBlock$ebnf$1", "symbols": ["DefBlock$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "DefBlock$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "DefBlock$ebnf$2", "symbols": []},
+    {"name": "DefBlock$ebnf$2$subexpression$1", "symbols": ["__lb__", "BlockLevel"]},
+    {"name": "DefBlock$ebnf$2", "symbols": ["DefBlock$ebnf$2", "DefBlock$ebnf$2$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockLevel", "DefBlock$ebnf$2", "_", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
+          typ, id, params === null ? null : params[1], [first, ...rest.map((e: any) => e[1])],
+        )
+              },
     {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow)]},
     {"name": "RenderBlock$ebnf$1", "symbols": ["RenderBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -235,6 +248,14 @@ const grammar: Grammar = {
     {"name": "Args$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Expr"]},
     {"name": "Args$ebnf$1", "symbols": ["Args$ebnf$1", "Args$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "Args", "symbols": ["Expr", "Args$ebnf$1"], "postprocess": d => [d[0], ...d[1].map((e: any) => e[2])]},
+    {"name": "Params$ebnf$1", "symbols": []},
+    {"name": "Params$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Param"]},
+    {"name": "Params$ebnf$1", "symbols": ["Params$ebnf$1", "Params$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "Params", "symbols": ["Param", "Params$ebnf$1"], "postprocess": d => [d[0], ...d[1].map((e: any) => e[2])]},
+    {"name": "Param$ebnf$1$subexpression$1", "symbols": ["_", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"]},
+    {"name": "Param$ebnf$1", "symbols": ["Param$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "Param$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "Param", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "Param$ebnf$1"], "postprocess": d => new Param(d[0], d[2], d[3] === null ? null : d[3][3])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => new FloatExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => new IntExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
