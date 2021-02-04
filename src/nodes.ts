@@ -6,8 +6,12 @@ import { stringify } from "querystring"; // TODO what was this for
 
 // TODO check the json conversion functions for tokens
 
-function commaSeparatedExprs(exprs: Expr[]) {
+function commaSeparatedNodes(exprs: Node[]) {
   return exprs.map((s) => s.parse()).join();
+}
+
+function lineSeparatedNodes(exprs: Node[]) {
+  return "\n" + exprs.map((s) => s.parse()).join(";\n");
 }
 
 abstract class Node {
@@ -75,6 +79,7 @@ export class RenderBlock extends Node {
   }
 
   parse(): string {
+    // TODO this isn't complete
     return this.expressions.map((e) => e.parse()).join("");
   }
 
@@ -220,7 +225,7 @@ export class CallExpr extends Expr {
   }
 
   parse(): string {
-    return `${this.call.parse}(${commaSeparatedExprs(this.args)})`;
+    return `${this.call.parse}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
@@ -249,7 +254,7 @@ export class ConstructorExpr extends Expr {
   }
 
   parse(): string {
-    return `${this.type.parse()}(${commaSeparatedExprs(this.args)})`;
+    return `${this.type.parse()}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
@@ -446,11 +451,36 @@ export class FuncDef extends Node {
   }
 
   parse(): string {
-    throw new Error("Method not implemented.");
+    return `${this.type.parse()} ${this.id.text}(${commaSeparatedNodes(
+      this.params
+    )}){${lineSeparatedNodes(this.body)}}\n`;
   }
 
   getToken(): Token {
-    throw new Error("Method not implemented.");
+    return this.id;
+  }
+}
+
+export class Return extends Node {
+  expr: Expr;
+  ret: Token;
+
+  constructor(expr: Expr, ret: Token) {
+    super();
+    this.expr = expr;
+    this.ret = ret;
+  }
+
+  toJson(): object {
+    return { name: "return", expr: this.expr };
+  }
+
+  parse(): string {
+    return `return ${this.expr}`;
+  }
+
+  getToken(): Token {
+    return this.ret;
   }
 }
 

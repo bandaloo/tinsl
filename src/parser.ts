@@ -13,7 +13,7 @@ const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 //parser.feed("{true && false}->0");
 //parser.feed("{-1||0&&1&2^3|4}->0");
 //parser.feed("float foo (float bar) { test }");
-parser.feed("float foo (float bar, float baz) { test }");
+parser.feed("float foo (float bar, float baz) { return test }");
 //parser.feed("{1}->0");
 console.log(
   util.inspect(parser.results, {

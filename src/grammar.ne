@@ -16,7 +16,8 @@ import {
   ConstructorExpr,
   Assign,
   Param,
-  FuncDef
+  FuncDef,
+  Return
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -42,10 +43,9 @@ TopLevel ->
 DefBlock ->
     TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace
       {% ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
-          typ, id, params === null ? null : params[1], [first, ...rest.map((e: any) => e[1])],
+          typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
         )
       %}
-
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
@@ -65,11 +65,16 @@ BlockLevel ->
     Expr   {% id %}
   | Decl   {% id %}
   | Assign {% id %}
+  | Return {% id %}
+
+Return ->
+    %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
 
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
       {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
 
+# TODO should this be after Expr? might not matter
 Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
 

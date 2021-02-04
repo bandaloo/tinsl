@@ -12,6 +12,7 @@ declare var int: any;
 declare var arrow: any;
 declare var kw_loop: any;
 declare var kw_once: any;
+declare var kw_return: any;
 declare var kw_const: any;
 declare var assignment: any;
 declare var lbracket: any;
@@ -90,7 +91,8 @@ import {
   ConstructorExpr,
   Assign,
   Param,
-  FuncDef
+  FuncDef,
+  Return
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -145,7 +147,7 @@ const grammar: Grammar = {
     {"name": "DefBlock$ebnf$2$subexpression$1", "symbols": ["__lb__", "BlockLevel"]},
     {"name": "DefBlock$ebnf$2", "symbols": ["DefBlock$ebnf$2", "DefBlock$ebnf$2$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockLevel", "DefBlock$ebnf$2", "_", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
-          typ, id, params === null ? null : params[1], [first, ...rest.map((e: any) => e[1])],
+          typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
         )
               },
     {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow)]},
@@ -173,6 +175,8 @@ const grammar: Grammar = {
     {"name": "BlockLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "BlockLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "BlockLevel", "symbols": ["Assign"], "postprocess": id},
+    {"name": "BlockLevel", "symbols": ["Return"], "postprocess": id},
+    {"name": "Return", "symbols": [(nearleyLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "Expr"], "postprocess": d => new Return(d[2], d[0])},
     {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
     {"name": "Decl$ebnf$1", "symbols": ["Decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Decl$ebnf$1", "symbols": [], "postprocess": () => null},
