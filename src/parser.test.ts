@@ -159,6 +159,17 @@ const mat = (redundant: boolean, ...args: number[][]) =>
 const assignFloat = (left: string, symbol: string, right: string) =>
   new Assign(new IdentExpr(tok(left)), tok(symbol), new FloatExpr(tok(right)));
 
+const funcNoParams = new FuncDef(
+  new TypeName(tok("float")),
+  tok("foo"),
+  [],
+  [
+    new UnaryExpr(tok("+"), new FloatExpr(tok("1."))),
+    new UnaryExpr(tok("-"), new FloatExpr(tok("2."))),
+    new Return(new FloatExpr(tok("1.")), tok("return")),
+  ]
+);
+
 const vec2Decl = new Decl(
   true,
   new TypeName(tok("float")),
@@ -406,16 +417,31 @@ describe("function declaration", () => {
   -2.;
   return 1.;
 }`,
-      new FuncDef(
-        new TypeName(tok("float")),
-        tok("foo"),
-        [],
-        [
-          new UnaryExpr(tok("+"), new FloatExpr(tok("1."))),
-          new UnaryExpr(tok("-"), new FloatExpr(tok("2."))),
-          new Return(new FloatExpr(tok("1.")), tok("return")),
-        ]
-      )
+      funcNoParams
+    );
+  });
+
+  it("parses function redundant semicolons after", () => {
+    checkProgram(
+      `float foo () {
+  +1.;;
+  -2.;;;
+  return 1.;;;
+  ;
+}`,
+      funcNoParams
+    );
+  });
+
+  it("parses function redundant semicolons before", () => {
+    checkProgram(
+      `float foo () {
+  ;
+  ;+1.;;
+  -2.;;;
+  return 1.;
+}`,
+      funcNoParams
     );
   });
 });

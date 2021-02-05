@@ -27,6 +27,7 @@ const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 const typ = (d: any) => new TypeName(d);
+const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 %}
 
 @lexer nearleyLexer
@@ -41,16 +42,16 @@ TopLevel ->
   | DefBlock    {% id %}
 
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ BlockLevel (%lbc BlockLevel):* %lbc %rbrace
-      {% ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace
+      {% ([typ, , id, , , params, , , , , , first, rest, , ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
         )
       %}
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
-    (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (%lbc BlockLevel):* %lbc %rbrace _ %arrow _ %int
-      {% ([inNumBl, loopNumBl, onceBl, , open, , first, rest, , , , , , outNum]: any) =>
+    (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace _ %arrow _ %int
+      {% ([inNumBl, loopNumBl, onceBl, , open, , , first, rest, , , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[1] !== null,
           [first, ...rest.map((e: any) => e[1])],
@@ -66,8 +67,6 @@ BlockLevel ->
   | Decl   {% id %}
   | Assign {% id %}
   | Return {% id %}
-
-# TODO Expr;
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
@@ -176,12 +175,11 @@ TypeName ->
   | %kw_mat4x3 {% typ %}
   | %kw_mat4x4 {% typ %}
 
-# TODO repeated code here
 Args ->
-    Expr (%comma _ Expr):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+    Expr (%comma _ Expr):* {% sep %}
 
 Params ->
-    Param (%comma _ Param):* {% d => [d[0], ...d[1].map((e: any) => e[2])] %}
+    Param (%comma _ Param):* {% sep %}
 
 Param ->
     TypeName _ %ident (_ %assignment _ Expr):?
