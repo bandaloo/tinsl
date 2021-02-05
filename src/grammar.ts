@@ -189,7 +189,7 @@ const grammar: Grammar = {
           [first, ...rest.map((e: any) => e[1])],
           inNumBl !== null ? parseInt(inNumBl[0].text) : null,
           parseInt(outNum.text),
-          loopNumBl !== null ? loopNumBl[2] : null,
+          loopNumBl !== null ? parseInt(loopNumBl[2].text) : null,
           open
         )
               },

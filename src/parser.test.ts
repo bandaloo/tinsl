@@ -443,25 +443,6 @@ describe("function declaration", () => {
       [funcNoParams]
     );
   });
-});
-
-describe("render blocks", () => {
-  const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
-
-  it("parses a minimal render block", () => {
-    checkProgram("{vec4(1., 2., 3., 4.);}->0", [bl]);
-  });
-
-  it("parses render block surrounding whitespace", () => {
-    checkProgram(" \n\t{vec4(1., 2., 3., 4.);}->0 \n\t", [bl]);
-  });
-
-  it("parses two render blocks", () => {
-    checkProgram("{vec4(1., 2., 3., 4.);}->0\n{vec4(1., 2., 3., 4.);}->0", [
-      bl,
-      bl,
-    ]);
-  });
 
   it("parses two function declarations", () => {
     checkProgram(
@@ -478,4 +459,78 @@ float foo () {
       [funcNoParams, funcNoParams]
     );
   });
+
+  it("parses two function declarations surrounding whitespace", () => {
+    checkProgram(
+      `\n\n\nfloat foo () {
+  +1.;
+  -2.;
+  return 1.;
+}
+float foo () {
+  +1.;
+  -2.;
+  return 1.;
+}\n\n\n`,
+      [funcNoParams, funcNoParams]
+    );
+  });
 });
+
+describe("top level", () => {
+  const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
+  const completeBlock = new RenderBlock(
+    true,
+    [vec(1, 2, 3, 4), vec(5, 6, 7, 8)],
+    0,
+    1,
+    2,
+    tok("{")
+  );
+
+  it("parses a render block minimal options minimal ws", () => {
+    checkProgram("{vec4(1., 2., 3., 4.);}->0", [bl]);
+  });
+
+  it("parses render block surrounding whitespace", () => {
+    checkProgram(" \n\t{vec4(1., 2., 3., 4.);}->0 \n\t", [bl]);
+  });
+
+  it("parses a render block with all options", () => {
+    checkProgram(
+      `0 -> loop 2 once {
+  vec4(1., 2., 3., 4.);
+  vec4(5., 6., 7., 8.);
+} -> 1`,
+      [completeBlock]
+    );
+  });
+
+  it("parses a render block with all options minimal ws", () => {
+    checkProgram(
+      `0->loop 2once{vec4(1., 2., 3., 4.);vec4(5., 6., 7., 8.);}->1`,
+      [completeBlock]
+    );
+  });
+
+  it("parses two render blocks", () => {
+    checkProgram("{vec4(1., 2., 3., 4.);}->0\n{vec4(1., 2., 3., 4.);}->0", [
+      bl,
+      bl,
+    ]);
+  });
+
+  it("parses function decl and renderblock", () => {
+    checkProgram(
+      `float foo () {
+  +1.;
+  -2.;
+  return 1.;
+}
+{vec4(1., 2., 3., 4.);}->0`,
+      [funcNoParams, bl]
+    );
+  });
+});
+
+// TODO parsing empty program
