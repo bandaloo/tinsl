@@ -32,7 +32,7 @@ const typ = (d: any) => new TypeName(d);
 @lexer nearleyLexer
 
 Main ->
-  _ TopLevel (__lb__ TopLevel):* _ {%
+  _ TopLevel (%lbc TopLevel):* _ {%
     ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
   %}
 
@@ -41,7 +41,7 @@ TopLevel ->
   | DefBlock    {% id %}
 
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ BlockLevel (%lbc BlockLevel):* %lbc %rbrace
       {% ([typ, , id, , , params, , , , , first, rest, , ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
         )
@@ -49,7 +49,7 @@ DefBlock ->
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
-    (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (__lb__ BlockLevel):* _ %rbrace _ %arrow _ %int
+    (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ BlockLevel (%lbc BlockLevel):* %lbc %rbrace _ %arrow _ %int
       {% ([inNumBl, loopNumBl, onceBl, , open, , first, rest, , , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[1] !== null,
@@ -66,6 +66,8 @@ BlockLevel ->
   | Decl   {% id %}
   | Assign {% id %}
   | Return {% id %}
+
+# TODO Expr;
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
@@ -208,8 +210,9 @@ AssignSymbol ->
   | %assign_brshift {% id %}
 
 # TODO confirm how multiline comments figure into this
-__lb__ -> (_sws_ %lbc _sws_):+
+#__lb__ -> (_sws_ %lbc _sws_):+
 
-_ -> (%ws | %lbc | %comment | %multiline_comment):*
+#_ -> (%ws | %lbc | %comment | %multiline_comment):*
+_ -> (%ws | %comment | %multiline_comment):*
 
-_sws_ -> (%ws | %comment | %multiline_comment):*
+#_sws_ -> (%ws | %comment | %multiline_comment):*

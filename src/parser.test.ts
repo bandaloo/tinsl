@@ -35,13 +35,13 @@ function parse(str: string) {
         colors: true,
       })
     );
-    throw new Error("ambiguous grammar!");
+    throw new Error("ambiguous grammar! length: " + parser.results.length);
   }
   return parser.results[0];
 }
 
 function extractExpr(str: string) {
-  return parse(`{${str}}->0`)[0].expressions[0];
+  return parse(`{${str};}->0`)[0].expressions[0];
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
@@ -363,7 +363,7 @@ describe("assignment", () => {
 describe("function declaration", () => {
   it("parses function declaration two arguments no defaults", () => {
     checkProgram(
-      "float foo (vec2 bar, vec3 baz) { return 1. }",
+      "float foo (vec2 bar, vec3 baz) { return 1.; }",
       new FuncDef(
         new TypeName(tok("float")),
         tok("foo"),
@@ -378,7 +378,7 @@ describe("function declaration", () => {
 
   it("parses function declaration two arguments defaults", () => {
     checkProgram(
-      "float foo (float bar = .1, float baz = .2) { return 1. }",
+      "float foo (float bar = .1, float baz = .2) { return 1.; }",
       new FuncDef(
         new TypeName(tok("float")),
         tok("foo"),
@@ -399,13 +399,12 @@ describe("function declaration", () => {
     );
   });
 
-  /*
   it("parses function declaration no args multiple statements", () => {
     checkProgram(
       `float foo () {
-  +1.
-  -2.
-  return 1.
+  +1.;
+  -2.;
+  return 1.;
 }`,
       new FuncDef(
         new TypeName(tok("float")),
@@ -419,5 +418,4 @@ describe("function declaration", () => {
       )
     );
   });
-  */
 });

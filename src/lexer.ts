@@ -187,10 +187,11 @@ export const keywords = [
 
 export const lexer = moo.compile({
   lbc: {
-    match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,
+    //match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,
+    match: /(?:[ \t\n]+;[ \t\n]+|[ \t\n]+;|;[ \t\n]+|;)/,
     lineBreaks: true,
   },
-  ws: /[ \t]+/,
+  ws: { match: /[ \t\n]+/, lineBreaks: true },
   //lb: { match: /\n/, lineBreaks: true },
   comment: /\/\/.*?$/,
   multiline_comment: /\/\*[^]*?\*\//,
@@ -240,7 +241,7 @@ export const lexer = moo.compile({
   modulo: "%",
   question_mark: "?",
   colon: ":",
-  semicolon: ";",
+  semicolon: ";", // TODO remove this
   period: ".",
   ident: {
     match: /[_a-zA-Z][_a-zA-Z0-9]*/,

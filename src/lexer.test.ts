@@ -156,7 +156,7 @@ describe("comments", () => {
   it("lexes two single line comments", () => {
     expect(types(tokens(lexer, "// some\n// comment"))).to.deep.equal([
       "comment",
-      "lbc",
+      "ws",
       "comment",
     ]);
   });
@@ -180,7 +180,7 @@ describe("comments", () => {
   it("lexes two multiline comments", () => {
     expect(
       types(tokens(lexer, "/* some comment */\n/*\nsome\ncomment\n*/"))
-    ).to.deep.equal(["multiline_comment", "lbc", "multiline_comment"]);
+    ).to.deep.equal(["multiline_comment", "ws", "multiline_comment"]);
   });
 });
 
@@ -201,12 +201,41 @@ describe("identifiers", () => {
     expect(types(tokens(lexer, "for_a_while"))).to.deep.equal(["ident"]);
   });
 
-  it("single character identifier", () => {
+  it("lexes single character identifier", () => {
     expect(types(tokens(lexer, "b"))).to.deep.equal(["ident"]);
   });
 });
 
-describe("whitespace", () => {
+describe("semicolons", () => {
+  it("lexes semicolon alone", () => {
+    expect(types(tokens(lexer, ";"))).to.deep.equal(["lbc"]);
+  });
+
+  it("lexes semicolon ws start", () => {
+    expect(types(tokens(lexer, "\n ;"))).to.deep.equal(["lbc"]);
+  });
+
+  it("lexes semicolon ws end", () => {
+    expect(types(tokens(lexer, ";\n "))).to.deep.equal(["lbc"]);
+  });
+
+  it("lexes semicolon ws both sides", () => {
+    expect(types(tokens(lexer, "\n ;\n "))).to.deep.equal(["lbc"]);
+  });
+
+  it("lexes multiple semicolons alone", () => {
+    expect(types(tokens(lexer, ";;"))).to.deep.equal(["lbc", "lbc"]);
+  });
+
+  it("lexes multiple semicolons ws", () => {
+    expect(types(tokens(lexer, "\n ;;"))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, ";;\n "))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, ";\n ;"))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, "\n ;;\n "))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, "\n ;\n ;\n "))).to.deep.equal(["lbc", "lbc"]);
+  });
+
+  /*
   it("lexes single newline linebreak chunk", () => {
     expect(types(tokens(lexer, "\n"))).to.deep.equal(["lbc"]);
   });
@@ -221,5 +250,28 @@ describe("whitespace", () => {
 
   it("lexes multiple newline linebreak chunk outer spaces", () => {
     expect(types(tokens(lexer, "  \n \n\n \n  "))).to.deep.equal(["lbc"]);
+  });
+  */
+});
+
+describe("whitespace", () => {
+  it("lexes tabs", () => {
+    expect(types(tokens(lexer, "\t"))).to.deep.equal(["ws"]);
+    expect(types(tokens(lexer, "\t\t\t"))).to.deep.equal(["ws"]);
+  });
+
+  it("lexes newlines", () => {
+    expect(types(tokens(lexer, "\n"))).to.deep.equal(["ws"]);
+    expect(types(tokens(lexer, "\n\n\n"))).to.deep.equal(["ws"]);
+  });
+
+  it("lexes spaces", () => {
+    expect(types(tokens(lexer, " "))).to.deep.equal(["ws"]);
+    expect(types(tokens(lexer, "   "))).to.deep.equal(["ws"]);
+  });
+
+  it("lexes mix", () => {
+    expect(types(tokens(lexer, " \n\t"))).to.deep.equal(["ws"]);
+    expect(types(tokens(lexer, "  \n\n\t\t  \n\n\t\t"))).to.deep.equal(["ws"]);
   });
 });
