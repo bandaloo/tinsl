@@ -32,10 +32,13 @@ const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
 @lexer nearleyLexer
 
+#Main ->
+#  _ TopLevel (%lbc TopLevel):* _ {%
+#    ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
+#  %}
 Main ->
-  _ TopLevel (%lbc TopLevel):* _ {%
-    ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
-  %}
+    _ TopLevel (__ TopLevel):* _
+      {% ([, first, rest, ]: any) => [first, ...rest.map((t: any) => t[1])] %}
 
 TopLevel ->
     RenderBlock {% id %}
@@ -50,14 +53,14 @@ DefBlock ->
 
 # TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
-    (%int _ %arrow):? (_ %kw_loop _ %int):? (_ %kw_once):? _ %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace _ %arrow _ %int
-      {% ([inNumBl, loopNumBl, onceBl, , open, , , first, rest, , , , , , outNum]: any) =>
+    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace _ %arrow _ %int
+      {% ([inNumBl, loopNumBl, onceBl, open, , , first, rest, , , , , , outNum]: any) =>
         new RenderBlock(
-          onceBl !== null && onceBl[1] !== null,
+          onceBl !== null && onceBl[0] !== null,
           [first, ...rest.map((e: any) => e[1])],
-          inNumBl !== null ? inNumBl[0] : null,
-          outNum,
-          loopNumBl !== null ? loopNumBl[3] : null,
+          inNumBl !== null ? parseInt(inNumBl[0].text) : null,
+          parseInt(outNum.text),
+          loopNumBl !== null ? loopNumBl[2] : null,
           open
         )
       %}
@@ -212,5 +215,6 @@ AssignSymbol ->
 
 #_ -> (%ws | %lbc | %comment | %multiline_comment):*
 _ -> (%ws | %comment | %multiline_comment):*
+__ -> (%ws | %comment | %multiline_comment):+
 
 #_sws_ -> (%ws | %comment | %multiline_comment):*

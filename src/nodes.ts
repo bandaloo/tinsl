@@ -32,16 +32,16 @@ abstract class Expr extends Node {
 export class RenderBlock extends Node {
   once: boolean;
   inNum: number | null;
-  outNum: number | null;
+  outNum: number;
   loopNum: number | null;
-  expressions: Expr[]; // TODO rename to body
+  expressions: Expr[]; // TODO rename to body?
   open: Token;
 
   constructor(
     once: boolean,
     expressions: Expr[],
     inNum: number | null,
-    outNum: number | null,
+    outNum: number,
     loopNum: number | null,
     open: Token
   ) {

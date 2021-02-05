@@ -3,11 +3,11 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
-declare var lbc: any;
 declare var ident: any;
 declare var lparen: any;
 declare var rparen: any;
 declare var lbrace: any;
+declare var lbc: any;
 declare var rbrace: any;
 declare var int: any;
 declare var arrow: any;
@@ -134,11 +134,9 @@ const grammar: Grammar = {
   Lexer: nearleyLexer,
   ParserRules: [
     {"name": "Main$ebnf$1", "symbols": []},
-    {"name": "Main$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "TopLevel"]},
+    {"name": "Main$ebnf$1$subexpression$1", "symbols": ["__", "TopLevel"]},
     {"name": "Main$ebnf$1", "symbols": ["Main$ebnf$1", "Main$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "Main", "symbols": ["_", "TopLevel", "Main$ebnf$1", "_"], "postprocess": 
-        ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
-          },
+    {"name": "Main", "symbols": ["_", "TopLevel", "Main$ebnf$1", "_"], "postprocess": ([, first, rest, ]: any) => [first, ...rest.map((t: any) => t[1])]},
     {"name": "TopLevel", "symbols": ["RenderBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["DefBlock"], "postprocess": id},
     {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params", "_"]},
@@ -162,33 +160,36 @@ const grammar: Grammar = {
           typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
         )
               },
-    {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow)]},
+    {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_"]},
     {"name": "RenderBlock$ebnf$1", "symbols": ["RenderBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "RenderBlock$ebnf$2$subexpression$1", "symbols": ["_", (nearleyLexer.has("kw_loop") ? {type: "kw_loop"} : kw_loop), "_", (nearleyLexer.has("int") ? {type: "int"} : int)]},
+    {"name": "RenderBlock$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("kw_loop") ? {type: "kw_loop"} : kw_loop), "_", (nearleyLexer.has("int") ? {type: "int"} : int), "_"]},
     {"name": "RenderBlock$ebnf$2", "symbols": ["RenderBlock$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$2", "symbols": [], "postprocess": () => null},
-    {"name": "RenderBlock$ebnf$3$subexpression$1", "symbols": ["_", (nearleyLexer.has("kw_once") ? {type: "kw_once"} : kw_once)]},
+    {"name": "RenderBlock$ebnf$3$subexpression$1", "symbols": [(nearleyLexer.has("kw_once") ? {type: "kw_once"} : kw_once), "_"]},
     {"name": "RenderBlock$ebnf$3", "symbols": ["RenderBlock$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$3", "symbols": [], "postprocess": () => null},
     {"name": "RenderBlock$ebnf$4", "symbols": []},
-    {"name": "RenderBlock$ebnf$4$subexpression$1$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
-    {"name": "RenderBlock$ebnf$4$subexpression$1$ebnf$1", "symbols": ["RenderBlock$ebnf$4$subexpression$1$ebnf$1$subexpression$1"]},
-    {"name": "RenderBlock$ebnf$4$subexpression$1$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
-    {"name": "RenderBlock$ebnf$4$subexpression$1$ebnf$1", "symbols": ["RenderBlock$ebnf$4$subexpression$1$ebnf$1", "RenderBlock$ebnf$4$subexpression$1$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock$ebnf$4$subexpression$1", "symbols": ["RenderBlock$ebnf$4$subexpression$1$ebnf$1", "BlockLevel"]},
+    {"name": "RenderBlock$ebnf$4$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "RenderBlock$ebnf$4", "symbols": ["RenderBlock$ebnf$4", "RenderBlock$ebnf$4$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock$ebnf$5$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
-    {"name": "RenderBlock$ebnf$5", "symbols": ["RenderBlock$ebnf$5$subexpression$1"]},
-    {"name": "RenderBlock$ebnf$5$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
-    {"name": "RenderBlock$ebnf$5", "symbols": ["RenderBlock$ebnf$5", "RenderBlock$ebnf$5$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockLevel", "RenderBlock$ebnf$4", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, , open, , first, rest, , , , , , outNum]: any) =>
+    {"name": "RenderBlock$ebnf$5", "symbols": []},
+    {"name": "RenderBlock$ebnf$5$subexpression$1$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "RenderBlock$ebnf$5$subexpression$1$ebnf$1", "symbols": ["RenderBlock$ebnf$5$subexpression$1$ebnf$1$subexpression$1"]},
+    {"name": "RenderBlock$ebnf$5$subexpression$1$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "RenderBlock$ebnf$5$subexpression$1$ebnf$1", "symbols": ["RenderBlock$ebnf$5$subexpression$1$ebnf$1", "RenderBlock$ebnf$5$subexpression$1$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "RenderBlock$ebnf$5$subexpression$1", "symbols": ["RenderBlock$ebnf$5$subexpression$1$ebnf$1", "BlockLevel"]},
+    {"name": "RenderBlock$ebnf$5", "symbols": ["RenderBlock$ebnf$5", "RenderBlock$ebnf$5$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "RenderBlock$ebnf$6$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "RenderBlock$ebnf$6", "symbols": ["RenderBlock$ebnf$6$subexpression$1"]},
+    {"name": "RenderBlock$ebnf$6$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "RenderBlock$ebnf$6", "symbols": ["RenderBlock$ebnf$6", "RenderBlock$ebnf$6$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "RenderBlock$ebnf$4", "BlockLevel", "RenderBlock$ebnf$5", "RenderBlock$ebnf$6", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , first, rest, , , , , , outNum]: any) =>
         new RenderBlock(
-          onceBl !== null && onceBl[1] !== null,
+          onceBl !== null && onceBl[0] !== null,
           [first, ...rest.map((e: any) => e[1])],
-          inNumBl !== null ? inNumBl[0] : null,
-          outNum,
-          loopNumBl !== null ? loopNumBl[3] : null,
+          inNumBl !== null ? parseInt(inNumBl[0].text) : null,
+          parseInt(outNum.text),
+          loopNumBl !== null ? loopNumBl[2] : null,
           open
         )
               },
@@ -304,7 +305,16 @@ const grammar: Grammar = {
     {"name": "_$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comment") ? {type: "comment"} : comment)]},
     {"name": "_$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("multiline_comment") ? {type: "multiline_comment"} : multiline_comment)]},
     {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", "_$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "_", "symbols": ["_$ebnf$1"]}
+    {"name": "_", "symbols": ["_$ebnf$1"]},
+    {"name": "__$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("ws") ? {type: "ws"} : ws)]},
+    {"name": "__$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comment") ? {type: "comment"} : comment)]},
+    {"name": "__$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("multiline_comment") ? {type: "multiline_comment"} : multiline_comment)]},
+    {"name": "__$ebnf$1", "symbols": ["__$ebnf$1$subexpression$1"]},
+    {"name": "__$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("ws") ? {type: "ws"} : ws)]},
+    {"name": "__$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("comment") ? {type: "comment"} : comment)]},
+    {"name": "__$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("multiline_comment") ? {type: "multiline_comment"} : multiline_comment)]},
+    {"name": "__$ebnf$1", "symbols": ["__$ebnf$1", "__$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "__", "symbols": ["__$ebnf$1"]}
   ],
   ParserStart: "Main",
 };

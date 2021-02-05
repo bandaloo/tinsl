@@ -15,6 +15,7 @@ import {
   IdentExpr,
   IntExpr,
   Param,
+  RenderBlock,
   Return,
   TypeName,
   UnaryExpr,
@@ -51,7 +52,7 @@ function checkExpr(str: string, eql: object) {
 }
 
 function checkProgram(str: string, eql: object) {
-  expect(parse(str)[0]).excludingEvery(excludes).to.deep.equal(eql);
+  expect(parse(str)).excludingEvery(excludes).to.deep.equal(eql);
 }
 
 function tok(val: string): Token {
@@ -373,8 +374,7 @@ describe("assignment", () => {
 
 describe("function declaration", () => {
   it("parses function declaration two arguments no defaults", () => {
-    checkProgram(
-      "float foo (vec2 bar, vec3 baz) { return 1.; }",
+    checkProgram("float foo (vec2 bar, vec3 baz) { return 1.; }", [
       new FuncDef(
         new TypeName(tok("float")),
         tok("foo"),
@@ -383,13 +383,12 @@ describe("function declaration", () => {
           new Param(new TypeName(tok("vec3")), tok("baz")),
         ],
         [new Return(new FloatExpr(tok("1.")), tok("return"))]
-      )
-    );
+      ),
+    ]);
   });
 
   it("parses function declaration two arguments defaults", () => {
-    checkProgram(
-      "float foo (float bar = .1, float baz = .2) { return 1.; }",
+    checkProgram("float foo (float bar = .1, float baz = .2) { return 1.; }", [
       new FuncDef(
         new TypeName(tok("float")),
         tok("foo"),
@@ -406,8 +405,8 @@ describe("function declaration", () => {
           ),
         ],
         [new Return(new FloatExpr(tok("1.")), tok("return"))]
-      )
-    );
+      ),
+    ]);
   });
 
   it("parses function declaration no args multiple statements", () => {
@@ -417,7 +416,7 @@ describe("function declaration", () => {
   -2.;
   return 1.;
 }`,
-      funcNoParams
+      [funcNoParams]
     );
   });
 
@@ -429,7 +428,7 @@ describe("function declaration", () => {
   return 1.;;;
   ;
 }`,
-      funcNoParams
+      [funcNoParams]
     );
   });
 
@@ -441,7 +440,42 @@ describe("function declaration", () => {
   -2.;;;
   return 1.;
 }`,
-      funcNoParams
+      [funcNoParams]
+    );
+  });
+});
+
+describe("render blocks", () => {
+  const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
+
+  it("parses a minimal render block", () => {
+    checkProgram("{vec4(1., 2., 3., 4.);}->0", [bl]);
+  });
+
+  it("parses render block surrounding whitespace", () => {
+    checkProgram(" \n\t{vec4(1., 2., 3., 4.);}->0 \n\t", [bl]);
+  });
+
+  it("parses two render blocks", () => {
+    checkProgram("{vec4(1., 2., 3., 4.);}->0\n{vec4(1., 2., 3., 4.);}->0", [
+      bl,
+      bl,
+    ]);
+  });
+
+  it("parses two function declarations", () => {
+    checkProgram(
+      `float foo () {
+  +1.;
+  -2.;
+  return 1.;
+}
+float foo () {
+  +1.;
+  -2.;
+  return 1.;
+}`,
+      [funcNoParams, funcNoParams]
     );
   });
 });
