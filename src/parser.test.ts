@@ -11,18 +11,32 @@ import {
   ConstructorExpr,
   Decl,
   FloatExpr,
+  FuncDef,
   IdentExpr,
   IntExpr,
+  Param,
+  Return,
   TypeName,
   UnaryExpr,
 } from "./nodes";
+import util from "util";
 
 chai.use(chaiExclude);
 
+// TODO move this into parser.ts
 function parse(str: string) {
   const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
   parser.feed(str);
-  if (parser.results.length > 1) throw new Error("ambiguous grammar!");
+  if (parser.results.length > 1) {
+    console.log(
+      util.inspect(parser.results, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
+    throw new Error("ambiguous grammar!");
+  }
   return parser.results[0];
 }
 
@@ -30,9 +44,14 @@ function extractExpr(str: string) {
   return parse(`{${str}}->0`)[0].expressions[0];
 }
 
+const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
+
 function checkExpr(str: string, eql: object) {
-  const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
   expect(extractExpr(str)).excludingEvery(excludes).to.deep.equal(eql);
+}
+
+function checkProgram(str: string, eql: object) {
+  expect(parse(str)[0]).excludingEvery(excludes).to.deep.equal(eql);
 }
 
 function tok(val: string): Token {
@@ -339,4 +358,66 @@ describe("assignment", () => {
       )
     );
   });
+});
+
+describe("function declaration", () => {
+  it("parses function declaration two arguments no defaults", () => {
+    checkProgram(
+      "float foo (vec2 bar, vec3 baz) { return 1. }",
+      new FuncDef(
+        new TypeName(tok("float")),
+        tok("foo"),
+        [
+          new Param(new TypeName(tok("vec2")), tok("bar")),
+          new Param(new TypeName(tok("vec3")), tok("baz")),
+        ],
+        [new Return(new FloatExpr(tok("1.")), tok("return"))]
+      )
+    );
+  });
+
+  it("parses function declaration two arguments defaults", () => {
+    checkProgram(
+      "float foo (float bar = .1, float baz = .2) { return 1. }",
+      new FuncDef(
+        new TypeName(tok("float")),
+        tok("foo"),
+        [
+          new Param(
+            new TypeName(tok("float")),
+            tok("bar"),
+            new FloatExpr(tok(".1"))
+          ),
+          new Param(
+            new TypeName(tok("float")),
+            tok("baz"),
+            new FloatExpr(tok(".2"))
+          ),
+        ],
+        [new Return(new FloatExpr(tok("1.")), tok("return"))]
+      )
+    );
+  });
+
+  /*
+  it("parses function declaration no args multiple statements", () => {
+    checkProgram(
+      `float foo () {
+  +1.
+  -2.
+  return 1.
+}`,
+      new FuncDef(
+        new TypeName(tok("float")),
+        tok("foo"),
+        [],
+        [
+          new UnaryExpr(tok("+"), new FloatExpr(tok("1."))),
+          new UnaryExpr(tok("-"), new FloatExpr(tok("2."))),
+          new Return(new FloatExpr(tok("1.")), tok("return")),
+        ]
+      )
+    );
+  });
+  */
 });

@@ -407,7 +407,7 @@ export class Param extends Node {
   id: Token;
   def: Expr | null;
 
-  constructor(type: TypeName, id: Token, def: Expr) {
+  constructor(type: TypeName, id: Token, def: Expr | null = null) {
     super();
     this.type = type;
     this.id = id;
@@ -461,7 +461,7 @@ export class FuncDef extends Node {
   }
 }
 
-export class Return extends Node {
+export class Return extends Expr {
   expr: Expr;
   ret: Token;
 
@@ -481,6 +481,10 @@ export class Return extends Node {
 
   getToken(): Token {
     return this.ret;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [this.expr];
   }
 }
 
