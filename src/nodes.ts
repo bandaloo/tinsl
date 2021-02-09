@@ -1,5 +1,4 @@
 import type { Token } from "moo";
-import { stringify } from "querystring"; // TODO what was this for
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -485,6 +484,43 @@ export class Return extends Expr {
 
   getSubExpressions(): Expr[] {
     return [this.expr];
+  }
+}
+
+export class TernaryExpr extends Expr {
+  bool: Expr;
+  expr1: Expr;
+  expr2: Expr;
+  token: Token;
+
+  constructor(bool: Expr, expr1: Expr, expr2: Expr, token: Token) {
+    super();
+    this.bool = bool;
+    this.expr1 = expr1;
+    this.expr2 = expr2;
+    this.token = token;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [this.bool, this.expr1, this.expr2];
+  }
+
+  toJson(): object {
+    // TODO should token be in all the json conversions?
+    return {
+      name: "ternary_expr",
+      bool: this.bool,
+      expr1: this.expr1,
+      expr2: this.expr2,
+    };
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.token;
   }
 }
 

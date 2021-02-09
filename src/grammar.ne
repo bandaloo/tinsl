@@ -17,7 +17,8 @@ import {
   Assign,
   Param,
   FuncDef,
-  Return
+  Return,
+  TernaryExpr
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -156,7 +157,15 @@ LogicOr ->
     LogicOr _ %or _ LogicXor {% bin %}
   | LogicXor                 {% id %}
 
-Expr -> LogicOr {% id %}
+Ternary ->
+    Ternary _ MiddleTernary _ LogicOr {% d => new TernaryExpr(d[0], d[2].expr, d[4], d[2].tok) %}
+  | LogicOr                           {% id %}
+
+Expr -> Ternary {% id %}
+
+# helpers
+MiddleTernary ->
+    %question_mark _ Expr _ %colon {% d => { return { tok: d[0], expr: d[2] } } %}
 
 # TODO int?
 # TODO float constructor call shouldn't be possible 

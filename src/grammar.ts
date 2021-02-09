@@ -42,6 +42,8 @@ declare var bor: any;
 declare var and: any;
 declare var xor: any;
 declare var or: any;
+declare var question_mark: any;
+declare var colon: any;
 declare var kw_float: any;
 declare var kw_vec2: any;
 declare var kw_vec3: any;
@@ -92,7 +94,8 @@ import {
   Assign,
   Param,
   FuncDef,
-  Return
+  Return,
+  TernaryExpr
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -252,7 +255,10 @@ const grammar: Grammar = {
     {"name": "LogicXor", "symbols": ["LogicAnd"], "postprocess": id},
     {"name": "LogicOr", "symbols": ["LogicOr", "_", (nearleyLexer.has("or") ? {type: "or"} : or), "_", "LogicXor"], "postprocess": bin},
     {"name": "LogicOr", "symbols": ["LogicXor"], "postprocess": id},
-    {"name": "Expr", "symbols": ["LogicOr"], "postprocess": id},
+    {"name": "Ternary", "symbols": ["Ternary", "_", "MiddleTernary", "_", "LogicOr"], "postprocess": d => new TernaryExpr(d[0], d[2].expr, d[4], d[2].tok)},
+    {"name": "Ternary", "symbols": ["LogicOr"], "postprocess": id},
+    {"name": "Expr", "symbols": ["Ternary"], "postprocess": id},
+    {"name": "MiddleTernary", "symbols": [(nearleyLexer.has("question_mark") ? {type: "question_mark"} : question_mark), "_", "Expr", "_", (nearleyLexer.has("colon") ? {type: "colon"} : colon)], "postprocess": d => { return { tok: d[0], expr: d[2] } }},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": typ},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": typ},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": typ},
