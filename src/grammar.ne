@@ -157,8 +157,9 @@ LogicOr ->
     LogicOr _ %or _ LogicXor {% bin %}
   | LogicXor                 {% id %}
 
+# ternary is right associative unlike other operators
 Ternary ->
-    Ternary _ MiddleTernary _ LogicOr {% d => new TernaryExpr(d[0], d[2].expr, d[4], d[2].tok) %}
+    LogicOr _ MiddleTernary _ Ternary {% d => new TernaryExpr(d[0], d[2].expr, d[4], d[2].tok) %}
   | LogicOr                           {% id %}
 
 Expr -> Ternary {% id %}

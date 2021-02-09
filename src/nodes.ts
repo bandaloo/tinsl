@@ -55,6 +55,7 @@ export class RenderBlock extends Node {
 
   toJson(): object {
     const info: string[] = [];
+    // TODO what is all this for??
     if (this.inNum !== null) {
       info.push("" + this.inNum);
       info.push("->");
@@ -74,6 +75,7 @@ export class RenderBlock extends Node {
     return {
       name: "render_block",
       info: info.join(" "),
+      expressions: this.expressions.map((e) => e.toJson()),
     };
   }
 
@@ -111,7 +113,7 @@ export class BinaryExpr extends Expr {
     return {
       name: "binary_expr",
       left: this.left.toJson(),
-      operator: this.operator,
+      operator: this.operator.text,
       right: this.right.toJson(),
     };
   }
@@ -148,8 +150,9 @@ export class UnaryExpr extends Expr {
   toJson() {
     return {
       name: "unary_expr",
-      operator: this.operator,
+      operator: this.operator.text,
       argument: this.argument.toJson(),
+      fix: this.postfix ? "postfix" : "prefix",
     };
   }
 }
@@ -228,7 +231,11 @@ export class CallExpr extends Expr {
   }
 
   toJson(): object {
-    return { name: "call_expr", call: this.call.parse(), args: this.args };
+    return {
+      name: "call_expr",
+      call: this.call.toJson(),
+      args: this.args.map((e) => e.toJson()),
+    };
   }
 }
 
@@ -259,7 +266,7 @@ export class ConstructorExpr extends Expr {
   toJson(): object {
     return {
       name: "constructor_expr",
-      type: this.type.parse(),
+      type: this.type.toJson(),
       args: this.args,
     };
   }
@@ -290,7 +297,11 @@ export class SubscriptExpr extends Expr {
   }
 
   toJson(): object {
-    return { name: "subscript_expr", call: this.call, index: this.index };
+    return {
+      name: "subscript_expr",
+      call: this.call.toJson,
+      index: this.index,
+    };
   }
 }
 
@@ -323,9 +334,9 @@ export class Decl extends Expr {
   toJson(): object {
     return {
       name: "decl",
-      type: this.type,
-      id: this.id,
-      expr: this.expr,
+      type: this.type.toJson(),
+      id: this.id.text,
+      expr: this.expr.toJson(),
     };
   }
 
@@ -361,9 +372,9 @@ export class Assign extends Expr {
   toJson(): object {
     return {
       name: "assign",
-      left: this.left,
-      right: this.right,
-      assign: this.assign,
+      left: this.left.toJson(),
+      right: this.right.toJson(),
+      assign: this.assign.text,
     };
   }
 
@@ -388,7 +399,7 @@ export class TypeName extends Node {
   toJson(): object {
     return {
       name: "type_name",
-      type: this.token,
+      type: this.token.text,
     };
   }
 
@@ -414,7 +425,7 @@ export class Param extends Node {
   }
 
   toJson(): object {
-    return { name: "param", type: this.type, id: this.id };
+    return { name: "param", type: this.type.toJson(), id: this.id.text };
   }
 
   parse(): string {
@@ -443,9 +454,9 @@ export class FuncDef extends Node {
   toJson(): object {
     return {
       name: "func_def",
-      id: this.id,
-      params: this.params,
-      body: this.body,
+      id: this.id.text,
+      params: this.params.map((e) => e.toJson()),
+      body: this.body.map((e) => e.toJson()),
     };
   }
 
@@ -471,7 +482,7 @@ export class Return extends Expr {
   }
 
   toJson(): object {
-    return { name: "return", expr: this.expr };
+    return { name: "return", expr: this.expr.toJson() };
   }
 
   parse(): string {
@@ -509,9 +520,9 @@ export class TernaryExpr extends Expr {
     // TODO should token be in all the json conversions?
     return {
       name: "ternary_expr",
-      bool: this.bool,
-      expr1: this.expr1,
-      expr2: this.expr2,
+      bool: this.bool.toJson(),
+      expr1: this.expr1.toJson(),
+      expr2: this.expr2.toJson(),
     };
   }
 

@@ -17,6 +17,7 @@ import {
   Param,
   RenderBlock,
   Return,
+  TernaryExpr,
   TypeName,
   UnaryExpr,
 } from "./nodes";
@@ -179,6 +180,14 @@ const vec2Decl = new Decl(
   tok("=")
 );
 
+const tern = (cond: string, first: string, second: string) =>
+  new TernaryExpr(
+    new BoolExpr(tok(cond)),
+    new IntExpr(tok(first)),
+    new IntExpr(tok(second)),
+    tok("?")
+  );
+
 describe("order of ops", () => {
   it("parses in reverse precedence logical or, xor, and", () => {
     checkExpr("true || false ^^ true && false", logicReverse);
@@ -216,6 +225,49 @@ describe("order of ops", () => {
 
   it("parses prefix unary expressions", () => {
     checkExpr("(+1 < -2 + ~3) == (!true || !false)", oneTwoThreeForwardUnary);
+  });
+
+  it("parses ternary expressions with other ops", () => {
+    checkExpr("true ? 1 : 2", tern("true", "1", "2"));
+
+    checkExpr(
+      "true || false ? 1 + 2 : 3 / 4",
+      new TernaryExpr(
+        new BinaryExpr(
+          new BoolExpr(tok("true")),
+          tok("||"),
+          new BoolExpr(tok("false"))
+        ),
+        new BinaryExpr(new IntExpr(tok("1")), tok("+"), new BoolExpr(tok("2"))),
+        new BinaryExpr(new IntExpr(tok("3")), tok("/"), new BoolExpr(tok("4"))),
+        tok("?")
+      )
+    );
+  });
+
+  it("parses nested ternary expressions testing right associativity", () => {
+    checkExpr(
+      //"true ? true ? 1 : 2 : false ? 3 : 4",
+      //"true ? true ? 1 : 2 : 3",
+      "true ? true ? 1 : 2 : 3",
+      new TernaryExpr(
+        new BoolExpr(tok("true")),
+        tern("true", "1", "2"),
+        //tern("false", "3", "4"),
+        new IntExpr(tok("3")),
+        tok("?")
+      )
+    );
+
+    const ternaryAssociative = new TernaryExpr(
+      new BoolExpr(tok("true")),
+      tern("true", "1", "2"),
+      tern("false", "3", "4"),
+      tok("?")
+    );
+
+    checkExpr("true ? true ? 1 : 2 : false ? 3 : 4", ternaryAssociative);
+    checkExpr("true ? (true ? 1 : 2) : false ? 3 : 4", ternaryAssociative);
   });
 });
 
