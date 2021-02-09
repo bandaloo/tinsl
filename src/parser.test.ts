@@ -28,7 +28,11 @@ chai.use(chaiExclude);
 // TODO move this into parser.ts
 function parse(str: string) {
   const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-  parser.feed(str);
+  try {
+    parser.feed(str);
+  } catch (e) {
+    console.error("parser error");
+  }
   if (parser.results.length > 1) {
     console.log(
       util.inspect(parser.results, {
@@ -43,7 +47,7 @@ function parse(str: string) {
 }
 
 function extractExpr(str: string) {
-  return parse(`{${str};}->0`)[0].expressions[0];
+  return parse(`{${str};}->0`)[0].body[0];
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
@@ -392,6 +396,7 @@ describe("assignment", () => {
     checkExpr("foo = 1.", assignFloat("foo", "=", "1."));
   });
 
+  // assignment not allowed in block (change from checkExpr)
   it("parses all relative assignment float", () => {
     checkExpr("foo += 1.", assignFloat("foo", "+=", "1."));
     checkExpr("foo -= 1.", assignFloat("foo", "-=", "1."));
@@ -545,11 +550,23 @@ describe("top level", () => {
     checkProgram(" \n\t{vec4(1., 2., 3., 4.);}->0 \n\t", [bl]);
   });
 
-  it("parses a render block with all options", () => {
+  it("parses a render block with all options and multiple statements", () => {
     checkProgram(
       `0 -> loop 2 once {
   vec4(1., 2., 3., 4.);
   vec4(5., 6., 7., 8.);
+} -> 1`,
+      [completeBlock]
+    );
+  });
+
+  it("parses render block with redundant semicolons", () => {
+    checkProgram(
+      `0 -> loop 2 once {
+  ;
+  vec4(1., 2., 3., 4.);;
+  vec4(5., 6., 7., 8.);;
+  ;
 } -> 1`,
       [completeBlock]
     );

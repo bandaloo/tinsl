@@ -31,12 +31,12 @@ export class RenderBlock extends Node {
   inNum: number | null;
   outNum: number;
   loopNum: number | null;
-  expressions: Expr[]; // TODO rename to body?
+  body: Expr[]; // TODO rename to body?
   open: Token;
 
   constructor(
     once: boolean,
-    expressions: Expr[],
+    body: Expr[],
     inNum: number | null,
     outNum: number,
     loopNum: number | null,
@@ -44,7 +44,7 @@ export class RenderBlock extends Node {
   ) {
     super();
     this.once = once;
-    this.expressions = expressions;
+    this.body = body;
     this.inNum = inNum;
     this.outNum = outNum;
     this.loopNum = loopNum;
@@ -58,7 +58,7 @@ export class RenderBlock extends Node {
       out: this.outNum,
       once: this.once,
       loop: this.loopNum,
-      expressions: this.expressions.map((e) => e.toJson()),
+      body: this.body.map((e) => e.toJson()),
     };
   }
 

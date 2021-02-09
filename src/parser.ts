@@ -5,7 +5,16 @@ import util from "util";
 console.log("running");
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 
-parser.feed("{(true ? true ? 1 : 2 : false) ? 3 : 4;}->0");
+//parser.feed("{(true ? true ? 1 : 2 : false) ? 3 : 4;}->0");
+parser.feed("float foo (float bar) { 0; return 1.; }");
+
+console.log(
+  util.inspect(parser.results, {
+    showHidden: false,
+    depth: null,
+    colors: true,
+  })
+);
 
 console.log(
   util.inspect(

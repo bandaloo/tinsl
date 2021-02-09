@@ -41,19 +41,21 @@ TopLevel ->
     RenderBlock {% id %}
   | DefBlock    {% id %}
 
+# TODO whitespace could lead to ambiguous grammar?
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace
-      {% ([typ, , id, , , params, , , , , , first, rest, , ]: any) => new FuncDef(
-          typ, id, params === null ? [] : params[1], [first, ...rest.map((e: any) => e[1])],
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* (Line):* %rbrace
+      {% ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
+          typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
       %}
 
 RenderBlock ->
-    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace _ %arrow _ %int
-      {% ([inNumBl, loopNumBl, onceBl, open, , , first, rest, , , , , , outNum]: any) =>
+    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* (Line):* %rbrace _ %arrow _ %int
+      {% ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
-          [first, ...rest.map((e: any) => e[1])],
+          //[first, ...rest.map((e: any) => e[1])],
+          body.map((e: any) => e[0]),
           inNumBl !== null ? parseInt(inNumBl[0].text) : null,
           parseInt(outNum.text),
           loopNumBl !== null ? parseInt(loopNumBl[2].text) : null,
@@ -61,11 +63,15 @@ RenderBlock ->
         )
       %}
 
+# TODO rename this
 BlockLevel ->
     Expr   {% id %}
   | Decl   {% id %}
   | Assign {% id %}
   | Return {% id %}
+
+Line ->
+    BlockLevel (%lbc):+ {% d => d[0] %}
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
@@ -76,6 +82,14 @@ Decl ->
 
 Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
+
+ForInit ->
+    Expr   {% id %}
+  | Assign {% id %}
+  | Decl   {% id %}
+
+For ->
+    %kw_for _ %lparen _ %lbc ForInit %lbc Expr _ %rparen {% id %}
 
 # order of operations
 Paren ->
