@@ -33,10 +33,6 @@ const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
 @lexer nearleyLexer
 
-#Main ->
-#  _ TopLevel (%lbc TopLevel):* _ {%
-#    ([, first, rest,]: any) => [first, ...rest.map((e: any) => e[1])]
-#  %}
 Main ->
     _ TopLevel (__ TopLevel):* _
       {% ([, first, rest, ]: any) => [first, ...rest.map((t: any) => t[1])] %}
@@ -52,7 +48,6 @@ DefBlock ->
         )
       %}
 
-# TODO is surrounding whitespace covered by line break chunks?
 RenderBlock ->
     (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* BlockLevel ((%lbc):+ BlockLevel):* (%lbc):+ %rbrace _ %arrow _ %int
       {% ([inNumBl, loopNumBl, onceBl, open, , , first, rest, , , , , , outNum]: any) =>
@@ -79,7 +74,6 @@ Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
       {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
 
-# TODO should this be after Expr? might not matter
 Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
 
@@ -220,11 +214,6 @@ AssignSymbol ->
   | %assign_blshift {% id %}
   | %assign_brshift {% id %}
 
-# TODO confirm how multiline comments figure into this
-#__lb__ -> (_sws_ %lbc _sws_):+
-
-#_ -> (%ws | %lbc | %comment | %multiline_comment):*
 _ -> (%ws | %comment | %multiline_comment):*
-__ -> (%ws | %comment | %multiline_comment):+
 
-#_sws_ -> (%ws | %comment | %multiline_comment):*
+__ -> (%ws | %comment | %multiline_comment):+

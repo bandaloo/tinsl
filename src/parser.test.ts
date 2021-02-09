@@ -247,13 +247,10 @@ describe("order of ops", () => {
 
   it("parses nested ternary expressions testing right associativity", () => {
     checkExpr(
-      //"true ? true ? 1 : 2 : false ? 3 : 4",
-      //"true ? true ? 1 : 2 : 3",
       "true ? true ? 1 : 2 : 3",
       new TernaryExpr(
         new BoolExpr(tok("true")),
         tern("true", "1", "2"),
-        //tern("false", "3", "4"),
         new IntExpr(tok("3")),
         tok("?")
       )

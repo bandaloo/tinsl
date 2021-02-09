@@ -234,24 +234,6 @@ describe("semicolons", () => {
     expect(types(tokens(lexer, "\n ;;\n "))).to.deep.equal(["lbc", "lbc"]);
     expect(types(tokens(lexer, "\n ;\n ;\n "))).to.deep.equal(["lbc", "lbc"]);
   });
-
-  /*
-  it("lexes single newline linebreak chunk", () => {
-    expect(types(tokens(lexer, "\n"))).to.deep.equal(["lbc"]);
-  });
-
-  it("lexes multiple newline linebreak chunk", () => {
-    expect(types(tokens(lexer, "\n\n\n"))).to.deep.equal(["lbc"]);
-  });
-
-  it("lexes multiple newline linebreak chunk inner spaces", () => {
-    expect(types(tokens(lexer, "\n \n\n \n"))).to.deep.equal(["lbc"]);
-  });
-
-  it("lexes multiple newline linebreak chunk outer spaces", () => {
-    expect(types(tokens(lexer, "  \n \n\n \n  "))).to.deep.equal(["lbc"]);
-  });
-  */
 });
 
 describe("whitespace", () => {

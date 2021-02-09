@@ -24,10 +24,8 @@ abstract class Node {
 
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
-  // TODO move this up to Node class?
 }
 
-// TODO token for renderblock
 export class RenderBlock extends Node {
   once: boolean;
   inNum: number | null;
@@ -54,34 +52,18 @@ export class RenderBlock extends Node {
   }
 
   toJson(): object {
-    const info: string[] = [];
-    // TODO what is all this for??
-    if (this.inNum !== null) {
-      info.push("" + this.inNum);
-      info.push("->");
-    }
-    if (this.loopNum !== null) {
-      info.push("loop");
-      info.push("" + this.loopNum);
-    }
-    if (this.once) {
-      info.push("once");
-    }
-    info.push(`{${this.expressions.length} ops}`);
-    if (this.outNum !== null) {
-      info.push("->");
-      info.push("" + this.loopNum);
-    }
     return {
       name: "render_block",
-      info: info.join(" "),
+      in: this.inNum,
+      out: this.outNum,
+      once: this.once,
+      loop: this.loopNum,
       expressions: this.expressions.map((e) => e.toJson()),
     };
   }
 
   parse(): string {
-    // TODO this isn't complete
-    return this.expressions.map((e) => e.parse()).join("");
+    throw new Error("parse for render blocks not implemented yet");
   }
 
   getToken(): Token {
