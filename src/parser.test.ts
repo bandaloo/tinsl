@@ -25,6 +25,8 @@ import util from "util";
 
 chai.use(chaiExclude);
 
+// TODO test rendundant spaces before semicolons
+
 // TODO move this into parser.ts
 function parse(str: string) {
   const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -47,7 +49,7 @@ function parse(str: string) {
 }
 
 function extractExpr(str: string) {
-  return parse(`{${str};}->0`)[0].body[0];
+  return parse(`float f () {${str};}`)[0].body[0];
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];

@@ -18,7 +18,8 @@ import {
   Param,
   FuncDef,
   Return,
-  TernaryExpr
+  TernaryExpr,
+  ForLoop
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -41,20 +42,18 @@ TopLevel ->
     RenderBlock {% id %}
   | DefBlock    {% id %}
 
-# TODO whitespace could lead to ambiguous grammar?
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* (Line):* %rbrace
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* (FuncLine):* %rbrace
       {% ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
       %}
 
 RenderBlock ->
-    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* (Line):* %rbrace _ %arrow _ %int
+    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* (RenderLine):* %rbrace _ %arrow _ %int
       {% ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
-          //[first, ...rest.map((e: any) => e[1])],
           body.map((e: any) => e[0]),
           inNumBl !== null ? parseInt(inNumBl[0].text) : null,
           parseInt(outNum.text),
@@ -63,15 +62,31 @@ RenderBlock ->
         )
       %}
 
-# TODO rename this
-BlockLevel ->
+# for (<INIT>; <cond>; <loop>)
+ForInit ->
+    Decl   {% id %}
+  | Expr   {% id %}
+  | Assign {% id %}
+
+# for (<init>; <COND>; <LOOP>)
+# and statements/expressions allowed to appear in render block
+RenderLevel ->
+    Decl {% id %}
+  | Expr {% id %}
+
+# statements/expressions allowed within function bodies
+FuncLevel ->
     Expr   {% id %}
   | Decl   {% id %}
   | Assign {% id %}
   | Return {% id %}
 
-Line ->
-    BlockLevel (%lbc):+ {% d => d[0] %}
+FuncLine ->
+    FuncLevel (%lbc):+ {% d => d[0] %}
+  | ForLoop            {% id %}
+
+RenderLine ->
+    RenderLevel (%lbc):+ {% d => d[0] %}
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
@@ -88,8 +103,15 @@ ForInit ->
   | Assign {% id %}
   | Decl   {% id %}
 
-For ->
-    %kw_for _ %lparen _ %lbc ForInit %lbc Expr _ %rparen {% id %}
+#For -> %kw_for _ %lparen _ %lbc ForInit %lbc RenderLevel Expr _ %rparen {% id %}
+
+ForLoop ->
+    %kw_for _ %lparen _ ForInit %lbc RenderLevel %lbc RenderLevel _ %rparen _ ForBody _
+      {% ([kw, , , , init, , cond, , loop, , , , body, ]: any) => new ForLoop(init, cond, loop, body, kw) %}
+
+ForBody ->
+    FuncLine                     {% d => [d[0]] %}
+  | %lbrace _ (%lbc):* (FuncLine):* %rbrace {% d => d[3].map((e: any) => e[0]) %}
 
 # order of operations
 Paren ->

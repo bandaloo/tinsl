@@ -499,7 +499,6 @@ export class TernaryExpr extends Expr {
   }
 
   toJson(): object {
-    // TODO should token be in all the json conversions?
     return {
       name: "ternary_expr",
       bool: this.bool.toJson(),
@@ -517,101 +516,39 @@ export class TernaryExpr extends Expr {
   }
 }
 
-/*
-export type Expr =
-  | BinaryExpr
-  | UnaryExpr
-  | FloatExpr
-  | IntExpr
-  | VecExpr
-  | FuncCallExpr;
-
-export interface Type {
-  id: "type";
-  type: Token | null;
-}
-
-export interface BinaryExpr {
-  id: "binaryexpr";
-  operator: Token;
-  left: Expr;
-  right: Expr;
-}
-
-export interface UnaryExpr {
-  id: "unaryexpr";
-  operator: Token;
-  argument: Expr;
-}
-
-export interface FloatExpr {
-  id: "floatexpr";
-  value: Token;
-}
-
-export interface IntExpr {
-  id: "intexpr";
-  value: Token;
-}
-
-export interface VecExpr {
-  id: "vecexpr";
-  call: Token;
-}
-
-export interface FuncDecl {
-  id: "funcdecl";
-  identifier: Token;
-  returnType: Type;
-  paramTypes: Type[];
-  paramIdents: Token[];
+export class ForLoop extends Node {
+  init: Expr;
+  cond: Expr;
+  loop: Expr;
   body: Expr[];
-}
+  token: Token;
 
-export interface FuncCallExpr {
-  id: "funccallexpr";
-  identifier: Token;
-  arguments: Expr[];
-}
+  constructor(init: Expr, cond: Expr, loop: Expr, body: Expr[], token: Token) {
+    super();
+    this.init = init;
+    this.cond = cond;
+    this.loop = loop;
+    this.body = body;
+    this.token = token;
+  }
 
-export interface ProcDecl {
-  id: "procdecl";
-  identifier: Token;
-  paramTypes: Type[];
-  paramIdents: Token[];
-  body: Expr[];
-}
+  toJson(): object {
+    return {
+      name: "for_loop",
+      init: this.init,
+      cond: this.cond,
+      loop: this.loop,
+      body: this.body.map((e) => e.toJson()),
+    };
+  }
 
-export interface ProcCall {
-  id: "proccall";
-  identifier: Token;
-  arguments: Expr[];
-}
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
 
-export interface RenderBlock {
-  id: "renderop";
-  inChannel: Token | null;
-  outChannel: Token;
-  operations: (Expr | ProcCall)[];
+  getToken(): Token {
+    return this.token;
+  }
 }
-
-export interface Program {
-  body: (ProcDecl | FuncDecl | RenderBlock)[];
-}
-*/
-
-/*
-export function makeBinaryExpr(
-  operator: Token,
-  left: Expr,
-  right: Expr
-): BinaryExpr {
-  return { id: "binaryexpr", operator, left, right };
-}
-
-export function makeUnaryExpr(operator: Token, argument: Expr): UnaryExpr {
-  return { id: "unaryexpr", operator, argument };
-}
-*/
 
 export type { Node, Expr };

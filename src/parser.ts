@@ -6,7 +6,7 @@ console.log("running");
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 
 //parser.feed("{(true ? true ? 1 : 2 : false) ? 3 : 4;}->0");
-parser.feed("float foo (float bar) { 0; return 1.; }");
+parser.feed("float foo (float bar) { for(float i = 1; i < 3; i++) a+=1; }");
 
 console.log(
   util.inspect(parser.results, {
