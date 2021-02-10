@@ -516,20 +516,30 @@ export class TernaryExpr extends Expr {
   }
 }
 
-export class ForLoop extends Node {
-  init: Expr;
-  cond: Expr;
-  loop: Expr;
+export class ForLoop extends Expr {
+  init: Expr | null;
+  cond: Expr | null;
+  loop: Expr | null;
   body: Expr[];
   token: Token;
 
-  constructor(init: Expr, cond: Expr, loop: Expr, body: Expr[], token: Token) {
+  constructor(
+    init: Expr | null,
+    cond: Expr | null,
+    loop: Expr | null,
+    body: Expr[],
+    token: Token
+  ) {
     super();
     this.init = init;
     this.cond = cond;
     this.loop = loop;
     this.body = body;
     this.token = token;
+  }
+
+  getSubExpressions(): Expr[] {
+    return this.body;
   }
 
   toJson(): object {

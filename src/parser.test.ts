@@ -10,7 +10,9 @@ import {
   CallExpr,
   ConstructorExpr,
   Decl,
+  Expr,
   FloatExpr,
+  ForLoop,
   FuncDef,
   IdentExpr,
   IntExpr,
@@ -48,14 +50,17 @@ function parse(str: string) {
   return parser.results[0];
 }
 
-function extractExpr(str: string) {
-  return parse(`float f () {${str};}`)[0].body[0];
+function extractExpr(str: string, semicolon: boolean) {
+  return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
 
-function checkExpr(str: string, eql: object) {
-  expect(extractExpr(str)).excludingEvery(excludes).to.deep.equal(eql);
+// TODO rename
+function checkExpr(str: string, eql: object, semicolon = true) {
+  expect(extractExpr(str, semicolon))
+    .excludingEvery(excludes)
+    .to.deep.equal(eql);
 }
 
 function checkProgram(str: string, eql: object) {
@@ -597,6 +602,128 @@ describe("top level", () => {
 }
 {vec4(1., 2., 3., 4.);}->0`,
       [funcNoParams, bl]
+    );
+  });
+});
+
+describe("for loops", () => {
+  const emptyForLoop = new ForLoop(null, null, null, [], tok("for"));
+
+  const forLoop = (body: Expr[]) =>
+    new ForLoop(
+      new Decl(
+        false,
+        new TypeName(tok("int")),
+        tok("i"),
+        new IntExpr(tok("0")),
+        tok("=")
+      ),
+      new BinaryExpr(new IdentExpr(tok("i")), tok("<"), new IntExpr(tok("3"))),
+      new UnaryExpr(tok("++"), new IdentExpr(tok("i")), true),
+      body,
+      tok("for")
+    );
+
+  const jUnary = new UnaryExpr(tok("++"), new IdentExpr(tok("j")), true);
+  const kUnary = new UnaryExpr(tok("++"), new IdentExpr(tok("k")), true);
+
+  const fullForLoop1 = forLoop([jUnary]);
+  const fullForLoop2 = forLoop([jUnary, kUnary]);
+
+  it("parses an empty for loop with empty body brackets", () => {
+    checkExpr("for(;;){}", emptyForLoop, false);
+  });
+
+  it("parses full for loop minimal whitespace", () => {
+    checkExpr("for(int i=0;i<3;i++){j++;k++;}", fullForLoop2, false);
+  });
+
+  it("parses full for loop natural whitespace", () => {
+    checkExpr(
+      `for (int i = 0; i < 3; i++) {
+  j++;
+  k++;
+}`,
+      fullForLoop2,
+      false
+    );
+  });
+
+  it("parses full for loop excessive whitespace", () => {
+    checkExpr(
+      `
+for
+(
+  int i = 0;
+  i < 3;
+  i++
+)
+{
+  j++;
+  k++;
+}
+`,
+      fullForLoop2,
+      false
+    );
+  });
+
+  it("parses for loop no brackets various spacing", () => {
+    checkExpr(`for(int i = 0;i < 3;i++)j++;`, fullForLoop1, false);
+    checkExpr(
+      `for(int i = 0; i < 3; i++)
+  j++;`,
+      fullForLoop1,
+      false
+    );
+  });
+
+  it("parses for loop with redundant semicolons", () => {
+    checkExpr(`for(int i=0;i<3;i++)j++;;;;`, fullForLoop1, false);
+    checkExpr(`for(int i=0;i<3;i++){;;j++;;;;}`, fullForLoop1, false);
+    checkExpr(`for(int i=0;i<3;i++){;;j++;;k++;;}`, fullForLoop2, false);
+  });
+  const declHelper = (str: string) =>
+    new Decl(
+      false,
+      new TypeName(tok("int")),
+      tok(str),
+      new IntExpr(tok("0")),
+      tok("=")
+    );
+
+  const forFunc = new FuncDef(
+    new TypeName(tok("float")),
+    tok("foo"),
+    [],
+    [
+      declHelper("j"),
+      declHelper("k"),
+      fullForLoop1,
+      fullForLoop2,
+      new Return(new IdentExpr(tok("k")), tok("return")),
+    ]
+  );
+
+  it("parses multiple for loops", () => {
+    checkProgram(
+      `
+float foo () {
+  int j = 0;
+  int k = 0;
+
+  for(int i = 0; i < 3; i++)
+    j++;
+
+  for(int i = 0; i < 3; i++) {
+    j++;
+    k++;
+  }
+
+  return k;
+}
+    `,
+      [forFunc]
     );
   });
 });

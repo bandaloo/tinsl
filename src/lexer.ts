@@ -188,6 +188,7 @@ export const keywords = [
 export const lexer = moo.compile({
   lbc: {
     //match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,
+    // TODO is this redundant?
     match: /(?:[ \t\n]+;[ \t\n]+|[ \t\n]+;|;[ \t\n]+|;)/,
     lineBreaks: true,
   },

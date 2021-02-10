@@ -63,10 +63,10 @@ RenderBlock ->
       %}
 
 # for (<INIT>; <cond>; <loop>)
-ForInit ->
-    Decl   {% id %}
-  | Expr   {% id %}
-  | Assign {% id %}
+#ForInit ->
+#    Decl   {% id %}
+#  | Expr   {% id %}
+#  | Assign {% id %}
 
 # for (<init>; <COND>; <LOOP>)
 # and statements/expressions allowed to appear in render block
@@ -99,19 +99,19 @@ Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
 
 ForInit ->
-    Expr   {% id %}
-  | Assign {% id %}
-  | Decl   {% id %}
+    RenderLevel {% id %}
+  | Assign      {% id %}
 
 #For -> %kw_for _ %lparen _ %lbc ForInit %lbc RenderLevel Expr _ %rparen {% id %}
 
 ForLoop ->
-    %kw_for _ %lparen _ ForInit %lbc RenderLevel %lbc RenderLevel _ %rparen _ ForBody _
-      {% ([kw, , , , init, , cond, , loop, , , , body, ]: any) => new ForLoop(init, cond, loop, body, kw) %}
+    %kw_for _ %lparen _ (ForInit):? %lbc (RenderLevel):? %lbc (RenderLevel):? _ %rparen _ ForBody _
+      {% ([kw, , , , init, , cond, , loop, , , , body, ]: any) =>
+        new ForLoop(init === null ? null : init[0], cond === null ? null : cond[0], loop === null ? null : loop[0], body, kw) %}
 
 ForBody ->
-    FuncLine                     {% d => [d[0]] %}
-  | %lbrace _ (%lbc):* (FuncLine):* %rbrace {% d => d[3].map((e: any) => e[0]) %}
+    FuncLine                                         {% d => [d[0]] %}
+  | %lbrace _ (%lbc):* (FuncLine):* %rbrace (%lbc):* {% d => d[3].map((e: any) => e[0]) %}
 
 # order of operations
 Paren ->
@@ -201,7 +201,8 @@ MiddleTernary ->
 # TODO int?
 # TODO float constructor call shouldn't be possible 
 TypeName ->
-    %kw_float  {% typ %}
+    %kw_int    {% typ %}
+  | %kw_float  {% typ %}
   | %kw_vec2   {% typ %}
   | %kw_vec3   {% typ %}
   | %kw_vec4   {% typ %}

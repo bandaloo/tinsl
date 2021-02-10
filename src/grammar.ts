@@ -45,6 +45,7 @@ declare var xor: any;
 declare var or: any;
 declare var question_mark: any;
 declare var colon: any;
+declare var kw_int: any;
 declare var kw_float: any;
 declare var kw_vec2: any;
 declare var kw_vec3: any;
@@ -182,9 +183,6 @@ const grammar: Grammar = {
           open
         )
               },
-    {"name": "ForInit", "symbols": ["Decl"], "postprocess": id},
-    {"name": "ForInit", "symbols": ["Expr"], "postprocess": id},
-    {"name": "ForInit", "symbols": ["Assign"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Expr"], "postprocess": id},
@@ -210,10 +208,19 @@ const grammar: Grammar = {
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
     {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3])},
     {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[4])},
-    {"name": "ForInit", "symbols": ["Expr"], "postprocess": id},
+    {"name": "ForInit", "symbols": ["RenderLevel"], "postprocess": id},
     {"name": "ForInit", "symbols": ["Assign"], "postprocess": id},
-    {"name": "ForInit", "symbols": ["Decl"], "postprocess": id},
-    {"name": "ForLoop", "symbols": [(nearleyLexer.has("kw_for") ? {type: "kw_for"} : kw_for), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "ForInit", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "RenderLevel", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "RenderLevel", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", "ForBody", "_"], "postprocess": ([kw, , , , init, , cond, , loop, , , , body, ]: any) => new ForLoop(init, cond, loop, body, kw)},
+    {"name": "ForLoop$ebnf$1$subexpression$1", "symbols": ["ForInit"]},
+    {"name": "ForLoop$ebnf$1", "symbols": ["ForLoop$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "ForLoop$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "ForLoop$ebnf$2$subexpression$1", "symbols": ["RenderLevel"]},
+    {"name": "ForLoop$ebnf$2", "symbols": ["ForLoop$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "ForLoop$ebnf$2", "symbols": [], "postprocess": () => null},
+    {"name": "ForLoop$ebnf$3$subexpression$1", "symbols": ["RenderLevel"]},
+    {"name": "ForLoop$ebnf$3", "symbols": ["ForLoop$ebnf$3$subexpression$1"], "postprocess": id},
+    {"name": "ForLoop$ebnf$3", "symbols": [], "postprocess": () => null},
+    {"name": "ForLoop", "symbols": [(nearleyLexer.has("kw_for") ? {type: "kw_for"} : kw_for), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "ForLoop$ebnf$1", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$2", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$3", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", "ForBody", "_"], "postprocess":  ([kw, , , , init, , cond, , loop, , , , body, ]: any) =>
+        new ForLoop(init === null ? null : init[0], cond === null ? null : cond[0], loop === null ? null : loop[0], body, kw) },
     {"name": "ForBody", "symbols": ["FuncLine"], "postprocess": d => [d[0]]},
     {"name": "ForBody$ebnf$1", "symbols": []},
     {"name": "ForBody$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
@@ -221,7 +228,10 @@ const grammar: Grammar = {
     {"name": "ForBody$ebnf$2", "symbols": []},
     {"name": "ForBody$ebnf$2$subexpression$1", "symbols": ["FuncLine"]},
     {"name": "ForBody$ebnf$2", "symbols": ["ForBody$ebnf$2", "ForBody$ebnf$2$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "ForBody", "symbols": [(nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "ForBody$ebnf$1", "ForBody$ebnf$2", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": d => d[3].map((e: any) => e[0])},
+    {"name": "ForBody$ebnf$3", "symbols": []},
+    {"name": "ForBody$ebnf$3$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "ForBody$ebnf$3", "symbols": ["ForBody$ebnf$3", "ForBody$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "ForBody", "symbols": [(nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "ForBody$ebnf$1", "ForBody$ebnf$2", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "ForBody$ebnf$3"], "postprocess": d => d[3].map((e: any) => e[0])},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
@@ -273,6 +283,7 @@ const grammar: Grammar = {
     {"name": "Ternary", "symbols": ["LogicOr"], "postprocess": id},
     {"name": "Expr", "symbols": ["Ternary"], "postprocess": id},
     {"name": "MiddleTernary", "symbols": [(nearleyLexer.has("question_mark") ? {type: "question_mark"} : question_mark), "_", "Expr", "_", (nearleyLexer.has("colon") ? {type: "colon"} : colon)], "postprocess": d => { return { tok: d[0], expr: d[2] } }},
+    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_int") ? {type: "kw_int"} : kw_int)], "postprocess": typ},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": typ},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": typ},
     {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": typ},
