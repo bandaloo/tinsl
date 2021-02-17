@@ -10,11 +10,13 @@ import {
   CallExpr,
   ConstructorExpr,
   Decl,
+  Else,
   Expr,
   FloatExpr,
   ForLoop,
   FuncDef,
   IdentExpr,
+  If,
   IntExpr,
   Param,
   RenderBlock,
@@ -725,6 +727,29 @@ float foo () {
     `,
       [forFunc]
     );
+  });
+});
+
+describe("ifs and elses", () => {
+  const basicIf = (cont: Else | null) =>
+    new If(
+      new BoolExpr(tok("true")),
+      [new Return(new BoolExpr(tok("false")), tok("return"))],
+      tok("if"),
+      cont
+    );
+
+  const basicElse = new Else(
+    [new Return(new BoolExpr(tok("true")), tok("return"))],
+    tok("else")
+  );
+
+  it("parses basic if statement", () => {
+    checkExpr("if(true)return false;", basicIf(null));
+  });
+
+  it("parses basic if else statement", () => {
+    checkExpr("if(true)return false; else return true;", basicIf(basicElse));
   });
 });
 

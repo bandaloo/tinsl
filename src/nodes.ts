@@ -22,6 +22,7 @@ abstract class Node {
   }
 }
 
+// TODO not quite the right name; includes stmts and exprs
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
 }
@@ -558,6 +559,69 @@ export class ForLoop extends Expr {
 
   getToken(): Token {
     return this.token;
+  }
+}
+
+export class If extends Expr {
+  cond: Expr;
+  body: Expr[];
+  token: Token;
+  cont: Else | null;
+
+  constructor(cond: Expr, body: Expr[], token: Token, cont: Else | null) {
+    super();
+    this.cond = cond;
+    this.body = body;
+    this.token = token;
+    this.cont = cont;
+  }
+
+  getSubExpressions(): Expr[] {
+    throw new Error("Method not implemented.");
+  }
+
+  toJson(): object {
+    return {
+      name: "if",
+      cond: this.cond,
+      body: this.body,
+      cont: this.cont,
+    };
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
+  }
+}
+
+export class Else extends Expr {
+  body: Expr[] | If;
+  token: Token;
+
+  constructor(body: Expr[] | If, token: Token) {
+    super();
+    this.body = body;
+    this.token = token;
+  }
+
+  getSubExpressions(): Expr[] {
+    throw new Error("Method not implemented.");
+  }
+
+  toJson(): object {
+    throw new Error("Method not implemented.");
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
   }
 }
 

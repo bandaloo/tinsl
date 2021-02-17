@@ -19,7 +19,9 @@ import {
   FuncDef,
   Return,
   TernaryExpr,
-  ForLoop
+  ForLoop,
+  If,
+  Else
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -84,6 +86,7 @@ FuncLevel ->
 FuncLine ->
     FuncLevel (%lbc):+ {% d => d[0] %}
   | ForLoop            {% id %}
+  | If {% id %}
 
 RenderLine ->
     RenderLevel (%lbc):+ {% d => d[0] %}
@@ -105,11 +108,36 @@ ForInit ->
 #For -> %kw_for _ %lparen _ %lbc ForInit %lbc RenderLevel Expr _ %rparen {% id %}
 
 ForLoop ->
-    %kw_for _ %lparen _ (ForInit):? %lbc (RenderLevel):? %lbc (RenderLevel):? _ %rparen _ ForBody _
+    %kw_for _ %lparen _ (ForInit):? %lbc (RenderLevel):? %lbc (RenderLevel):? _ %rparen _ BlockBody _
       {% ([kw, , , , init, , cond, , loop, , , , body, ]: any) =>
-        new ForLoop(init === null ? null : init[0], cond === null ? null : cond[0], loop === null ? null : loop[0], body, kw) %}
+        new ForLoop(
+          init === null ? null : init[0],
+          cond === null ? null : cond[0],
+          loop === null ? null : loop[0],
+          body,
+          kw
+        )
+      %}
 
-ForBody ->
+If ->
+    %kw_if _ %lparen _ Expr _ %rparen _ BlockBody (_ Else):?
+      {% ([tokn, , , , cond, , , , body, cont]: any) =>
+        new If(
+          cond,
+          body,
+          tokn,
+          cont === null ? null : cont[1]
+        )
+      %}
+
+Else ->
+    %kw_else _ ElseContinue {% d => new Else(d[2], d[0]) %}
+
+ElseContinue ->
+    If        {% id %}
+  | BlockBody {% id %}
+
+BlockBody ->
     FuncLine                                         {% d => [d[0]] %}
   | %lbrace _ (%lbc):* (FuncLine):* %rbrace (%lbc):* {% d => d[3].map((e: any) => e[0]) %}
 
