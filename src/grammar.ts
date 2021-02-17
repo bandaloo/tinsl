@@ -244,9 +244,7 @@ const grammar: Grammar = {
           cont === null ? null : cont[1]
         )
               },
-    {"name": "Else", "symbols": [(nearleyLexer.has("kw_else") ? {type: "kw_else"} : kw_else), "_", "ElseContinue"], "postprocess": d => new Else(d[2], d[0])},
-    {"name": "ElseContinue", "symbols": ["If"], "postprocess": id},
-    {"name": "ElseContinue", "symbols": ["BlockBody"], "postprocess": id},
+    {"name": "Else", "symbols": [(nearleyLexer.has("kw_else") ? {type: "kw_else"} : kw_else), "_", "BlockBody"], "postprocess": d => new Else(d[2], d[0])},
     {"name": "BlockBody", "symbols": ["FuncLine"], "postprocess": d => [d[0]]},
     {"name": "BlockBody$ebnf$1", "symbols": []},
     {"name": "BlockBody$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},

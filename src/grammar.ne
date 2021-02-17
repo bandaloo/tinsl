@@ -131,11 +131,11 @@ If ->
       %}
 
 Else ->
-    %kw_else _ ElseContinue {% d => new Else(d[2], d[0]) %}
+    %kw_else _ BlockBody {% d => new Else(d[2], d[0]) %}
 
-ElseContinue ->
-    If        {% id %}
-  | BlockBody {% id %}
+#ElseContinue ->
+#    If        {% id %}
+#  | BlockBody {% id %}
 
 BlockBody ->
     FuncLine                                         {% d => [d[0]] %}

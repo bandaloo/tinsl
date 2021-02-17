@@ -744,12 +744,45 @@ describe("ifs and elses", () => {
     tok("else")
   );
 
+  const basicElseIf = new Else([basicIf(null)], tok("else"));
+
+  const basicElseIfElse = new Else([basicIf(basicElse)], tok("else"));
+
   it("parses basic if statement", () => {
     checkExpr("if(true)return false;", basicIf(null));
   });
 
   it("parses basic if else statement", () => {
-    checkExpr("if(true)return false; else return true;", basicIf(basicElse));
+    checkExpr("if(true)return false;else return true;", basicIf(basicElse));
+  });
+
+  it("parses basic if else if statement", () => {
+    checkExpr(
+      "if(true)return false;else if(true)return false;",
+      basicIf(basicElseIf)
+    );
+  });
+
+  it("parses basic if statement curly braces", () => {
+    checkExpr("if(true){return false;}", basicIf(null));
+  });
+
+  it("parses basic if else statement curly braces", () => {
+    checkExpr("if(true){return false;}else{return true;}", basicIf(basicElse));
+  });
+
+  it("parses basic if else if statement curly braces", () => {
+    checkExpr(
+      "if(true){return false;}else if(true){return false;}",
+      basicIf(basicElseIf)
+    );
+  });
+
+  it("parses dangling else", () => {
+    checkExpr(
+      "if(true){return false;}else if(true){return false;}else{return true;}",
+      basicIf(basicElseIfElse)
+    );
   });
 });
 

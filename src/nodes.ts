@@ -599,10 +599,10 @@ export class If extends Expr {
 }
 
 export class Else extends Expr {
-  body: Expr[] | If;
+  body: Expr[];
   token: Token;
 
-  constructor(body: Expr[] | If, token: Token) {
+  constructor(body: Expr[], token: Token) {
     super();
     this.body = body;
     this.token = token;
