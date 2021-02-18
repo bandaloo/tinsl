@@ -625,4 +625,31 @@ export class Else extends Expr {
   }
 }
 
+export class Uniform extends Expr {
+  type: TypeName;
+  ident: Token;
+
+  constructor(type: TypeName, ident: Token) {
+    super();
+    this.type = type;
+    this.ident = ident;
+  }
+
+  getSubExpressions(): Expr[] {
+    throw new Error("Method not implemented.");
+  }
+
+  toJson(): object {
+    throw new Error("Method not implemented.");
+  }
+
+  parse(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
+  }
+}
+
 export type { Node, Expr };

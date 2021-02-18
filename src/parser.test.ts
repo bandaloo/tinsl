@@ -24,6 +24,7 @@ import {
   TernaryExpr,
   TypeName,
   UnaryExpr,
+  Uniform,
 } from "./nodes";
 import util from "util";
 
@@ -821,4 +822,31 @@ if (true) {
   });
 });
 
+describe("uniforms", () => {
+  const un = (type: string, tokn: string) =>
+    new Uniform(new TypeName(tok("type")), tok(tokn));
+
+  it("parses a basic uniform", () => {
+    checkProgram("uniform float foo;", [un("float", "foo")]);
+  });
+
+  /*
+  it("parses multiple uniforms", () => {
+    checkProgram("uniform float foo;\n\nuniform vec3 bar;", [
+      un("float", "foo"),
+      un("vec3", "bar"),
+    ]);
+  });
+  */
+
+  it("parses uniform with extra whitespace", () => {
+    checkProgram(
+      `uniform
+    float
+    foo
+    ;`,
+      [un("float", "foo")]
+    );
+  });
+});
 // TODO parsing empty program

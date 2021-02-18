@@ -21,7 +21,8 @@ import {
   TernaryExpr,
   ForLoop,
   If,
-  Else
+  Else,
+  Uniform
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -43,6 +44,9 @@ Main ->
 TopLevel ->
     RenderBlock {% id %}
   | DefBlock    {% id %}
+  | Uniform     {% id %}
+
+# TODO some sort of define?
 
 DefBlock ->
     TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* (FuncLine):* %rbrace
@@ -63,6 +67,10 @@ RenderBlock ->
           open
         )
       %}
+
+# TODO test without this whitespace
+Uniform
+    -> %kw_uniform _ TypeName _ %ident _ (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
 
 # for (<INIT>; <cond>; <loop>)
 #ForInit ->

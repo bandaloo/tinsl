@@ -13,6 +13,7 @@ declare var int: any;
 declare var arrow: any;
 declare var kw_loop: any;
 declare var kw_once: any;
+declare var kw_uniform: any;
 declare var kw_return: any;
 declare var kw_const: any;
 declare var assignment: any;
@@ -102,7 +103,8 @@ import {
   TernaryExpr,
   ForLoop,
   If,
-  Else
+  Else,
+  Uniform
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -149,6 +151,7 @@ const grammar: Grammar = {
     {"name": "Main", "symbols": ["_", "TopLevel", "Main$ebnf$1", "_"], "postprocess": ([, first, rest, ]: any) => [first, ...rest.map((t: any) => t[1])]},
     {"name": "TopLevel", "symbols": ["RenderBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["DefBlock"], "postprocess": id},
+    {"name": "TopLevel", "symbols": ["Uniform"], "postprocess": id},
     {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params", "_"]},
     {"name": "DefBlock$ebnf$1", "symbols": ["DefBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "DefBlock$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -187,6 +190,11 @@ const grammar: Grammar = {
           open
         )
               },
+    {"name": "Uniform$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "Uniform$ebnf$1", "symbols": ["Uniform$ebnf$1$subexpression$1"]},
+    {"name": "Uniform$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "Uniform$ebnf$1", "symbols": ["Uniform$ebnf$1", "Uniform$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "Uniform", "symbols": [(nearleyLexer.has("kw_uniform") ? {type: "kw_uniform"} : kw_uniform), "_", "TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", "Uniform$ebnf$1"], "postprocess": d => new Uniform(d[2], d[4])},
     {"name": "RenderLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Expr"], "postprocess": id},
