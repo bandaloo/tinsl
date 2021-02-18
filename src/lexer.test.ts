@@ -216,23 +216,32 @@ describe("semicolons", () => {
   });
 
   it("lexes semicolon ws end", () => {
-    expect(types(tokens(lexer, ";\n "))).to.deep.equal(["lbc"]);
+    expect(types(tokens(lexer, ";\n "))).to.deep.equal(["lbc", "ws"]);
   });
 
   it("lexes semicolon ws both sides", () => {
-    expect(types(tokens(lexer, "\n ;\n "))).to.deep.equal(["lbc"]);
+    expect(types(tokens(lexer, "\n ;\n "))).to.deep.equal(["lbc", "ws"]);
   });
 
   it("lexes multiple semicolons alone", () => {
     expect(types(tokens(lexer, ";;"))).to.deep.equal(["lbc", "lbc"]);
   });
 
+  // TODO make this test more clear
   it("lexes multiple semicolons ws", () => {
     expect(types(tokens(lexer, "\n ;;"))).to.deep.equal(["lbc", "lbc"]);
-    expect(types(tokens(lexer, ";;\n "))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, ";;\n "))).to.deep.equal(["lbc", "lbc", "ws"]);
     expect(types(tokens(lexer, ";\n ;"))).to.deep.equal(["lbc", "lbc"]);
-    expect(types(tokens(lexer, "\n ;;\n "))).to.deep.equal(["lbc", "lbc"]);
-    expect(types(tokens(lexer, "\n ;\n ;\n "))).to.deep.equal(["lbc", "lbc"]);
+    expect(types(tokens(lexer, "\n ;;\n "))).to.deep.equal([
+      "lbc",
+      "lbc",
+      "ws",
+    ]);
+    expect(types(tokens(lexer, "\n ;\n ;\n "))).to.deep.equal([
+      "lbc",
+      "lbc",
+      "ws",
+    ]);
   });
 });
 

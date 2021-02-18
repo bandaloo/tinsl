@@ -49,14 +49,14 @@ TopLevel ->
 # TODO some sort of define?
 
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace _ (%lbc):* (FuncLine):* %rbrace
+    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
       {% ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
       %}
 
 RenderBlock ->
-    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace _ (%lbc):* (RenderLine):* %rbrace _ %arrow _ %int
+    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace (%lbc):* _ (RenderLine):* %rbrace _ %arrow _ %int
       {% ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
@@ -70,7 +70,7 @@ RenderBlock ->
 
 # TODO test without this whitespace
 Uniform
-    -> %kw_uniform _ TypeName _ %ident _ (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
+    -> %kw_uniform _ TypeName _ %ident (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
 
 # for (<INIT>; <cond>; <loop>)
 #ForInit ->
@@ -91,13 +91,14 @@ FuncLevel ->
   | Assign {% id %}
   | Return {% id %}
 
+# TODO more tests for ending whitespace of for and if statements
 FuncLine ->
-    FuncLevel (%lbc):+ {% d => d[0] %}
-  | ForLoop            {% id %}
+    FuncLevel (%lbc):+ _ {% d => d[0] %}
+  | ForLoop             {% d => d[0] %}
   | If {% id %}
 
 RenderLine ->
-    RenderLevel (%lbc):+ {% d => d[0] %}
+    RenderLevel (%lbc):+ _ {% d => d[0] %}
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
@@ -113,28 +114,26 @@ ForInit ->
     RenderLevel {% id %}
   | Assign      {% id %}
 
-#For -> %kw_for _ %lparen _ %lbc ForInit %lbc RenderLevel Expr _ %rparen {% id %}
-
 ForLoop ->
-    %kw_for _ %lparen _ (ForInit):? %lbc (RenderLevel):? %lbc (RenderLevel):? _ %rparen _ BlockBody _
-      {% ([kw, , , , init, , cond, , loop, , , , body, ]: any) =>
+    %kw_for _ %lparen (_ ForInit):? %lbc (_ RenderLevel):? %lbc (_ RenderLevel):? _ %rparen _ BlockBody
+      {% ([kw, , , init, , cond, , loop, , , , body]: any) =>
         new ForLoop(
-          init === null ? null : init[0],
-          cond === null ? null : cond[0],
-          loop === null ? null : loop[0],
+          init === null ? null : init[1],
+          cond === null ? null : cond[1],
+          loop === null ? null : loop[1],
           body,
           kw
         )
       %}
 
 If ->
-    %kw_if _ %lparen _ Expr _ %rparen _ BlockBody (_ Else):?
+    %kw_if _ %lparen _ Expr _ %rparen _ BlockBody (Else):?
       {% ([tokn, , , , cond, , , , body, cont]: any) =>
         new If(
           cond,
           body,
           tokn,
-          cont === null ? null : cont[1]
+          cont === null ? null : cont[0]
         )
       %}
 
@@ -147,7 +146,7 @@ Else ->
 
 BlockBody ->
     FuncLine                                         {% d => [d[0]] %}
-  | %lbrace _ (%lbc):* (FuncLine):* %rbrace (%lbc):* {% d => d[3].map((e: any) => e[0]) %}
+  | %lbrace (%lbc):* _ (FuncLine):* %rbrace (%lbc):* _ {% d => d[3].map((e: any) => e[0]) %}
 
 # order of operations
 Paren ->

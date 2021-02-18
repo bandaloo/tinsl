@@ -161,7 +161,7 @@ const grammar: Grammar = {
     {"name": "DefBlock$ebnf$3", "symbols": []},
     {"name": "DefBlock$ebnf$3$subexpression$1", "symbols": ["FuncLine"]},
     {"name": "DefBlock$ebnf$3", "symbols": ["DefBlock$ebnf$3", "DefBlock$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "DefBlock$ebnf$2", "DefBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
+    {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "DefBlock$ebnf$2", "_", "DefBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
               },
@@ -180,7 +180,7 @@ const grammar: Grammar = {
     {"name": "RenderBlock$ebnf$5", "symbols": []},
     {"name": "RenderBlock$ebnf$5$subexpression$1", "symbols": ["RenderLine"]},
     {"name": "RenderBlock$ebnf$5", "symbols": ["RenderBlock$ebnf$5", "RenderBlock$ebnf$5$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "RenderBlock$ebnf$4", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
+    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "RenderBlock$ebnf$4", "_", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
           body.map((e: any) => e[0]),
@@ -194,7 +194,7 @@ const grammar: Grammar = {
     {"name": "Uniform$ebnf$1", "symbols": ["Uniform$ebnf$1$subexpression$1"]},
     {"name": "Uniform$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "Uniform$ebnf$1", "symbols": ["Uniform$ebnf$1", "Uniform$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "Uniform", "symbols": [(nearleyLexer.has("kw_uniform") ? {type: "kw_uniform"} : kw_uniform), "_", "TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", "Uniform$ebnf$1"], "postprocess": d => new Uniform(d[2], d[4])},
+    {"name": "Uniform", "symbols": [(nearleyLexer.has("kw_uniform") ? {type: "kw_uniform"} : kw_uniform), "_", "TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "Uniform$ebnf$1"], "postprocess": d => new Uniform(d[2], d[4])},
     {"name": "RenderLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Expr"], "postprocess": id},
@@ -205,14 +205,14 @@ const grammar: Grammar = {
     {"name": "FuncLine$ebnf$1", "symbols": ["FuncLine$ebnf$1$subexpression$1"]},
     {"name": "FuncLine$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "FuncLine$ebnf$1", "symbols": ["FuncLine$ebnf$1", "FuncLine$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "FuncLine", "symbols": ["FuncLevel", "FuncLine$ebnf$1"], "postprocess": d => d[0]},
-    {"name": "FuncLine", "symbols": ["ForLoop"], "postprocess": id},
+    {"name": "FuncLine", "symbols": ["FuncLevel", "FuncLine$ebnf$1", "_"], "postprocess": d => d[0]},
+    {"name": "FuncLine", "symbols": ["ForLoop"], "postprocess": d => d[0]},
     {"name": "FuncLine", "symbols": ["If"], "postprocess": id},
     {"name": "RenderLine$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "RenderLine$ebnf$1", "symbols": ["RenderLine$ebnf$1$subexpression$1"]},
     {"name": "RenderLine$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "RenderLine$ebnf$1", "symbols": ["RenderLine$ebnf$1", "RenderLine$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderLine", "symbols": ["RenderLevel", "RenderLine$ebnf$1"], "postprocess": d => d[0]},
+    {"name": "RenderLine", "symbols": ["RenderLevel", "RenderLine$ebnf$1", "_"], "postprocess": d => d[0]},
     {"name": "Return", "symbols": [(nearleyLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "Expr"], "postprocess": d => new Return(d[2], d[0])},
     {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
     {"name": "Decl$ebnf$1", "symbols": ["Decl$ebnf$1$subexpression$1"], "postprocess": id},
@@ -223,25 +223,25 @@ const grammar: Grammar = {
     {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[4])},
     {"name": "ForInit", "symbols": ["RenderLevel"], "postprocess": id},
     {"name": "ForInit", "symbols": ["Assign"], "postprocess": id},
-    {"name": "ForLoop$ebnf$1$subexpression$1", "symbols": ["ForInit"]},
+    {"name": "ForLoop$ebnf$1$subexpression$1", "symbols": ["_", "ForInit"]},
     {"name": "ForLoop$ebnf$1", "symbols": ["ForLoop$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "ForLoop$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "ForLoop$ebnf$2$subexpression$1", "symbols": ["RenderLevel"]},
+    {"name": "ForLoop$ebnf$2$subexpression$1", "symbols": ["_", "RenderLevel"]},
     {"name": "ForLoop$ebnf$2", "symbols": ["ForLoop$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "ForLoop$ebnf$2", "symbols": [], "postprocess": () => null},
-    {"name": "ForLoop$ebnf$3$subexpression$1", "symbols": ["RenderLevel"]},
+    {"name": "ForLoop$ebnf$3$subexpression$1", "symbols": ["_", "RenderLevel"]},
     {"name": "ForLoop$ebnf$3", "symbols": ["ForLoop$ebnf$3$subexpression$1"], "postprocess": id},
     {"name": "ForLoop$ebnf$3", "symbols": [], "postprocess": () => null},
-    {"name": "ForLoop", "symbols": [(nearleyLexer.has("kw_for") ? {type: "kw_for"} : kw_for), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "ForLoop$ebnf$1", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$2", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$3", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", "BlockBody", "_"], "postprocess":  ([kw, , , , init, , cond, , loop, , , , body, ]: any) =>
+    {"name": "ForLoop", "symbols": [(nearleyLexer.has("kw_for") ? {type: "kw_for"} : kw_for), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "ForLoop$ebnf$1", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$2", (nearleyLexer.has("lbc") ? {type: "lbc"} : lbc), "ForLoop$ebnf$3", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", "BlockBody"], "postprocess":  ([kw, , , init, , cond, , loop, , , , body]: any) =>
         new ForLoop(
-          init === null ? null : init[0],
-          cond === null ? null : cond[0],
-          loop === null ? null : loop[0],
+          init === null ? null : init[1],
+          cond === null ? null : cond[1],
+          loop === null ? null : loop[1],
           body,
           kw
         )
               },
-    {"name": "If$ebnf$1$subexpression$1", "symbols": ["_", "Else"]},
+    {"name": "If$ebnf$1$subexpression$1", "symbols": ["Else"]},
     {"name": "If$ebnf$1", "symbols": ["If$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "If$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "If", "symbols": [(nearleyLexer.has("kw_if") ? {type: "kw_if"} : kw_if), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", "BlockBody", "If$ebnf$1"], "postprocess":  ([tokn, , , , cond, , , , body, cont]: any) =>
@@ -249,7 +249,7 @@ const grammar: Grammar = {
           cond,
           body,
           tokn,
-          cont === null ? null : cont[1]
+          cont === null ? null : cont[0]
         )
               },
     {"name": "Else", "symbols": [(nearleyLexer.has("kw_else") ? {type: "kw_else"} : kw_else), "_", "BlockBody"], "postprocess": d => new Else(d[2], d[0])},
@@ -263,7 +263,7 @@ const grammar: Grammar = {
     {"name": "BlockBody$ebnf$3", "symbols": []},
     {"name": "BlockBody$ebnf$3$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "BlockBody$ebnf$3", "symbols": ["BlockBody$ebnf$3", "BlockBody$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "BlockBody", "symbols": [(nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_", "BlockBody$ebnf$1", "BlockBody$ebnf$2", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "BlockBody$ebnf$3"], "postprocess": d => d[3].map((e: any) => e[0])},
+    {"name": "BlockBody", "symbols": [(nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "BlockBody$ebnf$1", "_", "BlockBody$ebnf$2", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "BlockBody$ebnf$3", "_"], "postprocess": d => d[3].map((e: any) => e[0])},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},

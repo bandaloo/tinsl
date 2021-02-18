@@ -53,6 +53,7 @@ function parse(str: string) {
   return parser.results[0];
 }
 
+// TODO rewrite with above function
 function extractExpr(str: string, semicolon: boolean) {
   return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
 }
@@ -818,6 +819,38 @@ if (true) {
 }
     `,
       multiIfElse
+    );
+  });
+
+  const multiIfElseFunc = new FuncDef(
+    new TypeName(tok("float")),
+    tok("foo"),
+    [],
+    [
+      basicIf(basicElse),
+      basicIf(basicElse),
+      new Return(new FloatExpr(tok("1.")), tok("return")),
+    ]
+  );
+
+  it("parses multiple if else statements", () => {
+    checkProgram(
+      `
+float foo () {
+  if (true)
+    return false;
+  else
+    return true;
+
+  if (true)
+    return false;
+  else
+    return true;
+  
+  return 1.;
+}
+`,
+      [multiIfElseFunc]
     );
   });
 });
