@@ -863,14 +863,12 @@ describe("uniforms", () => {
     checkProgram("uniform float foo;", [un("float", "foo")]);
   });
 
-  /*
   it("parses multiple uniforms", () => {
     checkProgram("uniform float foo;\n\nuniform vec3 bar;", [
       un("float", "foo"),
       un("vec3", "bar"),
     ]);
   });
-  */
 
   it("parses uniform with extra whitespace", () => {
     checkProgram(
