@@ -763,6 +763,13 @@ describe("ifs and elses", () => {
     );
   });
 
+  it("parses dangling else", () => {
+    checkExpr(
+      "if(true)return false;else if(true)return false;else return true;",
+      basicIf(basicElseIfElse)
+    );
+  });
+
   it("parses basic if statement curly braces", () => {
     checkExpr("if(true){return false;}", basicIf(null));
   });
@@ -778,10 +785,38 @@ describe("ifs and elses", () => {
     );
   });
 
-  it("parses dangling else", () => {
+  it("parses dangling else curly braces", () => {
     checkExpr(
       "if(true){return false;}else if(true){return false;}else{return true;}",
       basicIf(basicElseIfElse)
+    );
+  });
+
+  it("parses multiple statements in if and else blocks", () => {
+    const assignHelper = (str: string, val: number) =>
+      new Assign(
+        new IdentExpr(tok(str)),
+        tok("="),
+        new FloatExpr(tok(val + "."))
+      );
+
+    const multiIfElse = new If(
+      new BoolExpr(tok("true")),
+      [assignHelper("a", 1), assignHelper("b", 2)],
+      tok("if"),
+      new Else([assignHelper("a", 3), assignHelper("b", 4)], tok("else"))
+    );
+    checkExpr(
+      `
+if (true) {
+  a = 1.;
+  b = 2.;
+} else {
+  a = 3.;
+  b = 4.;
+}
+    `,
+      multiIfElse
     );
   });
 });
