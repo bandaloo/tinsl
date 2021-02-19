@@ -21,6 +21,7 @@ import {
   Param,
   RenderBlock,
   Return,
+  SubscriptExpr,
   TernaryExpr,
   TypeName,
   UnaryExpr,
@@ -921,6 +922,40 @@ describe("uniforms", () => {
     ;`,
       [un("float", "foo")]
     );
+  });
+});
+
+describe("function calls and subscripting", () => {
+  const fooCall = (args: Expr[]) =>
+    new CallExpr(tok("("), new IdentExpr(tok("foo")), args);
+
+  const barSubscript = new SubscriptExpr(
+    tok("["),
+    new IdentExpr(tok("bar")),
+    new IntExpr(tok("3"))
+  );
+
+  it("parses function call no args", () => {
+    checkExpr("foo()", fooCall([]));
+  });
+
+  it("parses function call one arg", () => {
+    checkExpr("foo(1)", fooCall([new IntExpr(tok("1"))]));
+  });
+
+  it("parses function call multiple args", () => {
+    checkExpr(
+      "foo(1, 2, 3.4)",
+      fooCall([
+        new IntExpr(tok("1")),
+        new IntExpr(tok("2")),
+        new FloatExpr(tok("3.4")),
+      ])
+    );
+  });
+
+  it("parses subscripting an array", () => {
+    checkExpr("bar[3]", barSubscript);
   });
 });
 

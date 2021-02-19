@@ -276,7 +276,7 @@ export class SubscriptExpr extends Expr {
   }
 
   parse(): string {
-    return `${this.call.parse}[${this.index.parse()}]`;
+    return `${this.call.parse()}[${this.index.parse()}]`;
   }
 
   toJson(): object {
