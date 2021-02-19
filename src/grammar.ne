@@ -235,8 +235,8 @@ MiddleTernary ->
 
 # TODO float constructor call shouldn't be possible?
 TypeName ->
-    TypeWord (_ %lbracket _ %int _ %rbracket):?
-      {% d => new TypeName(d[0], d[1] === null ? null : parseInt(d[1][3])) %}
+    TypeWord (_ %lbracket (_ %int):? _ %rbracket):?
+      {% d => new TypeName(d[0], d[1] === null ? null : d[1][2] === null ? 0 : parseInt(d[1][2][1])) %}
 
 TypeWord ->
     %kw_int    {% id %}

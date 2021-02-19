@@ -384,9 +384,9 @@ describe("variable declarations", () => {
 
   const intArrayDecl = new Decl(
     false,
-    new TypeName(tok("float"), 4),
+    new TypeName(tok("int"), 0),
     tok("arr"),
-    new ConstructorExpr(tok("("), new TypeName(tok("float"), 4), arr),
+    new ConstructorExpr(tok("("), new TypeName(tok("int"), 0), arr),
     tok("=")
   );
 
@@ -415,11 +415,9 @@ describe("variable declarations", () => {
     checkExpr("\nconst\nvec2\nbar\n=\nvec2(1.,2.)\n", vec2Decl);
   });
 
-  /*
   it("parses array declaration", () => {
-    checkExpr("float[3] arr = float[3](1, 2, 3)", intArrayDecl);
+    checkExpr("int[] arr = int[](1, 2, 3)", intArrayDecl);
   });
-  */
 });
 
 describe("assignment", () => {
@@ -558,6 +556,31 @@ float foo () {
   return 1.;
 }\n\n\n`,
       [funcNoParams, funcNoParams]
+    );
+  });
+
+  it("parses function declaration return type array", () => {
+    checkProgram(
+      `
+int[2] foo () {
+  return int[](1, 2);
+}`,
+      [
+        new FuncDef(
+          new TypeName(tok("int"), 2),
+          tok("foo"),
+          [],
+          [
+            new Return(
+              new ConstructorExpr(tok("("), new TypeName(tok("int"), 0), [
+                new IntExpr(tok("1")),
+                new IntExpr(tok("2")),
+              ]),
+              tok("return")
+            ),
+          ]
+        ),
+      ]
     );
   });
 });
