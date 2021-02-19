@@ -6,16 +6,16 @@ import type { Token } from "moo";
 // TODO check the json conversion functions for tokens
 
 function commaSeparatedNodes(exprs: Node[]) {
-  return exprs.map((s) => s.parse()).join();
+  return exprs.map((s) => s.translate()).join();
 }
 
 function lineSeparatedNodes(exprs: Node[]) {
-  return "\n" + exprs.map((s) => s.parse()).join(";\n");
+  return "\n" + exprs.map((s) => s.translate()).join(";\n");
 }
 
 abstract class Node {
   abstract toJson(): object;
-  abstract parse(): string;
+  abstract translate(): string;
   abstract getToken(): Token; // TODO change this to tokens?
   toString() {
     return JSON.stringify(this.toJson());
@@ -63,7 +63,7 @@ export class RenderBlock extends Node {
     };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("parse for render blocks not implemented yet");
   }
 
@@ -101,8 +101,10 @@ export class BinaryExpr extends Expr {
     };
   }
 
-  parse() {
-    return `(${this.left.parse()}${this.operator.text}${this.right.parse()})`;
+  translate() {
+    return `(${this.left.translate()}${
+      this.operator.text
+    }${this.right.translate()})`;
   }
 }
 
@@ -126,8 +128,8 @@ export class UnaryExpr extends Expr {
     return this.operator;
   }
 
-  parse() {
-    return `(${this.operator}${this.argument.parse()})`;
+  translate() {
+    return `(${this.operator}${this.argument.translate()})`;
   }
 
   toJson() {
@@ -156,7 +158,7 @@ export abstract class AtomExpr extends Expr {
     return this.value;
   }
 
-  parse() {
+  translate() {
     return this.value.text;
   }
 
@@ -209,8 +211,8 @@ export class CallExpr extends Expr {
     return this.open;
   }
 
-  parse(): string {
-    return `${this.call.parse}(${commaSeparatedNodes(this.args)})`;
+  translate(): string {
+    return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
@@ -242,8 +244,8 @@ export class ConstructorExpr extends Expr {
     return this.open;
   }
 
-  parse(): string {
-    return `${this.typ.parse()}(${commaSeparatedNodes(this.args)})`;
+  translate(): string {
+    return `${this.typ.translate()}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
@@ -275,8 +277,8 @@ export class SubscriptExpr extends Expr {
     return this.open;
   }
 
-  parse(): string {
-    return `${this.call.parse()}[${this.index.parse()}]`;
+  translate(): string {
+    return `${this.call.translate()}[${this.index.translate()}]`;
   }
 
   toJson(): object {
@@ -323,10 +325,10 @@ export class Decl extends Expr {
     };
   }
 
-  parse(): string {
-    return `${this.constant ? "const " : ""}${this.typ.parse()}${
+  translate(): string {
+    return `${this.constant ? "const " : ""}${this.typ.translate()}${
       this.id.text
-    }=${this.expr.parse}`;
+    }=${this.expr.translate}`;
   }
 
   getToken(): Token {
@@ -361,8 +363,10 @@ export class Assign extends Expr {
     };
   }
 
-  parse(): string {
-    return `${this.left.parse()}${this.assign.text}${this.right.parse()}`;
+  translate(): string {
+    return `${this.left.translate()}${
+      this.assign.text
+    }${this.right.translate()}`;
   }
 
   getToken(): Token {
@@ -389,7 +393,7 @@ export class TypeName extends Node {
     };
   }
 
-  parse(): string {
+  translate(): string {
     return this.token.text;
   }
 
@@ -414,8 +418,8 @@ export class Param extends Node {
     return { name: "param", typ: this.typ.toJson(), id: this.id.text };
   }
 
-  parse(): string {
-    return `${this.typ.parse()} ${this.id.text}`;
+  translate(): string {
+    return `${this.typ.translate()} ${this.id.text}`;
   }
 
   getToken(): Token {
@@ -446,8 +450,8 @@ export class FuncDef extends Node {
     };
   }
 
-  parse(): string {
-    return `${this.typ.parse()} ${this.id.text}(${commaSeparatedNodes(
+  translate(): string {
+    return `${this.typ.translate()} ${this.id.text}(${commaSeparatedNodes(
       this.params
     )}){${lineSeparatedNodes(this.body)}}\n`;
   }
@@ -471,7 +475,7 @@ export class Return extends Expr {
     return { name: "return", expr: this.expr.toJson() };
   }
 
-  parse(): string {
+  translate(): string {
     return `return ${this.expr}`;
   }
 
@@ -511,7 +515,7 @@ export class TernaryExpr extends Expr {
     };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("Method not implemented.");
   }
 
@@ -556,7 +560,7 @@ export class ForLoop extends Expr {
     };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("Method not implemented.");
   }
 
@@ -592,7 +596,7 @@ export class If extends Expr {
     };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("Method not implemented.");
   }
 
@@ -622,7 +626,7 @@ export class Else extends Expr {
     };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("Method not implemented.");
   }
 
@@ -650,7 +654,7 @@ export class Uniform extends Expr {
     return { name: "uniform", ident: this.ident.text };
   }
 
-  parse(): string {
+  translate(): string {
     throw new Error("Method not implemented.");
   }
 
