@@ -24,6 +24,7 @@ import {
   Else,
   Uniform,
   ProcDef,
+  TopDef
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -47,6 +48,7 @@ TopLevel ->
   | DefBlock    {% id %}
   | Uniform     {% id %}
   | ProcBlock   {% id %}
+  | TopDef    {% id %}
 
 # TODO some sort of define?
 
@@ -117,6 +119,10 @@ Return ->
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
       {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
+
+TopDef ->
+    %kw_def _ %ident __ Expr
+      {% d => new TopDef(d[2], d[4]) %}
 
 Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}

@@ -688,4 +688,35 @@ export class ProcDef extends Node {
   }
 }
 
+export class TopDef extends Expr {
+  id: Token;
+  expr: Expr;
+
+  constructor(id: Token, expr: Expr) {
+    super();
+    this.id = id;
+    this.expr = expr;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [this.expr];
+  }
+
+  toJson(): object {
+    return {
+      name: "top_def",
+      id: this.id.text,
+      expr: this.expr,
+    };
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.id;
+  }
+}
+
 export type { Node, Expr };

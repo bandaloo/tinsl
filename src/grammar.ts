@@ -18,6 +18,7 @@ declare var kw_uniform: any;
 declare var kw_return: any;
 declare var kw_const: any;
 declare var assignment: any;
+declare var kw_def: any;
 declare var kw_for: any;
 declare var kw_if: any;
 declare var kw_else: any;
@@ -107,6 +108,7 @@ import {
   Else,
   Uniform,
   ProcDef,
+  TopDef
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -155,6 +157,7 @@ const grammar: Grammar = {
     {"name": "TopLevel", "symbols": ["DefBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["Uniform"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["ProcBlock"], "postprocess": id},
+    {"name": "TopLevel", "symbols": ["TopDef"], "postprocess": id},
     {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params", "_"]},
     {"name": "DefBlock$ebnf$1", "symbols": ["DefBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "DefBlock$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -236,6 +239,7 @@ const grammar: Grammar = {
     {"name": "Decl$subexpression$1", "symbols": ["TypeName", "_"]},
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
     {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3])},
+    {"name": "TopDef", "symbols": [(nearleyLexer.has("kw_def") ? {type: "kw_def"} : kw_def), "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "__", "Expr"], "postprocess": d => new TopDef(d[2], d[4])},
     {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[4])},
     {"name": "ForInit", "symbols": ["RenderLevel"], "postprocess": id},
     {"name": "ForInit", "symbols": ["Assign"], "postprocess": id},

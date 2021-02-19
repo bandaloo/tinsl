@@ -24,6 +24,7 @@ import {
   Return,
   SubscriptExpr,
   TernaryExpr,
+  TopDef,
   TypeName,
   UnaryExpr,
   Uniform,
@@ -670,6 +671,36 @@ describe("top level", () => {
 {vec4(1., 2., 3., 4.);}->0`,
       [funcNoParams, bl]
     );
+  });
+});
+
+describe("top level definitions", () => {
+  const topLevel = (scalar: number) =>
+    new TopDef(
+      tok("pi" + scalar),
+      new BinaryExpr(
+        new FloatExpr(tok("3.14159")),
+        tok("*"),
+        new FloatExpr(tok(scalar + "."))
+      )
+    );
+
+  it("parses a top level definition", () => {
+    checkProgram("def pi2 3.14159 * 2.", [topLevel(2)]);
+  });
+
+  it("parses a top level definition", () => {
+    checkProgram("def pi2 3.14159 * 2.\ndef pi3 3.14159 * 3.", [
+      topLevel(2),
+      topLevel(3),
+    ]);
+  });
+
+  it("parses a top level definition", () => {
+    checkProgram("def\npi2\n3.14159\n*\n2.\ndef\npi3\n3.14159\n*\n3.", [
+      topLevel(2),
+      topLevel(3),
+    ]);
   });
 });
 
