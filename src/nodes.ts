@@ -635,8 +635,7 @@ export class Else extends Expr {
   }
 }
 
-// TODO change to node? no sub-expressions
-export class Uniform extends Expr {
+export class Uniform extends Node {
   typ: TypeName;
   ident: Token;
 
@@ -644,10 +643,6 @@ export class Uniform extends Expr {
     super();
     this.typ = typ;
     this.ident = ident;
-  }
-
-  getSubExpressions(): Expr[] {
-    throw new Error("Method not implemented.");
   }
 
   toJson(): object {
