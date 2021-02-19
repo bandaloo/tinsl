@@ -22,7 +22,8 @@ import {
   ForLoop,
   If,
   Else,
-  Uniform
+  Uniform,
+  ProcDef,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -45,13 +46,23 @@ TopLevel ->
     RenderBlock {% id %}
   | DefBlock    {% id %}
   | Uniform     {% id %}
+  | ProcBlock   {% id %}
 
 # TODO some sort of define?
 
+# TODO this is a bad name
+# TODO make ( ) with space a valid no arg declaration
 DefBlock ->
     TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
       {% ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
+        )
+      %}
+
+ProcBlock ->
+    %kw_pr _ %ident _ %lparen (_ Params):? _ %rparen _ %lbrace (%lbc):* _ (RenderLine):* %rbrace
+      {% ([, , id, , , params, , , , , , , body, ,]: any) => new ProcDef(
+          id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
       %}
 

@@ -19,6 +19,7 @@ import {
   If,
   IntExpr,
   Param,
+  ProcDef,
   RenderBlock,
   Return,
   SubscriptExpr,
@@ -426,7 +427,7 @@ describe("assignment", () => {
     checkExpr("foo = 1.", assignFloat("foo", "=", "1."));
   });
 
-  // assignment not allowed in block (change from checkExpr)
+  // TODO assignment not allowed in block (change from checkExpr)
   it("parses all relative assignment float", () => {
     checkExpr("foo += 1.", assignFloat("foo", "+=", "1."));
     checkExpr("foo -= 1.", assignFloat("foo", "-=", "1."));
@@ -456,40 +457,30 @@ describe("assignment", () => {
   });
 });
 
-describe("function declaration", () => {
+describe("function and procedure declarations", () => {
+  const noDefaultParams = [
+    new Param(new TypeName(tok("vec2")), tok("bar")),
+    new Param(new TypeName(tok("vec3")), tok("baz")),
+  ];
+
+  const defaultParams = [
+    new Param(new TypeName(tok("float")), tok("bar"), new FloatExpr(tok(".1"))),
+    new Param(new TypeName(tok("float")), tok("baz"), new FloatExpr(tok(".2"))),
+  ];
+
   it("parses function declaration two arguments no defaults", () => {
     checkProgram("float foo (vec2 bar, vec3 baz) { return 1.; }", [
-      new FuncDef(
-        new TypeName(tok("float")),
-        tok("foo"),
-        [
-          new Param(new TypeName(tok("vec2")), tok("bar")),
-          new Param(new TypeName(tok("vec3")), tok("baz")),
-        ],
-        [new Return(new FloatExpr(tok("1.")), tok("return"))]
-      ),
+      new FuncDef(new TypeName(tok("float")), tok("foo"), noDefaultParams, [
+        new Return(new FloatExpr(tok("1.")), tok("return")),
+      ]),
     ]);
   });
 
   it("parses function declaration two arguments defaults", () => {
     checkProgram("float foo (float bar = .1, float baz = .2) { return 1.; }", [
-      new FuncDef(
-        new TypeName(tok("float")),
-        tok("foo"),
-        [
-          new Param(
-            new TypeName(tok("float")),
-            tok("bar"),
-            new FloatExpr(tok(".1"))
-          ),
-          new Param(
-            new TypeName(tok("float")),
-            tok("baz"),
-            new FloatExpr(tok(".2"))
-          ),
-        ],
-        [new Return(new FloatExpr(tok("1.")), tok("return"))]
-      ),
+      new FuncDef(new TypeName(tok("float")), tok("foo"), defaultParams, [
+        new Return(new FloatExpr(tok("1.")), tok("return")),
+      ]),
     ]);
   });
 
@@ -584,8 +575,36 @@ int[2] foo () {
       ]
     );
   });
+
+  const procDecl = (args: Param[]) =>
+    new ProcDef(tok("foo"), args, [vec(1, 0, 0, 1)]);
+
+  it("parses proc decl no arguments", () => {
+    checkProgram("pr foo() {vec4(1., 0., 0., 1.);}", [procDecl([])]);
+  });
+
+  it("parses proc decl two arguments no default", () => {
+    checkProgram("pr foo(vec2 bar, vec3 baz) {vec4(1., 0., 0., 1.);}", [
+      procDecl(noDefaultParams),
+    ]);
+  });
+
+  it("parses proc decl two arguments default params", () => {
+    checkProgram(
+      "pr foo(float bar = .1, float baz = .2) {vec4(1., 0., 0., 1.);}",
+      [procDecl(defaultParams)]
+    );
+  });
+
+  it("parses procedure excessive whitespace", () => {
+    checkProgram(
+      "\npr\nfoo\n(\nfloat\nbar\n=\n.1,\nfloat\nbaz\n=\n.2)\n{\nvec4(1., 0., 0., 1.);\n}\n",
+      [procDecl(defaultParams)]
+    );
+  });
 });
 
+// TODO rename this test
 describe("top level", () => {
   const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
   const completeBlock = new RenderBlock(

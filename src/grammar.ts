@@ -9,6 +9,7 @@ declare var rparen: any;
 declare var lbrace: any;
 declare var lbc: any;
 declare var rbrace: any;
+declare var kw_pr: any;
 declare var int: any;
 declare var arrow: any;
 declare var kw_loop: any;
@@ -104,7 +105,8 @@ import {
   ForLoop,
   If,
   Else,
-  Uniform
+  Uniform,
+  ProcDef,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -152,6 +154,7 @@ const grammar: Grammar = {
     {"name": "TopLevel", "symbols": ["RenderBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["DefBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["Uniform"], "postprocess": id},
+    {"name": "TopLevel", "symbols": ["ProcBlock"], "postprocess": id},
     {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params", "_"]},
     {"name": "DefBlock$ebnf$1", "symbols": ["DefBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "DefBlock$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -163,6 +166,19 @@ const grammar: Grammar = {
     {"name": "DefBlock$ebnf$3", "symbols": ["DefBlock$ebnf$3", "DefBlock$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "DefBlock$ebnf$2", "_", "DefBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
+        )
+              },
+    {"name": "ProcBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params"]},
+    {"name": "ProcBlock$ebnf$1", "symbols": ["ProcBlock$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "ProcBlock$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "ProcBlock$ebnf$2", "symbols": []},
+    {"name": "ProcBlock$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
+    {"name": "ProcBlock$ebnf$2", "symbols": ["ProcBlock$ebnf$2", "ProcBlock$ebnf$2$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "ProcBlock$ebnf$3", "symbols": []},
+    {"name": "ProcBlock$ebnf$3$subexpression$1", "symbols": ["RenderLine"]},
+    {"name": "ProcBlock$ebnf$3", "symbols": ["ProcBlock$ebnf$3", "ProcBlock$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "ProcBlock", "symbols": [(nearleyLexer.has("kw_pr") ? {type: "kw_pr"} : kw_pr), "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "ProcBlock$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "ProcBlock$ebnf$2", "_", "ProcBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([, , id, , , params, , , , , , , body, ,]: any) => new ProcDef(
+          id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
               },
     {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_"]},

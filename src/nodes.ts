@@ -658,4 +658,34 @@ export class Uniform extends Node {
   }
 }
 
+export class ProcDef extends Node {
+  id: Token;
+  params: Param[];
+  body: Expr[];
+
+  constructor(id: Token, params: Param[], body: Expr[]) {
+    super();
+    this.id = id;
+    this.params = params;
+    this.body = body;
+  }
+
+  toJson(): object {
+    return {
+      name: "proc_def",
+      id: this.id.text,
+      params: this.params.map((e) => e.toJson()),
+      body: this.body.map((e) => e.toJson()),
+    };
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("Method not implemented.");
+  }
+}
+
 export type { Node, Expr };
