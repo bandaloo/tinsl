@@ -113,7 +113,7 @@ const nearleyLexer = (lexer as unknown) as NearleyLexer;
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
-const typ = (d: any) => new TypeName(d);
+//const typ = (d: any) => new TypeName(d);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
 interface NearleyToken {  value: any;
@@ -315,23 +315,27 @@ const grammar: Grammar = {
     {"name": "Ternary", "symbols": ["LogicOr"], "postprocess": id},
     {"name": "Expr", "symbols": ["Ternary"], "postprocess": id},
     {"name": "MiddleTernary", "symbols": [(nearleyLexer.has("question_mark") ? {type: "question_mark"} : question_mark), "_", "Expr", "_", (nearleyLexer.has("colon") ? {type: "colon"} : colon)], "postprocess": d => { return { tok: d[0], expr: d[2] } }},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_int") ? {type: "kw_int"} : kw_int)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_vec4") ? {type: "kw_vec4"} : kw_vec4)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2") ? {type: "kw_mat2"} : kw_mat2)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3") ? {type: "kw_mat3"} : kw_mat3)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4") ? {type: "kw_mat4"} : kw_mat4)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x2") ? {type: "kw_mat2x2"} : kw_mat2x2)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x3") ? {type: "kw_mat2x3"} : kw_mat2x3)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat2x4") ? {type: "kw_mat2x4"} : kw_mat2x4)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x2") ? {type: "kw_mat3x2"} : kw_mat3x2)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x3") ? {type: "kw_mat3x3"} : kw_mat3x3)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat3x4") ? {type: "kw_mat3x4"} : kw_mat3x4)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x2") ? {type: "kw_mat4x2"} : kw_mat4x2)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x3") ? {type: "kw_mat4x3"} : kw_mat4x3)], "postprocess": typ},
-    {"name": "TypeName", "symbols": [(nearleyLexer.has("kw_mat4x4") ? {type: "kw_mat4x4"} : kw_mat4x4)], "postprocess": typ},
+    {"name": "TypeName$ebnf$1$subexpression$1", "symbols": ["_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", (nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)]},
+    {"name": "TypeName$ebnf$1", "symbols": ["TypeName$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "TypeName$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "TypeName", "symbols": ["TypeWord", "TypeName$ebnf$1"], "postprocess": d => new TypeName(d[0], d[1] === null ? null : parseInt(d[1][3]))},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_int") ? {type: "kw_int"} : kw_int)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec4") ? {type: "kw_vec4"} : kw_vec4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat2") ? {type: "kw_mat2"} : kw_mat2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat3") ? {type: "kw_mat3"} : kw_mat3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4") ? {type: "kw_mat4"} : kw_mat4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat2x2") ? {type: "kw_mat2x2"} : kw_mat2x2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat2x3") ? {type: "kw_mat2x3"} : kw_mat2x3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat2x4") ? {type: "kw_mat2x4"} : kw_mat2x4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat3x2") ? {type: "kw_mat3x2"} : kw_mat3x2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat3x3") ? {type: "kw_mat3x3"} : kw_mat3x3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat3x4") ? {type: "kw_mat3x4"} : kw_mat3x4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x2") ? {type: "kw_mat4x2"} : kw_mat4x2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x3") ? {type: "kw_mat4x3"} : kw_mat4x3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x4") ? {type: "kw_mat4x4"} : kw_mat4x4)], "postprocess": id},
     {"name": "Args$ebnf$1", "symbols": []},
     {"name": "Args$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Expr"]},
     {"name": "Args$ebnf$1", "symbols": ["Args$ebnf$1", "Args$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},

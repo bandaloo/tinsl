@@ -31,7 +31,7 @@ const nearleyLexer = (lexer as unknown) as NearleyLexer;
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
-const typ = (d: any) => new TypeName(d);
+//const typ = (d: any) => new TypeName(d);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 %}
 
@@ -233,26 +233,29 @@ Expr -> Ternary {% id %}
 MiddleTernary ->
     %question_mark _ Expr _ %colon {% d => { return { tok: d[0], expr: d[2] } } %}
 
-# TODO int?
-# TODO float constructor call shouldn't be possible 
+# TODO float constructor call shouldn't be possible?
 TypeName ->
-    %kw_int    {% typ %}
-  | %kw_float  {% typ %}
-  | %kw_vec2   {% typ %}
-  | %kw_vec3   {% typ %}
-  | %kw_vec4   {% typ %}
-  | %kw_mat2   {% typ %}
-  | %kw_mat3   {% typ %}
-  | %kw_mat4   {% typ %}
-  | %kw_mat2x2 {% typ %}
-  | %kw_mat2x3 {% typ %}
-  | %kw_mat2x4 {% typ %}
-  | %kw_mat3x2 {% typ %}
-  | %kw_mat3x3 {% typ %}
-  | %kw_mat3x4 {% typ %}
-  | %kw_mat4x2 {% typ %}
-  | %kw_mat4x3 {% typ %}
-  | %kw_mat4x4 {% typ %}
+    TypeWord (_ %lbracket _ %int _ %rbracket):?
+      {% d => new TypeName(d[0], d[1] === null ? null : parseInt(d[1][3])) %}
+
+TypeWord ->
+    %kw_int    {% id %}
+  | %kw_float  {% id %}
+  | %kw_vec2   {% id %}
+  | %kw_vec3   {% id %}
+  | %kw_vec4   {% id %}
+  | %kw_mat2   {% id %}
+  | %kw_mat3   {% id %}
+  | %kw_mat4   {% id %}
+  | %kw_mat2x2 {% id %}
+  | %kw_mat2x3 {% id %}
+  | %kw_mat2x4 {% id %}
+  | %kw_mat3x2 {% id %}
+  | %kw_mat3x3 {% id %}
+  | %kw_mat3x4 {% id %}
+  | %kw_mat4x2 {% id %}
+  | %kw_mat4x3 {% id %}
+  | %kw_mat4x4 {% id %}
 
 Args ->
     Expr (%comma _ Expr):* {% sep %}

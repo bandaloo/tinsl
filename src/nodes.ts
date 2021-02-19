@@ -224,13 +224,13 @@ export class CallExpr extends Expr {
 
 export class ConstructorExpr extends Expr {
   open: Token;
-  type: TypeName;
+  typ: TypeName;
   args: Expr[];
 
-  constructor(open: Token, type: TypeName, args: Expr[]) {
+  constructor(open: Token, typ: TypeName, args: Expr[]) {
     super();
     this.open = open;
-    this.type = type;
+    this.typ = typ;
     this.args = args;
   }
 
@@ -243,13 +243,13 @@ export class ConstructorExpr extends Expr {
   }
 
   parse(): string {
-    return `${this.type.parse()}(${commaSeparatedNodes(this.args)})`;
+    return `${this.typ.parse()}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
     return {
       name: "constructor_expr",
-      type: this.type.toJson(),
+      typ: this.typ.toJson(),
       args: this.args,
     };
   }
@@ -290,21 +290,21 @@ export class SubscriptExpr extends Expr {
 
 export class Decl extends Expr {
   constant: boolean;
-  type: TypeName;
+  typ: TypeName;
   id: Token;
   expr: Expr;
   assign: Token;
 
   constructor(
     constant: boolean,
-    type: TypeName,
+    typ: TypeName,
     id: Token,
     expr: Expr,
     assign: Token
   ) {
     super();
     this.constant = constant;
-    this.type = type;
+    this.typ = typ;
     this.id = id;
     this.expr = expr;
     this.assign = assign;
@@ -317,14 +317,14 @@ export class Decl extends Expr {
   toJson(): object {
     return {
       name: "decl",
-      type: this.type.toJson(),
+      typ: this.typ.toJson(),
       id: this.id.text,
       expr: this.expr.toJson(),
     };
   }
 
   parse(): string {
-    return `${this.constant ? "const " : ""}${this.type.parse()}${
+    return `${this.constant ? "const " : ""}${this.typ.parse()}${
       this.id.text
     }=${this.expr.parse}`;
   }
@@ -373,16 +373,19 @@ export class Assign extends Expr {
 // TODO better name is type specifier
 export class TypeName extends Node {
   token: Token;
+  size: number | null; // size of 0 is unspecified, aka `float[]`
 
-  constructor(token: Token) {
+  constructor(token: Token, size: number | null = null) {
     super();
     this.token = token;
+    this.size = size;
   }
 
   toJson(): object {
     return {
       name: "type_name",
-      type: this.token.text,
+      typ: this.token.text,
+      size: this.size,
     };
   }
 
@@ -396,23 +399,23 @@ export class TypeName extends Node {
 }
 
 export class Param extends Node {
-  type: TypeName;
+  typ: TypeName;
   id: Token;
   def: Expr | null;
 
-  constructor(type: TypeName, id: Token, def: Expr | null = null) {
+  constructor(typ: TypeName, id: Token, def: Expr | null = null) {
     super();
-    this.type = type;
+    this.typ = typ;
     this.id = id;
     this.def = def;
   }
 
   toJson(): object {
-    return { name: "param", type: this.type.toJson(), id: this.id.text };
+    return { name: "param", typ: this.typ.toJson(), id: this.id.text };
   }
 
   parse(): string {
-    return `${this.type.parse()} ${this.id.text}`;
+    return `${this.typ.parse()} ${this.id.text}`;
   }
 
   getToken(): Token {
@@ -421,14 +424,14 @@ export class Param extends Node {
 }
 
 export class FuncDef extends Node {
-  type: TypeName;
+  typ: TypeName;
   id: Token;
   params: Param[];
   body: Expr[];
 
-  constructor(type: TypeName, id: Token, params: Param[], body: Expr[]) {
+  constructor(typ: TypeName, id: Token, params: Param[], body: Expr[]) {
     super();
-    this.type = type;
+    this.typ = typ;
     this.id = id;
     this.params = params;
     this.body = body;
@@ -444,7 +447,7 @@ export class FuncDef extends Node {
   }
 
   parse(): string {
-    return `${this.type.parse()} ${this.id.text}(${commaSeparatedNodes(
+    return `${this.typ.parse()} ${this.id.text}(${commaSeparatedNodes(
       this.params
     )}){${lineSeparatedNodes(this.body)}}\n`;
   }
@@ -609,11 +612,14 @@ export class Else extends Expr {
   }
 
   getSubExpressions(): Expr[] {
-    throw new Error("Method not implemented.");
+    return this.body;
   }
 
   toJson(): object {
-    throw new Error("Method not implemented.");
+    return {
+      name: "else",
+      body: this.body.map((e) => e.toJson()),
+    };
   }
 
   parse(): string {
@@ -621,17 +627,18 @@ export class Else extends Expr {
   }
 
   getToken(): Token {
-    throw new Error("Method not implemented.");
+    return this.token;
   }
 }
 
+// TODO change to node? no sub-expressions
 export class Uniform extends Expr {
-  type: TypeName;
+  typ: TypeName;
   ident: Token;
 
-  constructor(type: TypeName, ident: Token) {
+  constructor(typ: TypeName, ident: Token) {
     super();
-    this.type = type;
+    this.typ = typ;
     this.ident = ident;
   }
 
@@ -640,7 +647,7 @@ export class Uniform extends Expr {
   }
 
   toJson(): object {
-    throw new Error("Method not implemented.");
+    return { name: "uniform", ident: this.ident.text };
   }
 
   parse(): string {
@@ -648,7 +655,7 @@ export class Uniform extends Expr {
   }
 
   getToken(): Token {
-    throw new Error("Method not implemented.");
+    return this.ident;
   }
 }
 

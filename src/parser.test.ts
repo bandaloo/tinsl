@@ -167,7 +167,7 @@ const mat = (redundant: boolean, ...args: number[][]) =>
         "mat" +
           (!redundant && args.length === args[0].length
             ? args.length
-            : args.length + "x" + args[0].length)
+            : args[0].length + "x" + args.length)
       )
     ),
     args.flat().map((n) => new FloatExpr(tok(n + ".")))
@@ -185,14 +185,6 @@ const funcNoParams = new FuncDef(
     new UnaryExpr(tok("-"), new FloatExpr(tok("2."))),
     new Return(new FloatExpr(tok("1.")), tok("return")),
   ]
-);
-
-const vec2Decl = new Decl(
-  true,
-  new TypeName(tok("float")),
-  tok("bar"),
-  vec(1, 2),
-  tok("=")
 );
 
 const tern = (cond: string, first: string, second: string) =>
@@ -293,7 +285,7 @@ describe("call expressions", () => {
   });
 
   it("parses vec4 constructor call", () => {
-    checkExpr("vec2(0., 1., 2., 3.)", vec(0, 1, 2, 3));
+    checkExpr("vec4(0., 1., 2., 3.)", vec(0, 1, 2, 3));
   });
 
   it("parses mat2 constructor call", () => {
@@ -320,21 +312,21 @@ describe("call expressions", () => {
 
   it("parses mat2x3 constructor call", () => {
     checkExpr(
-      "mat2x2(0., 1., 2., 3., 4., 5.)",
+      "mat2x3(0., 1., 2., 3., 4., 5.)",
       mat(true, [0, 1], [2, 3], [4, 5])
     );
   });
 
   it("parses mat2x4 constructor call", () => {
     checkExpr(
-      "mat2x2(0., 1., 2., 3., 4., 5., 6., 7.)",
+      "mat2x4(0., 1., 2., 3., 4., 5., 6., 7.)",
       mat(true, [0, 1], [2, 3], [4, 5], [6, 7])
     );
   });
 
   it("parses mat3x2 constructor call", () => {
     checkExpr(
-      "mat3x3(0., 1., 2., 3., 4., 5.)",
+      "mat3x2(0., 1., 2., 3., 4., 5.)",
       mat(true, [0, 1, 2], [3, 4, 5])
     );
   });
@@ -348,21 +340,21 @@ describe("call expressions", () => {
 
   it("parses mat3x4 constructor call", () => {
     checkExpr(
-      "mat3x3(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
+      "mat3x4(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
       mat(true, [0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11])
     );
   });
 
   it("parses mat4x2 constructor call", () => {
     checkExpr(
-      "mat4x4(0., 1., 2., 3., 4., 5., 6., 7.)",
+      "mat4x2(0., 1., 2., 3., 4., 5., 6., 7.)",
       mat(true, [0, 1, 2, 3], [4, 5, 6, 7])
     );
   });
 
   it("parses mat4x3 constructor call", () => {
     checkExpr(
-      "mat4x4(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
+      "mat4x3(0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.)",
       mat(true, [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11])
     );
   });
@@ -376,6 +368,28 @@ describe("call expressions", () => {
 });
 
 describe("variable declarations", () => {
+  const vec2Decl = new Decl(
+    true,
+    new TypeName(tok("vec2")),
+    tok("bar"),
+    vec(1, 2),
+    tok("=")
+  );
+
+  const arr = [
+    new IntExpr(tok("1")),
+    new IntExpr(tok("2")),
+    new IntExpr(tok("3")),
+  ];
+
+  const intArrayDecl = new Decl(
+    false,
+    new TypeName(tok("float"), 4),
+    tok("arr"),
+    new ConstructorExpr(tok("("), new TypeName(tok("float"), 4), arr),
+    tok("=")
+  );
+
   it("parses non-constant variable declaration float", () => {
     checkExpr(
       "float foo = 1.",
@@ -400,6 +414,12 @@ describe("variable declarations", () => {
   it("parses declaration with newlines", () => {
     checkExpr("\nconst\nvec2\nbar\n=\nvec2(1.,2.)\n", vec2Decl);
   });
+
+  /*
+  it("parses array declaration", () => {
+    checkExpr("float[3] arr = float[3](1, 2, 3)", intArrayDecl);
+  });
+  */
 });
 
 describe("assignment", () => {
@@ -857,7 +877,7 @@ float foo () {
 
 describe("uniforms", () => {
   const un = (type: string, tokn: string) =>
-    new Uniform(new TypeName(tok("type")), tok(tokn));
+    new Uniform(new TypeName(tok(type)), tok(tokn));
 
   it("parses a basic uniform", () => {
     checkProgram("uniform float foo;", [un("float", "foo")]);
@@ -880,4 +900,5 @@ describe("uniforms", () => {
     );
   });
 });
+
 // TODO parsing empty program
