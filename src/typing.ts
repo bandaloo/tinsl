@@ -253,15 +253,18 @@ export function isScalar(typ: TotalType) {
   return ["float", "int", "uint"].includes(typ);
 }
 
-export function matching(left: TotalType, right: TotalType) {
-  // TODO orient left to be the scalar
+/** checks if two types in an operation can be applied without type error */
+export function scalarOp(left: TotalType, right: TotalType): TotalType {
   if (isScalar(right) && !isScalar(left)) [left, right] = [right, left];
-  return (
-    left === right ||
+  if (
     (left === "float" && (/^vec/.test(right) || /^mat/.test(right))) ||
-    (left === "int" && /^ivec$/.test(right)) ||
-    (left === "uint" && /^uvec$/.test(right))
-  );
+    (left === "int" && /^ivec/.test(right)) ||
+    (left === "uint" && /^uvec/.test(right))
+  ) {
+    return right;
+  }
+
+  throw new TinslError("illegal scalar operation");
 }
 
 export function dimensions(typ: TotalType, side?: "left" | "right") {
@@ -288,25 +291,33 @@ export function operators(
   left: TotalType,
   right: TotalType
 ): TotalType {
-  // matrix mult
-  if (op === "*" && (/^mat/.test(left) || /^mat/.test(right))) {
-    // mxn * nxp -> mxp
-    // but in GLSL row and col are reversed from linear algebra
-    const [m, n1] = dimensions(left, "left");
-    const [n2, p] = dimensions(right, "right");
-    if (n1 !== n2)
-      throw new TinslError(
-        "matrix and/or vector multiplication dimension mismatch"
-      );
-    if (m === "1" || p === "1")
-      return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
-    return `mat${p}x${m}` as TotalType;
-  }
-
   if ("+-/*".includes(op)) {
+    if (left === right) return left;
+
+    // matrix mult
+    const matrixMultTypeMatch = (left: TotalType, right: TotalType) =>
+      (/^vec/.test(left) && /^mat/.test(right)) ||
+      (/^vec/.test(right) && /^mat/.test(left)) ||
+      (/^mat/.test(right) && /^mat/.test(left));
+
+    if (op === "*" && matrixMultTypeMatch(left, right)) {
+      // mxn * nxp -> mxp
+      // but in GLSL row and col are reversed from linear algebra
+      const [m, n1] = dimensions(left, "left");
+      const [n2, p] = dimensions(right, "right");
+      if (n1 !== n2)
+        throw new TinslError(
+          "matrix and/or vector multiplication dimension mismatch"
+        );
+      if (m === "1" || p === "1")
+        return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
+      return `mat${p}x${m}` as TotalType;
+    }
+
+    return scalarOp(left, right);
   }
 
-  throw Error("not done");
+  throw Error("illegal operation");
 }
 // TODO page 61 conversions
 
