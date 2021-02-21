@@ -257,10 +257,11 @@ export function matching(left: TotalType, right: TotalType) {
   );
 }
 
-export function dimensions(typ: GenType, side: "left" | "right") {
+export function dimensions(typ: TotalType, side?: "left" | "right") {
   if (/^vec/.test(typ)) {
     const matches = typ.match(/^vec(.+)/);
     if (matches === null) throw new Error("no dimensions matches vec");
+    if (side === undefined) throw new Error("side was undefined for vec");
     if (side === "left") {
       return ["1", matches[1]];
     }
@@ -270,7 +271,7 @@ export function dimensions(typ: GenType, side: "left" | "right") {
   const matches = typ.match(/^mat(.+)/);
   if (matches === null) throw new Error("no dimensions matches mat");
   const dims = matches[1].split("x");
-  if (dims.length === 1) return [dims[1], dims[1]];
+  if (dims.length === 1) return [dims[0], dims[0]];
   return dims.reverse();
 }
 
