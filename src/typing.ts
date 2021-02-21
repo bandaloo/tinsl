@@ -241,4 +241,60 @@ export const builtIns: BuiltIns = {
   not: [{ args: ["bvec"], ret: "bool" }],
 };
 
+// helpers for type checking
+export function isScalar(typ: TotalType) {
+  return ["float", "int", "uint"].includes(typ);
+}
+
+export function matching(left: TotalType, right: TotalType) {
+  // TODO orient left to be the scalar
+  if (isScalar(right) && !isScalar(left)) [left, right] = [right, left];
+  return (
+    left === right ||
+    (left === "float" && (/^vec/.test(right) || /^mat/.test(right))) ||
+    (left === "int" && /^ivec$/.test(right)) ||
+    (left === "uint" && /^uvec$/.test(right))
+  );
+}
+
+export function dimensions(typ: GenType, side: "left" | "right") {
+  if (/^vec/.test(typ)) {
+    const matches = typ.match(/^vec(.+)/);
+    if (matches === null) throw new Error("no dimensions matches vec");
+    if (side === "left") {
+      return ["1", matches[1]];
+    }
+    return [matches[1], "1"];
+  }
+
+  const matches = typ.match(/^mat(.+)/);
+  if (matches === null) throw new Error("no dimensions matches mat");
+  const dims = matches[1].split("x");
+  if (dims.length === 1) return [dims[1], dims[1]];
+  return dims.reverse();
+}
+
+// TODO make op specific type?
+export function operators(
+  op: string,
+  left: TotalType,
+  right: TotalType
+): TotalType {
+  // matrix mult
+  if (op === "*" && (/^mat/.test(left) || /^mat/.test(right))) {
+    // mxn * nxp -> nxp
+    // but in GLSL row and col are reversed from linear algebra
+  }
+  if ("+-/*".includes(op)) {
+  }
+
+  return "float"; // TODO get rid of this
+}
+// TODO page 61 conversions
+
 // note: modf is skipped because it has an output parameter
+
+// TODO check for valid l-value for dot application in assignment
+// aka no `pos.xyx = something;`
+
+// TODO length method for arrays
