@@ -56,7 +56,6 @@ function parse(str: string) {
   return parser.results[0];
 }
 
-// TODO rewrite with above function
 function extractExpr(str: string, semicolon: boolean) {
   return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
 }
