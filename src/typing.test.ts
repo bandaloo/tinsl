@@ -51,7 +51,7 @@ describe("scalar and other type operations", () => {
   });
 });
 
-describe("mat * mat, vec * mat and mat * vec multiplications", () => {
+describe("matrix and vector multiplications", () => {
   it("mults mat2x3 * vec2 -> vec3", () => {
     expect(operators("*", "mat2x3", "vec2")).to.equal("vec3");
   });
@@ -71,5 +71,21 @@ describe("mat * mat, vec * mat and mat * vec multiplications", () => {
   it("mults mat3x3 * mat3x3 -> mat3x3", () => {
     expect(operators("*", "mat3x3", "mat3x3")).to.equal("mat3x3");
     expect(operators("*", "mat3", "mat3")).to.equal("mat3");
+  });
+
+  it("mults mat3x2 * mat4x2 -> throws", () => {
+    expect(() => operators("*", "mat3x2", "mat4x2")).to.throw("dimension");
+  });
+
+  it("mults mat2x3 * vec3 -> throws", () => {
+    expect(() => operators("*", "mat2x3", "vec3")).to.throw("dimension");
+  });
+
+  it("mults vec2 * mat2x3 -> throws", () => {
+    expect(() => operators("*", "vec2", "mat2x3")).to.throw("dimension");
+  });
+
+  it("mults vec2 * vec3 -> throws", () => {
+    expect(() => operators("*", "vec2", "vec3")).to.throw("illegal");
   });
 });
