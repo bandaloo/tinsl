@@ -1,5 +1,5 @@
 import chai, { expect } from "chai";
-import { dimensions } from "./typing";
+import { dimensions, operators } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
@@ -20,5 +20,28 @@ describe("regex on vec and mat dimensions", () => {
 
   it("throws when side is unspecified for vec", () => {
     expect(() => dimensions("vec2")).to.throw("side");
+  });
+});
+
+describe("mat * mat, vec * mat and mat * vec multiplications", () => {
+  it("mults mat2x3 * vec2 -> vec3", () => {
+    expect(operators("*", "mat2x3", "vec2")).to.equal("vec3");
+  });
+
+  it("mults vec3 * mat2x3 -> vec2", () => {
+    expect(operators("*", "vec3", "mat2x3")).to.equal("vec2");
+  });
+
+  it("mults mat2x3 * mat3x2 -> mat3x3", () => {
+    expect(operators("*", "mat2x3", "mat3x2")).to.equal("mat3x3");
+  });
+
+  it("mults mat3x2 * mat2x3 -> mat2x2", () => {
+    expect(operators("*", "mat3x2", "mat2x3")).to.equal("mat2x2");
+  });
+
+  it("mults mat3x3 * mat3x3 -> mat3x3", () => {
+    expect(operators("*", "mat3x3", "mat3x3")).to.equal("mat3x3");
+    expect(operators("*", "mat3", "mat3")).to.equal("mat3x3");
   });
 });

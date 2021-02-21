@@ -50,6 +50,13 @@ interface BuiltIns {
   [key: string]: TypeInfo | TypeInfo[];
 }
 
+export class TinslError extends Error {
+  constructor(message?: string) {
+    super(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf
 // starting from p. 86
 export const builtIns: BuiltIns = {
@@ -283,13 +290,23 @@ export function operators(
 ): TotalType {
   // matrix mult
   if (op === "*" && (/^mat/.test(left) || /^mat/.test(right))) {
-    // mxn * nxp -> nxp
+    // mxn * nxp -> mxp
     // but in GLSL row and col are reversed from linear algebra
+    const [m, n1] = dimensions(left, "left");
+    const [n2, p] = dimensions(right, "right");
+    if (n1 !== n2)
+      throw new TinslError(
+        "matrix and/or vector multiplication dimension mismatch"
+      );
+    if (m === "1" || p === "1")
+      return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
+    return `mat${p}x${m}` as TotalType;
   }
+
   if ("+-/*".includes(op)) {
   }
 
-  return "float"; // TODO get rid of this
+  throw Error("not done");
 }
 // TODO page 61 conversions
 
