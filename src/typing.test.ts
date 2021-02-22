@@ -1,5 +1,5 @@
 import chai, { expect } from "chai";
-import { dimensions, scalarOp, binaryTyping } from "./typing";
+import { dimensions, scalarOp, binaryTyping, unaryTyping } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
@@ -95,5 +95,21 @@ describe("matrix and vector multiplications", () => {
 
   it("mults vec2 * vec3 -> throws", () => {
     expect(() => binaryTyping("*", "vec2", "vec3")).to.throw("vector");
+  });
+});
+
+describe("unary typing", () => {
+  it("unary operators on valid types", () => {
+    expect(unaryTyping("+", "vec2")).to.equal("vec2");
+    expect(unaryTyping("-", "int")).to.equal("int");
+    expect(unaryTyping("++", "mat2")).to.equal("mat2");
+    expect(unaryTyping("--", "uvec4")).to.equal("uvec4");
+  });
+
+  it("unary operators on booleans throws", () => {
+    expect(() => unaryTyping("+", "bool")).to.throw("boolean");
+    expect(() => unaryTyping("-", "bvec2")).to.throw("boolean");
+    expect(() => unaryTyping("++", "bvec3")).to.throw("boolean");
+    expect(() => unaryTyping("--", "bvec4")).to.throw("boolean");
   });
 });

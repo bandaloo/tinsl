@@ -299,6 +299,31 @@ export function dimensions(typ: TotalType, side?: "left" | "right") {
   return dims.reverse();
 }
 
+export function unaryTyping(op: string, typ: TotalType): TotalType {
+  if (["+", "-", "++", "--"].includes(op)) {
+    // TODO we'll have to check if ++, -- value is valid l-value
+    if (typ === "bool" || /^bvec/.test(typ)) {
+      throw new TinslError(`unary operator ${op} cannot be used on \
+boolean scalars or vectors`);
+    }
+    return typ;
+  }
+
+  if (op === "~") {
+    if (!isIntBased(typ)) {
+      throw new TinslError(`unary operator \`%\` cannot be used on \
+floating point scalars, vectors or matrices`);
+    }
+    return typ;
+  }
+
+  throw new Error(`"${op}" not a valid unary operator`);
+}
+
+function isIntBased(typ: TotalType) {
+  return ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
+}
+
 // TODO make op specific type?
 export function binaryTyping(
   op: string,
@@ -307,11 +332,9 @@ export function binaryTyping(
 ): TotalType {
   if ("+-/*%".includes(op)) {
     if (op == "%") {
-      const isIntBased = (typ: TotalType) =>
-        ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
       if (!(isIntBased(left) && isIntBased(left))) {
-        throw new TinslError(`operator \`%\` cannot be used on floating point scalars, \
-vecs or matrices. use \`mod(x, y)\` instead`);
+        throw new TinslError(`binary operator \`%\` cannot be used on \
+floating point scalars, vectors or matrices. use \`mod(x, y)\` instead`);
       }
     }
 
@@ -338,7 +361,7 @@ vecs or matrices. use \`mod(x, y)\` instead`);
     return scalarOp(op, left, right);
   }
 
-  throw new Error(`"${op}" not a valid symbol`);
+  throw new Error(`"${op}" not a valid binary operator`);
 }
 // TODO page 61 conversions
 
