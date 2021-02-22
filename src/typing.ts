@@ -300,12 +300,21 @@ export function dimensions(typ: TotalType, side?: "left" | "right") {
 }
 
 // TODO make op specific type?
-export function operators(
+export function binaryTyping(
   op: string,
   left: TotalType,
   right: TotalType
 ): TotalType {
-  if ("+-/*".includes(op)) {
+  if ("+-/*%".includes(op)) {
+    if (op == "%") {
+      const isIntBased = (typ: TotalType) =>
+        ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
+      if (!(isIntBased(left) && isIntBased(left))) {
+        throw new TinslError(`operator \`%\` cannot be used on floating point scalars, \
+vecs or matrices. use \`mod(x, y)\` instead`);
+      }
+    }
+
     if (left === right) return left;
 
     // matrix mult
