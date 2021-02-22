@@ -2,7 +2,6 @@ import chai, { expect } from "chai";
 import chaiExclude from "chai-exclude";
 import * as nearley from "nearley";
 import grammar from "./grammar";
-import { Token } from "moo";
 import {
   Assign,
   BinaryExpr,
@@ -30,6 +29,7 @@ import {
   Uniform,
 } from "./nodes";
 import util from "util";
+import { tok } from "./testhelpers";
 
 chai.use(chaiExclude);
 
@@ -71,18 +71,6 @@ function checkExpr(str: string, eql: object, semicolon = true) {
 
 function checkProgram(str: string, eql: object) {
   expect(parse(str)).excludingEvery(excludes).to.deep.equal(eql);
-}
-
-function tok(val: string): Token {
-  return {
-    toString: () => val,
-    value: val,
-    offset: -1,
-    text: val,
-    lineBreaks: -1,
-    line: -1,
-    col: -1,
-  };
 }
 
 const oneTwoThreeForward = (op1: string, op2: string) =>

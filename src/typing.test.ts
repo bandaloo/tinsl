@@ -74,18 +74,18 @@ describe("matrix and vector multiplications", () => {
   });
 
   it("mults mat3x2 * mat4x2 -> throws", () => {
-    expect(() => operators("*", "mat3x2", "mat4x2")).to.throw("dimension");
+    expect(() => operators("*", "mat3x2", "mat4x2")).to.throw("matrix");
   });
 
   it("mults mat2x3 * vec3 -> throws", () => {
-    expect(() => operators("*", "mat2x3", "vec3")).to.throw("dimension");
+    expect(() => operators("*", "mat2x3", "vec3")).to.throw("matrix");
   });
 
   it("mults vec2 * mat2x3 -> throws", () => {
-    expect(() => operators("*", "vec2", "mat2x3")).to.throw("dimension");
+    expect(() => operators("*", "vec2", "mat2x3")).to.throw("matrix");
   });
 
   it("mults vec2 * vec3 -> throws", () => {
-    expect(() => operators("*", "vec2", "vec3")).to.throw("illegal");
+    expect(() => operators("*", "vec2", "vec3")).to.throw("vector");
   });
 });

@@ -39,7 +39,7 @@ type SpecType =
   | "mat4x3"
   | "mat4x4";
 
-type TotalType = GenType | SpecType;
+export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
   args: TotalType[];
@@ -253,8 +253,17 @@ export function isScalar(typ: TotalType) {
   return ["float", "int", "uint"].includes(typ);
 }
 
+function dimensionMismatch(op: string, left: TotalType, right: TotalType) {
+  return new TinslError(`dimension mismatch: \
+cannot do vector/matrix operation \`${left} ${op} ${right}\``);
+}
+
 /** checks if two types in an operation can be applied without type error */
-export function scalarOp(left: TotalType, right: TotalType): TotalType {
+export function scalarOp(
+  op: string,
+  left: TotalType,
+  right: TotalType
+): TotalType {
   if (isScalar(right) && !isScalar(left)) [left, right] = [right, left];
   if (
     (left === "float" && (/^vec/.test(right) || /^mat/.test(right))) ||
@@ -264,7 +273,12 @@ export function scalarOp(left: TotalType, right: TotalType): TotalType {
     return right;
   }
 
-  throw new TinslError("illegal scalar operation");
+  if (!isScalar(left) && !isScalar(right)) {
+    throw dimensionMismatch(op, left, right);
+  }
+
+  throw new TinslError(`type mismatch: \
+cannot do scalar operation \`${left} ${op} ${right}\``);
 }
 
 export function dimensions(typ: TotalType, side?: "left" | "right") {
@@ -306,18 +320,16 @@ export function operators(
       const [m, n1] = dimensions(left, "left");
       const [n2, p] = dimensions(right, "right");
       if (n1 !== n2)
-        throw new TinslError(
-          "matrix and/or vector multiplication dimension mismatch"
-        );
+        throw new TinslError("matrix and/or vector dimension mismatch");
       if (m === "1" || p === "1")
         return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
       return `mat${p}x${m}` as TotalType;
     }
 
-    return scalarOp(left, right);
+    return scalarOp(op, left, right);
   }
 
-  throw Error("illegal operation");
+  throw new Error(`"${op}" not a valid symbol`);
 }
 // TODO page 61 conversions
 

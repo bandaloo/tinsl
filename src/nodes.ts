@@ -1,4 +1,5 @@
 import type { Token } from "moo";
+import { TotalType } from "./typing";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -25,6 +26,7 @@ abstract class Node {
 // TODO not quite the right name; includes stmts and exprs
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
+  abstract getType(): TotalType;
 }
 
 export class RenderBlock extends Node {
@@ -106,6 +108,10 @@ export class BinaryExpr extends Expr {
       this.operator.text
     }${this.right.translate()})`;
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
 export class UnaryExpr extends Expr {
@@ -140,6 +146,10 @@ export class UnaryExpr extends Expr {
       fix: this.postfix ? "postfix" : "prefix",
     };
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
 export abstract class AtomExpr extends Expr {
@@ -171,11 +181,19 @@ export class FloatExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("float_expr");
   }
+
+  getType(): TotalType {
+    return "float";
+  }
 }
 
 export class IntExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("int_expr");
+  }
+
+  getType(): TotalType {
+    return "int";
   }
 }
 
@@ -183,11 +201,19 @@ export class IdentExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("ident_expr");
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
 export class BoolExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("bool_expr");
+  }
+
+  getType(): TotalType {
+    return "bool";
   }
 }
 
@@ -222,6 +248,10 @@ export class CallExpr extends Expr {
       args: this.args.map((e) => e.toJson()),
     };
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
 export class ConstructorExpr extends Expr {
@@ -255,6 +285,10 @@ export class ConstructorExpr extends Expr {
       args: this.args,
     };
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
 export class SubscriptExpr extends Expr {
@@ -287,6 +321,10 @@ export class SubscriptExpr extends Expr {
       call: this.call.toJson,
       index: this.index,
     };
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -334,8 +372,13 @@ export class Decl extends Expr {
   getToken(): Token {
     return this.assign;
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
+// TODO assignment isn't really an expression
 // we will reject invalid left-hand assignments not in the grammar but in a
 // second pass; this will lead to better error messages
 export class Assign extends Expr {
@@ -371,6 +414,10 @@ export class Assign extends Expr {
 
   getToken(): Token {
     return this.assign;
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -461,6 +508,7 @@ export class FuncDef extends Node {
   }
 }
 
+// TODO also a statement not an expression
 export class Return extends Expr {
   expr: Expr;
   ret: Token;
@@ -485,6 +533,10 @@ export class Return extends Expr {
 
   getSubExpressions(): Expr[] {
     return [this.expr];
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -521,6 +573,10 @@ export class TernaryExpr extends Expr {
 
   getToken(): Token {
     return this.token;
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -567,8 +623,13 @@ export class ForLoop extends Expr {
   getToken(): Token {
     return this.token;
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
+// TODO stmt
 export class If extends Expr {
   cond: Expr;
   body: Expr[];
@@ -603,8 +664,13 @@ export class If extends Expr {
   getToken(): Token {
     throw new Error("Method not implemented.");
   }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
 }
 
+// TODO stmt
 export class Else extends Expr {
   body: Expr[];
   token: Token;
@@ -632,6 +698,10 @@ export class Else extends Expr {
 
   getToken(): Token {
     return this.token;
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -688,7 +758,7 @@ export class ProcDef extends Node {
   }
 }
 
-export class TopDef extends Expr {
+export class TopDef extends Node {
   id: Token;
   expr: Expr;
 
@@ -696,10 +766,6 @@ export class TopDef extends Expr {
     super();
     this.id = id;
     this.expr = expr;
-  }
-
-  getSubExpressions(): Expr[] {
-    return [this.expr];
   }
 
   toJson(): object {
