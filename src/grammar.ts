@@ -51,10 +51,21 @@ declare var or: any;
 declare var question_mark: any;
 declare var colon: any;
 declare var kw_int: any;
+declare var kw_uint: any;
 declare var kw_float: any;
+declare var kw_bool: any;
 declare var kw_vec2: any;
 declare var kw_vec3: any;
 declare var kw_vec4: any;
+declare var kw_uvec2: any;
+declare var kw_uvec3: any;
+declare var kw_uvec4: any;
+declare var kw_ivec2: any;
+declare var kw_ivec3: any;
+declare var kw_ivec4: any;
+declare var kw_bvec2: any;
+declare var kw_bvec3: any;
+declare var kw_bvec4: any;
 declare var kw_mat2: any;
 declare var kw_mat3: any;
 declare var kw_mat4: any;
@@ -343,10 +354,21 @@ const grammar: Grammar = {
     {"name": "TypeName$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "TypeName", "symbols": ["TypeWord", "TypeName$ebnf$1"], "postprocess": d => new TypeName(d[0], d[1] === null ? null : d[1][2] === null ? 0 : parseInt(d[1][2][1]))},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_int") ? {type: "kw_int"} : kw_int)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uint") ? {type: "kw_uint"} : kw_uint)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_float") ? {type: "kw_float"} : kw_float)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bool") ? {type: "kw_bool"} : kw_bool)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec2") ? {type: "kw_vec2"} : kw_vec2)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec3") ? {type: "kw_vec3"} : kw_vec3)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec4") ? {type: "kw_vec4"} : kw_vec4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uvec2") ? {type: "kw_uvec2"} : kw_uvec2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uvec3") ? {type: "kw_uvec3"} : kw_uvec3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uvec4") ? {type: "kw_uvec4"} : kw_uvec4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_ivec2") ? {type: "kw_ivec2"} : kw_ivec2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_ivec3") ? {type: "kw_ivec3"} : kw_ivec3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_ivec4") ? {type: "kw_ivec4"} : kw_ivec4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bvec2") ? {type: "kw_bvec2"} : kw_bvec2)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bvec3") ? {type: "kw_bvec3"} : kw_bvec3)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bvec4") ? {type: "kw_bvec4"} : kw_bvec4)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat2") ? {type: "kw_mat2"} : kw_mat2)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat3") ? {type: "kw_mat3"} : kw_mat3)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4") ? {type: "kw_mat4"} : kw_mat4)], "postprocess": id},

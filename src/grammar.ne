@@ -107,7 +107,7 @@ FuncLevel ->
 # TODO more tests for ending whitespace of for and if statements
 FuncLine ->
     FuncLevel (%lbc):+ _ {% d => d[0] %}
-  | ForLoop             {% d => d[0] %}
+  | ForLoop              {% d => d[0] %}
   | If {% id %}
 
 RenderLine ->
@@ -162,7 +162,7 @@ Else ->
 #  | BlockBody {% id %}
 
 BlockBody ->
-    FuncLine                                         {% d => [d[0]] %}
+    FuncLine                                           {% d => [d[0]] %}
   | %lbrace (%lbc):* _ (FuncLine):* %rbrace (%lbc):* _ {% d => d[3].map((e: any) => e[0]) %}
 
 # order of operations
@@ -257,10 +257,21 @@ TypeName ->
 
 TypeWord ->
     %kw_int    {% id %}
+  | %kw_uint   {% id %}
   | %kw_float  {% id %}
+  | %kw_bool   {% id %}
   | %kw_vec2   {% id %}
   | %kw_vec3   {% id %}
   | %kw_vec4   {% id %}
+  | %kw_uvec2  {% id %}
+  | %kw_uvec3  {% id %}
+  | %kw_uvec4  {% id %}
+  | %kw_ivec2  {% id %}
+  | %kw_ivec3  {% id %}
+  | %kw_ivec4  {% id %}
+  | %kw_bvec2  {% id %}
+  | %kw_bvec3  {% id %}
+  | %kw_bvec4  {% id %}
   | %kw_mat2   {% id %}
   | %kw_mat3   {% id %}
   | %kw_mat4   {% id %}
