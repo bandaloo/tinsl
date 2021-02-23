@@ -42,13 +42,15 @@ type SpecType =
 export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
-  args: TotalType[];
+  params: TotalType[];
   ret: TotalType;
 }
 
 interface BuiltIns {
   [key: string]: TypeInfo | TypeInfo[];
 }
+
+// TODO should use specific type where total type is used some places
 
 export class TinslError extends Error {
   constructor(message?: string) {
@@ -61,191 +63,191 @@ export class TinslError extends Error {
 // starting from p. 86
 export const builtIns: BuiltIns = {
   // trig
-  radians: { args: ["genType"], ret: "genType" },
-  degrees: { args: ["genType"], ret: "genType" },
-  sin: { args: ["genType"], ret: "genType" },
-  cos: { args: ["genType"], ret: "genType" },
-  tan: { args: ["genType"], ret: "genType" },
-  asin: { args: ["genType"], ret: "genType" },
-  acos: { args: ["genType"], ret: "genType" },
+  radians: { params: ["genType"], ret: "genType" },
+  degrees: { params: ["genType"], ret: "genType" },
+  sin: { params: ["genType"], ret: "genType" },
+  cos: { params: ["genType"], ret: "genType" },
+  tan: { params: ["genType"], ret: "genType" },
+  asin: { params: ["genType"], ret: "genType" },
+  acos: { params: ["genType"], ret: "genType" },
   atan: [
-    { args: ["genType", "genType"], ret: "genType" },
-    { args: ["genType"], ret: "genType" },
+    { params: ["genType", "genType"], ret: "genType" },
+    { params: ["genType"], ret: "genType" },
   ],
-  sinh: { args: ["genType"], ret: "genType" },
-  cosh: { args: ["genType"], ret: "genType" },
-  tanh: { args: ["genType"], ret: "genType" },
-  asinh: { args: ["genType"], ret: "genType" },
-  acosh: { args: ["genType"], ret: "genType" },
-  atanh: { args: ["genType"], ret: "genType" },
+  sinh: { params: ["genType"], ret: "genType" },
+  cosh: { params: ["genType"], ret: "genType" },
+  tanh: { params: ["genType"], ret: "genType" },
+  asinh: { params: ["genType"], ret: "genType" },
+  acosh: { params: ["genType"], ret: "genType" },
+  atanh: { params: ["genType"], ret: "genType" },
 
   // exponential
-  pow: { args: ["genType", "genType"], ret: "genType" },
-  exp: { args: ["genType"], ret: "genType" },
-  log: { args: ["genType"], ret: "genType" },
-  exp2: { args: ["genType"], ret: "genType" },
-  log2: { args: ["genType"], ret: "genType" },
-  sqrt: { args: ["genType"], ret: "genType" },
-  inversesqrt: { args: ["genType"], ret: "genType" },
+  pow: { params: ["genType", "genType"], ret: "genType" },
+  exp: { params: ["genType"], ret: "genType" },
+  log: { params: ["genType"], ret: "genType" },
+  exp2: { params: ["genType"], ret: "genType" },
+  log2: { params: ["genType"], ret: "genType" },
+  sqrt: { params: ["genType"], ret: "genType" },
+  inversesqrt: { params: ["genType"], ret: "genType" },
 
   // common
   abs: [
-    { args: ["genType"], ret: "genType" },
-    { args: ["genIType"], ret: "genIType" },
+    { params: ["genType"], ret: "genType" },
+    { params: ["genIType"], ret: "genIType" },
   ],
   sign: [
-    { args: ["genType"], ret: "genType" },
-    { args: ["genIType"], ret: "genIType" },
+    { params: ["genType"], ret: "genType" },
+    { params: ["genIType"], ret: "genIType" },
   ],
-  floor: { args: ["genType"], ret: "genType" },
-  trunc: { args: ["genType"], ret: "genType" },
-  round: { args: ["genType"], ret: "genType" },
-  roundEven: { args: ["genType"], ret: "genType" },
-  ceil: { args: ["genType"], ret: "genType" },
-  fract: { args: ["genType"], ret: "genType" },
+  floor: { params: ["genType"], ret: "genType" },
+  trunc: { params: ["genType"], ret: "genType" },
+  round: { params: ["genType"], ret: "genType" },
+  roundEven: { params: ["genType"], ret: "genType" },
+  ceil: { params: ["genType"], ret: "genType" },
+  fract: { params: ["genType"], ret: "genType" },
   mod: [
-    { args: ["genType", "float"], ret: "genType" },
-    { args: ["genType", "genType"], ret: "genType" },
+    { params: ["genType", "float"], ret: "genType" },
+    { params: ["genType", "genType"], ret: "genType" },
   ],
   min: [
-    { args: ["genType", "genType"], ret: "genType" },
-    { args: ["genType", "float"], ret: "genType" },
-    { args: ["genIType", "genIType"], ret: "genIType" },
-    { args: ["genIType", "int"], ret: "genIType" },
-    { args: ["genUType", "genUType"], ret: "genUType" },
-    { args: ["genUType", "uint"], ret: "genUType" },
+    { params: ["genType", "genType"], ret: "genType" },
+    { params: ["genType", "float"], ret: "genType" },
+    { params: ["genIType", "genIType"], ret: "genIType" },
+    { params: ["genIType", "int"], ret: "genIType" },
+    { params: ["genUType", "genUType"], ret: "genUType" },
+    { params: ["genUType", "uint"], ret: "genUType" },
   ],
   max: [
-    { args: ["genType", "genType"], ret: "genType" },
-    { args: ["genType", "float"], ret: "genType" },
-    { args: ["genIType", "genIType"], ret: "genIType" },
-    { args: ["genIType", "int"], ret: "genIType" },
-    { args: ["genUType", "genUType"], ret: "genUType" },
-    { args: ["genUType", "uint"], ret: "genUType" },
+    { params: ["genType", "genType"], ret: "genType" },
+    { params: ["genType", "float"], ret: "genType" },
+    { params: ["genIType", "genIType"], ret: "genIType" },
+    { params: ["genIType", "int"], ret: "genIType" },
+    { params: ["genUType", "genUType"], ret: "genUType" },
+    { params: ["genUType", "uint"], ret: "genUType" },
   ],
   clamp: [
-    { args: ["genType", "genType", "genType"], ret: "genType" },
-    { args: ["genType", "float", "float"], ret: "genType" },
-    { args: ["genIType", "genIType", "genIType"], ret: "genIType" },
-    { args: ["genIType", "int", "int"], ret: "genIType" },
-    { args: ["genUType", "genUType", "genUType"], ret: "genUType" },
-    { args: ["genUType", "uint", "uint"], ret: "genUType" },
+    { params: ["genType", "genType", "genType"], ret: "genType" },
+    { params: ["genType", "float", "float"], ret: "genType" },
+    { params: ["genIType", "genIType", "genIType"], ret: "genIType" },
+    { params: ["genIType", "int", "int"], ret: "genIType" },
+    { params: ["genUType", "genUType", "genUType"], ret: "genUType" },
+    { params: ["genUType", "uint", "uint"], ret: "genUType" },
   ],
   mix: [
-    { args: ["genType", "genType", "genType"], ret: "genType" },
-    { args: ["genType", "genType", "float"], ret: "genType" },
-    { args: ["genType", "genType", "genBType"], ret: "genType" },
+    { params: ["genType", "genType", "genType"], ret: "genType" },
+    { params: ["genType", "genType", "float"], ret: "genType" },
+    { params: ["genType", "genType", "genBType"], ret: "genType" },
   ],
   step: [
-    { args: ["genType", "genType"], ret: "genType" },
-    { args: ["float", "genType"], ret: "genType" },
+    { params: ["genType", "genType"], ret: "genType" },
+    { params: ["float", "genType"], ret: "genType" },
   ],
   smoothstep: [
-    { args: ["genType", "genType", "genType"], ret: "genType" },
-    { args: ["float", "float", "genType"], ret: "genType" },
+    { params: ["genType", "genType", "genType"], ret: "genType" },
+    { params: ["float", "float", "genType"], ret: "genType" },
   ],
-  isnan: [{ args: ["genType"], ret: "genBType" }],
-  isinf: [{ args: ["genType"], ret: "genBType" }],
-  floatBitsToInt: [{ args: ["genType"], ret: "genIType" }],
-  floatBitsToUint: [{ args: ["genType"], ret: "genUType" }],
-  intBitsToFloat: [{ args: ["genIType"], ret: "genType" }],
-  uintBitsToFloat: [{ args: ["genUType"], ret: "genType" }],
+  isnan: [{ params: ["genType"], ret: "genBType" }],
+  isinf: [{ params: ["genType"], ret: "genBType" }],
+  floatBitsToInt: [{ params: ["genType"], ret: "genIType" }],
+  floatBitsToUint: [{ params: ["genType"], ret: "genUType" }],
+  intBitsToFloat: [{ params: ["genIType"], ret: "genType" }],
+  uintBitsToFloat: [{ params: ["genUType"], ret: "genType" }],
 
   // floating point pack/unpack
-  packSnorm2x16: [{ args: ["vec2"], ret: "uint" }], // -> highp
-  unpackSnorm2x16: [{ args: ["uint"], ret: "vec2" }], // highp -> highp
-  packUnorm2x16: [{ args: ["vec2"], ret: "uint" }], // -> highp
-  unpackUnorm2x16: [{ args: ["uint"], ret: "vec2" }], // highp -> highp
-  packHalf2x16: [{ args: ["vec2"], ret: "uint" }], // mediump -> highp
-  unpackHalf2x16: [{ args: ["uint"], ret: "vec2" }], // highp -> mediump
+  packSnorm2x16: [{ params: ["vec2"], ret: "uint" }], // -> highp
+  unpackSnorm2x16: [{ params: ["uint"], ret: "vec2" }], // highp -> highp
+  packUnorm2x16: [{ params: ["vec2"], ret: "uint" }], // -> highp
+  unpackUnorm2x16: [{ params: ["uint"], ret: "vec2" }], // highp -> highp
+  packHalf2x16: [{ params: ["vec2"], ret: "uint" }], // mediump -> highp
+  unpackHalf2x16: [{ params: ["uint"], ret: "vec2" }], // highp -> mediump
 
   // geometric
-  length: { args: ["genType"], ret: "float" },
-  distance: { args: ["genType", "genType"], ret: "float" },
-  dot: { args: ["genType", "genType"], ret: "float" },
-  cross: { args: ["vec3", "vec3"], ret: "vec3" },
-  normalize: { args: ["genType"], ret: "genType" },
-  faceforward: { args: ["genType", "genType", "genType"], ret: "genType" },
-  reflect: { args: ["genType", "genType"], ret: "genType" },
-  refract: { args: ["genType", "genType", "float"], ret: "genType" },
+  length: { params: ["genType"], ret: "float" },
+  distance: { params: ["genType", "genType"], ret: "float" },
+  dot: { params: ["genType", "genType"], ret: "float" },
+  cross: { params: ["vec3", "vec3"], ret: "vec3" },
+  normalize: { params: ["genType"], ret: "genType" },
+  faceforward: { params: ["genType", "genType", "genType"], ret: "genType" },
+  reflect: { params: ["genType", "genType"], ret: "genType" },
+  refract: { params: ["genType", "genType", "float"], ret: "genType" },
 
   // matrix
-  matrixCompMult: { args: ["mat", "mat"], ret: "mat" },
+  matrixCompMult: { params: ["mat", "mat"], ret: "mat" },
   outerProduct: [
-    { args: ["vec2", "vec2"], ret: "mat2" },
-    { args: ["vec3", "vec3"], ret: "mat3" },
-    { args: ["vec4", "vec4"], ret: "mat4" },
+    { params: ["vec2", "vec2"], ret: "mat2" },
+    { params: ["vec3", "vec3"], ret: "mat3" },
+    { params: ["vec4", "vec4"], ret: "mat4" },
 
-    { args: ["vec3", "vec2"], ret: "mat2x3" },
-    { args: ["vec2", "vec3"], ret: "mat3x2" },
+    { params: ["vec3", "vec2"], ret: "mat2x3" },
+    { params: ["vec2", "vec3"], ret: "mat3x2" },
 
-    { args: ["vec4", "vec2"], ret: "mat2x4" },
-    { args: ["vec2", "vec4"], ret: "mat4x2" },
+    { params: ["vec4", "vec2"], ret: "mat2x4" },
+    { params: ["vec2", "vec4"], ret: "mat4x2" },
 
-    { args: ["vec4", "vec3"], ret: "mat3x4" },
-    { args: ["vec3", "vec4"], ret: "mat4x3" },
+    { params: ["vec4", "vec3"], ret: "mat3x4" },
+    { params: ["vec3", "vec4"], ret: "mat4x3" },
   ],
   transpose: [
-    { args: ["mat2"], ret: "mat2" },
-    { args: ["mat3"], ret: "mat3" },
-    { args: ["mat4"], ret: "mat4" },
+    { params: ["mat2"], ret: "mat2" },
+    { params: ["mat3"], ret: "mat3" },
+    { params: ["mat4"], ret: "mat4" },
 
-    { args: ["mat3x2"], ret: "mat2x3" },
-    { args: ["mat2x3"], ret: "mat3x2" },
+    { params: ["mat3x2"], ret: "mat2x3" },
+    { params: ["mat2x3"], ret: "mat3x2" },
 
-    { args: ["mat4x2"], ret: "mat2x4" },
-    { args: ["mat2x4"], ret: "mat4x2" },
+    { params: ["mat4x2"], ret: "mat2x4" },
+    { params: ["mat2x4"], ret: "mat4x2" },
 
-    { args: ["mat4x3"], ret: "mat3x4" },
-    { args: ["mat3x4"], ret: "mat4x3" },
+    { params: ["mat4x3"], ret: "mat3x4" },
+    { params: ["mat3x4"], ret: "mat4x3" },
   ],
   determinant: [
-    { args: ["mat2"], ret: "float" },
-    { args: ["mat3"], ret: "float" },
-    { args: ["mat4"], ret: "float" },
+    { params: ["mat2"], ret: "float" },
+    { params: ["mat3"], ret: "float" },
+    { params: ["mat4"], ret: "float" },
   ],
   inverse: [
-    { args: ["mat2"], ret: "mat2" },
-    { args: ["mat3"], ret: "mat3" },
-    { args: ["mat4"], ret: "mat4" },
+    { params: ["mat2"], ret: "mat2" },
+    { params: ["mat3"], ret: "mat3" },
+    { params: ["mat4"], ret: "mat4" },
   ],
 
   // vector and relational
   lessThan: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
   ],
   lessThanEqual: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
   ],
   greaterThan: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
   ],
   greaterThanEqual: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
   ],
   equal: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
-    { args: ["bvec", "bvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["bvec", "bvec"], ret: "bvec" },
   ],
   notEqual: [
-    { args: ["vec", "vec"], ret: "bvec" },
-    { args: ["ivec", "ivec"], ret: "bvec" },
-    { args: ["uvec", "uvec"], ret: "bvec" },
-    { args: ["bvec", "bvec"], ret: "bvec" },
+    { params: ["vec", "vec"], ret: "bvec" },
+    { params: ["ivec", "ivec"], ret: "bvec" },
+    { params: ["uvec", "uvec"], ret: "bvec" },
+    { params: ["bvec", "bvec"], ret: "bvec" },
   ],
-  any: [{ args: ["bvec"], ret: "bool" }],
-  all: [{ args: ["bvec"], ret: "bool" }],
-  not: [{ args: ["bvec"], ret: "bool" }],
+  any: [{ params: ["bvec"], ret: "bool" }],
+  all: [{ params: ["bvec"], ret: "bool" }],
+  not: [{ params: ["bvec"], ret: "bool" }],
 };
 
 // helpers for type checking
@@ -271,6 +273,9 @@ function toSimpleMatrix(m: string) {
     ? "mat4"
     : m) as TotalType;
 }
+
+//function callReturnType(args: TotalType[], ) {
+//}
 
 /** checks if two types in an operation can be applied without type error */
 export function scalarOp(
