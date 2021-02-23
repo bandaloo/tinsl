@@ -30,11 +30,36 @@ describe("same type operations", () => {
     expect(binaryTyping("/", "uint", "uint")).to.be.equal("uint");
     expect(binaryTyping("*", "mat2x3", "mat2x3")).to.be.equal("mat2x3");
     expect(() => binaryTyping("*", "uint", "float")).to.throw("scalar");
+    expect(() => binaryTyping("&", "int", "uint")).to.throw("scalar");
   });
 
   it("checks equivalent matrix types", () => {
     expect(binaryTyping("*", "mat2", "mat2x2")).to.equal("mat2");
     expect(binaryTyping("*", "mat2x2", "mat2")).to.equal("mat2");
+  });
+});
+
+describe("bitwise binary operations", () => {
+  it("checks valid vector and scalar operations", () => {
+    expect(binaryTyping("&", "int", "ivec2")).to.equal("ivec2");
+    expect(binaryTyping("|", "ivec2", "int")).to.equal("ivec2");
+    expect(binaryTyping("^", "ivec2", "ivec2")).to.equal("ivec2");
+    expect(binaryTyping("&", "uint", "uvec2")).to.equal("uvec2");
+    expect(binaryTyping("^", "uvec2", "uint")).to.equal("uvec2");
+    expect(binaryTyping("|", "uvec2", "uvec2")).to.equal("uvec2");
+  });
+
+  it("checks valid scalar and scalar operations", () => {
+    expect(binaryTyping("&", "int", "int")).to.equal("int");
+    expect(binaryTyping("|", "uint", "uint")).to.equal("uint");
+  });
+
+  it("throws when bitwise operators used on non-ints", () => {
+    expect(() => binaryTyping("&", "int", "vec2")).to.throw("bitwise");
+    expect(() => binaryTyping("|", "uvec2", "float")).to.throw("bitwise");
+    expect(() => binaryTyping("^", "vec2", "vec2")).to.throw("bitwise");
+    expect(() => binaryTyping("&", "float", "float")).to.throw("bitwise");
+    expect(() => binaryTyping("|", "mat2", "mat2")).to.throw("bitwise");
   });
 });
 
@@ -61,8 +86,9 @@ describe("scalar and other type operations", () => {
   });
 
   it("checks to see % operations not used on floats", () => {
-    expect(() => binaryTyping("%", "vec2", "float")).to.throw("%");
-    expect(() => binaryTyping("%", "float", "mat2")).to.throw("%");
+    expect(() => binaryTyping("%", "vec2", "float")).to.throw("mod");
+    expect(() => binaryTyping("%", "float", "mat2")).to.throw("mod");
+    expect(() => binaryTyping("%", "float", "int")).to.throw("mod");
     expect(binaryTyping("%", "int", "ivec2")).to.be.equal("ivec2");
     expect(binaryTyping("%", "ivec2", "int")).to.be.equal("ivec2");
     expect(binaryTyping("%", "uvec3", "uvec3")).to.be.equal("uvec3");

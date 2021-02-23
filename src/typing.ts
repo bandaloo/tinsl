@@ -323,8 +323,8 @@ export function unaryTyping(op: string, typ: TotalType): TotalType {
   if (["+", "-", "++", "--"].includes(op)) {
     // TODO we'll have to check if ++, -- value is valid l-value
     if (typ === "bool" || /^bvec/.test(typ)) {
-      throw new TinslError(`unary operator ${op} cannot be used on \
-boolean scalars or vectors`);
+      throw new TinslError(`unary operator ${op} can only be used on \
+boolean scalars`);
     }
     return typ;
   }
@@ -359,8 +359,10 @@ export function binaryTyping(
 
   if ("+-/*%&|^".includes(op)) {
     if ("%&|^".includes(op)) {
-      if (!(isIntBased(left) && isIntBased(left))) {
-        throw new TinslError(`binary operator ${op} cannot be used on \
+      if (!(isIntBased(left) && isIntBased(right))) {
+        throw new TinslError(`${
+          op === "%" ? "mod" : "bitwise"
+        } operator ${op} cannot be used on \
 floating point scalars, vectors or matrices${
           op === "%" ? ". use mod(x, y) instead" : ""
         }`);
