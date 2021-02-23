@@ -262,14 +262,14 @@ function dimensionMismatch(op: string, left: TotalType, right: TotalType) {
 cannot do vector/matrix operation \`${left} ${op} ${right}\``);
 }
 
-function toRedundantMatrix(m: string) {
-  return m === "mat2"
-    ? "mat2x2"
-    : m === "mat3"
-    ? "mat3x3"
-    : m === "mat4"
-    ? "mat4x4"
-    : m;
+function toSimpleMatrix(m: string) {
+  return (m === "mat2x2"
+    ? "mat2"
+    : m === "mat3x3"
+    ? "mat3"
+    : m === "mat4x4"
+    ? "mat4"
+    : m) as TotalType;
 }
 
 /** checks if two types in an operation can be applied without type error */
@@ -354,6 +354,8 @@ export function binaryTyping(
   left: TotalType,
   right: TotalType
 ): TotalType {
+  [left, right] = [left, right].map(toSimpleMatrix);
+
   if ("+-/*%&|^".includes(op)) {
     if ("%&|^".includes(op)) {
       if (!(isIntBased(left) && isIntBased(left))) {
@@ -364,7 +366,7 @@ floating point scalars, vectors or matrices${
       }
     }
 
-    if (toRedundantMatrix(left) === toRedundantMatrix(right)) return left;
+    if (left === right) return left;
 
     // matrix mult
     const matrixMultTypeMatch = (left: TotalType, right: TotalType) =>
@@ -381,7 +383,7 @@ floating point scalars, vectors or matrices${
         throw new TinslError("matrix and/or vector dimension mismatch");
       if (m === "1" || p === "1")
         return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
-      return `mat${p}x${m}` as TotalType;
+      return `mat${p === m ? m : p + "x" + m}` as TotalType;
     }
 
     return scalarOp(op, left, right);

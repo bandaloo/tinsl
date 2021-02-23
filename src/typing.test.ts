@@ -34,6 +34,7 @@ describe("same type operations", () => {
 
   it("checks equivalent matrix types", () => {
     expect(binaryTyping("*", "mat2", "mat2x2")).to.equal("mat2");
+    expect(binaryTyping("*", "mat2x2", "mat2")).to.equal("mat2");
   });
 });
 
@@ -78,15 +79,15 @@ describe("matrix and vector multiplications", () => {
   });
 
   it("mults mat2x3 * mat3x2 -> mat3x3", () => {
-    expect(binaryTyping("*", "mat2x3", "mat3x2")).to.equal("mat3x3");
+    expect(binaryTyping("*", "mat2x3", "mat3x2")).to.equal("mat3");
   });
 
   it("mults mat3x2 * mat2x3 -> mat2x2", () => {
-    expect(binaryTyping("*", "mat3x2", "mat2x3")).to.equal("mat2x2");
+    expect(binaryTyping("*", "mat3x2", "mat2x3")).to.equal("mat2");
   });
 
   it("mults mat3x3 * mat3x3 -> mat3x3", () => {
-    expect(binaryTyping("*", "mat3x3", "mat3x3")).to.equal("mat3x3");
+    expect(binaryTyping("*", "mat3x3", "mat3x3")).to.equal("mat3");
     expect(binaryTyping("*", "mat3", "mat3")).to.equal("mat3");
   });
 
@@ -194,3 +195,5 @@ describe("logical operators", () => {
     );
   });
 });
+
+// TODO ternary tests and bitwise tests
