@@ -1,12 +1,12 @@
-import chai, { expect } from "chai";
-import { dimensions, scalarOp, binaryTyping, unaryTyping } from "./typing";
+import { expect } from "chai";
+import { dimensions, binaryTyping, unaryTyping } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
     expect(dimensions("mat2x3")).to.deep.equal(["3", "2"]);
   });
 
-  it("matches matmxn", () => {
+  it("matches matm", () => {
     expect(dimensions("mat2")).to.deep.equal(["2", "2"]);
   });
 
@@ -31,6 +31,10 @@ describe("same type operations", () => {
     expect(binaryTyping("*", "mat2x3", "mat2x3")).to.be.equal("mat2x3");
     expect(() => binaryTyping("*", "uint", "float")).to.throw("scalar");
   });
+
+  it("checks equivalent matrix types", () => {
+    expect(binaryTyping("*", "mat2", "mat2x2")).to.equal("mat2");
+  });
 });
 
 describe("scalar and other type operations", () => {
@@ -48,6 +52,11 @@ describe("scalar and other type operations", () => {
     expect(binaryTyping("*", "ivec3", "int")).to.be.equal("ivec3");
     expect(binaryTyping("*", "uint", "uvec2")).to.be.equal("uvec2");
     expect(binaryTyping("*", "uvec3", "uint")).to.be.equal("uvec3");
+  });
+
+  it("checks that wrong scalar paired with wrong vec throws", () => {
+    expect(() => binaryTyping("*", "int", "vec2")).to.be.throw();
+    expect(() => binaryTyping("*", "mat2", "int")).to.be.throw();
   });
 
   it("checks to see % operations not used on floats", () => {
@@ -99,17 +108,89 @@ describe("matrix and vector multiplications", () => {
 });
 
 describe("unary typing", () => {
-  it("unary operators on valid types", () => {
+  it("applies unary operators on valid types", () => {
     expect(unaryTyping("+", "vec2")).to.equal("vec2");
     expect(unaryTyping("-", "int")).to.equal("int");
     expect(unaryTyping("++", "mat2")).to.equal("mat2");
     expect(unaryTyping("--", "uvec4")).to.equal("uvec4");
   });
 
-  it("unary operators on booleans throws", () => {
+  it("applies unary operators on booleans throws", () => {
     expect(() => unaryTyping("+", "bool")).to.throw("boolean");
     expect(() => unaryTyping("-", "bvec2")).to.throw("boolean");
     expect(() => unaryTyping("++", "bvec3")).to.throw("boolean");
     expect(() => unaryTyping("--", "bvec4")).to.throw("boolean");
+  });
+});
+
+describe("relational and equality typing", () => {
+  it("compares valid values", () => {
+    expect(binaryTyping(">", "int", "int")).to.equal("int");
+    expect(binaryTyping("<", "float", "float")).to.equal("float");
+    expect(binaryTyping(">=", "uint", "uint")).to.equal("uint");
+    expect(binaryTyping(">=", "int", "int")).to.equal("int");
+  });
+
+  it("compares mismatching values which throws", () => {
+    expect(() => binaryTyping(">", "int", "uint")).to.throw("same");
+    expect(() => binaryTyping("<", "float", "int")).to.throw("same");
+  });
+
+  it("compares vectors and matrices which throws", () => {
+    expect(() => binaryTyping(">", "vec2", "vec2")).to.throw("greaterThan");
+    expect(() => binaryTyping("<", "mat2", "mat2")).to.throw("lessThan");
+    expect(() => binaryTyping(">=", "vec3", "vec3")).to.throw(
+      "greaterThanEqual"
+    );
+    expect(() => binaryTyping("<=", "mat3", "mat3")).to.throw("lessThanEqual");
+  });
+
+  it("compares for equality valid types", () => {
+    expect(binaryTyping("==", "int", "int")).to.equal("bool");
+    expect(binaryTyping("!=", "mat4x2", "mat4x2")).to.equal("bool");
+  });
+
+  it("compares for equality different types, throws", () => {
+    expect(() => binaryTyping("==", "int", "float")).to.throw("equality");
+    expect(() => binaryTyping("!=", "mat4x2", "mat2x4")).to.throw("equality");
+  });
+});
+
+describe("logical operators", () => {
+  it("checks valid logical operations on booleans", () => {
+    expect(binaryTyping("&&", "bool", "bool")).to.equal("bool");
+    expect(binaryTyping("||", "bool", "bool")).to.equal("bool");
+    expect(binaryTyping("^^", "bool", "bool")).to.equal("bool");
+  });
+
+  it("checks illegal logical operations on booleans", () => {
+    expect(() => binaryTyping("&&", "bool", "int")).to.throw("logical");
+    expect(() => binaryTyping("||", "vec2", "vec3")).to.throw("logical");
+    expect(() => binaryTyping("^^", "mat4x3", "bool")).to.throw("logical");
+  });
+});
+
+describe("logical operators", () => {
+  it("checks that both sides are integer based", () => {
+    expect(() => binaryTyping("<<", "int", "float")).to.throw(
+      "signed or unsigned"
+    );
+    expect(() => binaryTyping(">>", "vec2", "uvec2")).to.throw(
+      "signed or unsigned"
+    );
+  });
+
+  it("checks if right expr is scalar if left is scalar", () => {
+    expect(() => binaryTyping("<<", "int", "ivec3")).to.throw(
+      "scalar if expression"
+    );
+    expect(binaryTyping("<<", "uint", "int")).to.equal("uint");
+  });
+
+  it("checks if right expr is scalar or same-length vec if left is vec", () => {
+    expect(binaryTyping("<<", "ivec2", "int")).to.equal("ivec2");
+    expect(() => binaryTyping(">>", "ivec2", "uvec3")).to.throw(
+      "scalar or same-length"
+    );
   });
 });

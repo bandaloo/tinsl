@@ -253,9 +253,23 @@ export function isScalar(typ: TotalType) {
   return ["float", "int", "uint"].includes(typ);
 }
 
+function isIntBased(typ: TotalType) {
+  return ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
+}
+
 function dimensionMismatch(op: string, left: TotalType, right: TotalType) {
   return new TinslError(`dimension mismatch: \
 cannot do vector/matrix operation \`${left} ${op} ${right}\``);
+}
+
+function toRedundantMatrix(m: string) {
+  return m === "mat2"
+    ? "mat2x2"
+    : m === "mat3"
+    ? "mat3x3"
+    : m === "mat4"
+    ? "mat4x4"
+    : m;
 }
 
 /** checks if two types in an operation can be applied without type error */
@@ -281,15 +295,20 @@ export function scalarOp(
 cannot do scalar operation \`${left} ${op} ${right}\``);
 }
 
+function extractVecLength(typ: string) {
+  const matches = typ.match(/^[i|u]?vec(.+)/);
+  if (matches === null) throw new Error("could not match size of vec");
+  return matches[1];
+}
+
 export function dimensions(typ: TotalType, side?: "left" | "right") {
   if (/^vec/.test(typ)) {
-    const matches = typ.match(/^vec(.+)/);
-    if (matches === null) throw new Error("no dimensions matches vec");
+    const size = extractVecLength(typ);
     if (side === undefined) throw new Error("side was undefined for vec");
     if (side === "left") {
-      return ["1", matches[1]];
+      return ["1", size];
     }
-    return [matches[1], "1"];
+    return [size, "1"];
   }
 
   const matches = typ.match(/^mat(.+)/);
@@ -317,34 +336,41 @@ floating point scalars, vectors or matrices`);
     return typ;
   }
 
+  if (op === "!") {
+    if (typ === "bool") {
+      throw new TinslError(`${op} unary operator can only be used on \
+scalar booleans. for boolean vectors, use not(val)`);
+    }
+    return typ;
+  }
+
   throw new Error(`"${op}" not a valid unary operator`);
 }
 
-function isIntBased(typ: TotalType) {
-  return ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
-}
-
+// TODO consider what to do with mat2x2 being the same as mat2
 // TODO make op specific type?
 export function binaryTyping(
   op: string,
   left: TotalType,
   right: TotalType
 ): TotalType {
-  if ("+-/*%".includes(op)) {
-    if (op == "%") {
+  if ("+-/*%&|^".includes(op)) {
+    if ("%&|^".includes(op)) {
       if (!(isIntBased(left) && isIntBased(left))) {
-        throw new TinslError(`binary operator \`%\` cannot be used on \
-floating point scalars, vectors or matrices. use \`mod(x, y)\` instead`);
+        throw new TinslError(`binary operator ${op} cannot be used on \
+floating point scalars, vectors or matrices${
+          op === "%" ? ". use mod(x, y) instead" : ""
+        }`);
       }
     }
 
-    if (left === right) return left;
+    if (toRedundantMatrix(left) === toRedundantMatrix(right)) return left;
 
     // matrix mult
     const matrixMultTypeMatch = (left: TotalType, right: TotalType) =>
       (/^vec/.test(left) && /^mat/.test(right)) ||
-      (/^vec/.test(right) && /^mat/.test(left)) ||
-      (/^mat/.test(right) && /^mat/.test(left));
+      (/^mat/.test(left) && /^vec/.test(right)) ||
+      (/^mat/.test(left) && /^mat/.test(right));
 
     if (op === "*" && matrixMultTypeMatch(left, right)) {
       // mxn * nxp -> mxp
@@ -361,7 +387,98 @@ floating point scalars, vectors or matrices. use \`mod(x, y)\` instead`);
     return scalarOp(op, left, right);
   }
 
-  throw new Error(`"${op}" not a valid binary operator`);
+  if ([">", "<", ">=", "<="].includes(op)) {
+    if (left !== right) {
+      throw new TinslError(
+        `${op} relation operator can only compare values of the same type`
+      );
+    }
+
+    if (!(isScalar(left) && isScalar(right))) {
+      throw new TinslError(`${op} relational operator can only be used to \
+compare scalars. for vectors, use ${
+        op === ">"
+          ? "greaterThan"
+          : op === "<"
+          ? "lessThan"
+          : op === ">="
+          ? "greaterThanEqual"
+          : "lessThanEqual"
+      }(left, right) instead.`);
+    }
+
+    return left;
+  }
+
+  if (["==", "!="].includes(op)) {
+    if (left !== right) {
+      throw new TinslError(
+        `${op} equality operator can only compare expressions of the same type`
+      );
+    }
+
+    return "bool";
+  }
+
+  if (["&&", "||", "^^"].includes(op)) {
+    if (!(left === "bool" && right === "bool")) {
+      throw new TinslError(
+        `${op} logical operator can only operate on booleans`
+      );
+    }
+
+    return left;
+  }
+
+  if ([">>", "<<"].includes(op)) {
+    // "For both operators, the operands must be signed or unsigned integers or
+    // integer vectors. One operand can be signed while the other is unsigned."
+    if (!isIntBased(left) || !isIntBased(right)) {
+      throw new TinslError(`${op} bitshift operator can only operate on \
+signed or unsigned integers or vectors`);
+    }
+
+    // "If the first operand is a scalar, the second operand has to be a scalar
+    // as well."
+    if (isScalar(left) && !isScalar(right)) {
+      throw new TinslError(`expression to right of ${op} bitshift operator \
+must be a scalar if expression to left is also a scalar`);
+    }
+
+    // "If the first operand is a vector, the second operand must be a scalar or
+    // a vector with the same size as the first operand [...]."
+    if (
+      !isScalar(left) &&
+      !(isScalar(right) || extractVecLength(left) === extractVecLength(right))
+    ) {
+      throw new TinslError(`expression to right of ${op} bitshift operator \
+must be a scalar or same-length vector if the expression to left is a vector`);
+    }
+
+    // "In all cases, the resulting type will be the same type as the left
+    // operand."
+    return left;
+  }
+
+  throw new Error(`${op} not a valid binary operator`);
+}
+
+export function ternaryTyping(
+  condType: TotalType,
+  ifType: TotalType,
+  elseType: TotalType
+): TotalType {
+  if (condType !== "bool") {
+    throw new TinslError(`the condition expression in a ternary expression \
+must be of boolean type`);
+  }
+
+  if (ifType !== elseType) {
+    throw new TinslError(`both ending expressions in a ternary expression \
+must have the same type`);
+  }
+
+  return ifType;
 }
 // TODO page 61 conversions
 
