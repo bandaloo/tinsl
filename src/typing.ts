@@ -319,6 +319,7 @@ export function dimensions(typ: TotalType, side?: "left" | "right") {
 }
 
 export function unaryTyping(op: string, typ: TotalType): TotalType {
+  typ = toSimpleMatrix(typ);
   if (["+", "-", "++", "--"].includes(op)) {
     // TODO we'll have to check if ++, -- value is valid l-value
     if (typ === "bool" || /^bvec/.test(typ)) {
@@ -330,15 +331,15 @@ boolean scalars or vectors`);
 
   if (op === "~") {
     if (!isIntBased(typ)) {
-      throw new TinslError(`unary operator \`%\` cannot be used on \
+      throw new TinslError(`unary operator ${op} cannot be used on \
 floating point scalars, vectors or matrices`);
     }
     return typ;
   }
 
   if (op === "!") {
-    if (typ === "bool") {
-      throw new TinslError(`${op} unary operator can only be used on \
+    if (typ !== "bool") {
+      throw new TinslError(`unary operator ${op} can only be used on \
 scalar booleans. for boolean vectors, use not(val)`);
     }
     return typ;
@@ -470,6 +471,8 @@ export function ternaryTyping(
   ifType: TotalType,
   elseType: TotalType
 ): TotalType {
+  [ifType, elseType] = [ifType, elseType].map(toSimpleMatrix);
+
   if (condType !== "bool") {
     throw new TinslError(`the condition expression in a ternary expression \
 must be of boolean type`);

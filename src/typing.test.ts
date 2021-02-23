@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { dimensions, binaryTyping, unaryTyping } from "./typing";
+import { dimensions, binaryTyping, unaryTyping, ternaryTyping } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
@@ -116,11 +116,41 @@ describe("unary typing", () => {
     expect(unaryTyping("--", "uvec4")).to.equal("uvec4");
   });
 
-  it("applies unary operators on booleans throws", () => {
+  it("applies unary operators on booleans and throws", () => {
     expect(() => unaryTyping("+", "bool")).to.throw("boolean");
     expect(() => unaryTyping("-", "bvec2")).to.throw("boolean");
     expect(() => unaryTyping("++", "bvec3")).to.throw("boolean");
     expect(() => unaryTyping("--", "bvec4")).to.throw("boolean");
+  });
+
+  it("simplifies matrix types", () => {
+    expect(unaryTyping("+", "mat2x2")).to.equal("mat2");
+  });
+
+  it("checks unary boolean not operator on bool", () => {
+    expect(unaryTyping("!", "bool")).to.equal("bool");
+  });
+
+  it("checks unary boolean not operator throwing on non-bool", () => {
+    expect(() => unaryTyping("!", "int")).to.throw("scalar booleans");
+  });
+
+  it("checks unary bitwise not operator on valid types", () => {
+    expect(unaryTyping("~", "int")).to.equal("int");
+    expect(unaryTyping("~", "uint")).to.equal("uint");
+    expect(unaryTyping("~", "ivec2")).to.equal("ivec2");
+    expect(unaryTyping("~", "uvec2")).to.equal("uvec2");
+  });
+
+  it("checks unary bitwise not operator on floating point types, throws", () => {
+    expect(() => unaryTyping("~", "float")).to.throw("floating");
+    expect(() => unaryTyping("~", "vec2")).to.throw("floating");
+    expect(() => unaryTyping("~", "mat2")).to.throw("floating");
+  });
+
+  it("checks unary not operator", () => {
+    expect(() => unaryTyping("!", "int")).to.throw("scalar booleans");
+    expect(unaryTyping("!", "bool")).to.equal("bool");
   });
 });
 
@@ -196,4 +226,26 @@ describe("logical operators", () => {
   });
 });
 
-// TODO ternary tests and bitwise tests
+describe("ternary operator", () => {
+  it("checks valid ternary operations", () => {
+    expect(ternaryTyping("bool", "int", "int")).to.equal("int");
+  });
+
+  it("throws when non-boolean condition expression", () => {
+    expect(() => ternaryTyping("vec2", "int", "int")).to.throw(
+      "condition expression"
+    );
+  });
+
+  it("throws when non-matching ending expressions", () => {
+    expect(() => ternaryTyping("bool", "int", "float")).to.throw(
+      "ending expressions"
+    );
+  });
+
+  it("simplifies matrix types", () => {
+    expect(ternaryTyping("bool", "mat2x2", "mat2")).to.equal("mat2");
+    expect(ternaryTyping("bool", "mat2", "mat2x2")).to.equal("mat2");
+    expect(ternaryTyping("bool", "mat2x2", "mat2x2")).to.equal("mat2");
+  });
+});
