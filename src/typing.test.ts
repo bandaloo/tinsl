@@ -330,4 +330,13 @@ describe("typing overloaded generic function calls", () => {
       "vec2"
     );
   });
+
+  it("array param type and return type", () => {
+    expect(
+      callReturnType([{ typ: "int", size: 8 }], {
+        params: [{ typ: "genIType", size: 8 }],
+        ret: { typ: "genIType", size: 8 },
+      })
+    ).to.deep.equal({ typ: "int", size: 8 });
+  });
 });

@@ -49,7 +49,7 @@ export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
   params: (TotalType | ArrayType<TotalType>)[]; // TODO include array types
-  ret: TotalType;
+  ret: TotalType | ArrayType<TotalType>;
 }
 
 interface BuiltIns {
@@ -306,9 +306,9 @@ function validGenSpecPair(gen: GenType, spec: SpecType) {
 }
 
 export function callReturnType(
-  args: SpecType[],
+  args: (SpecType | ArrayType<SpecType>)[],
   typeInfo: TypeInfo | TypeInfo[]
-) {
+): SpecType | ArrayType<SpecType> {
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
 
   const genArr: GenType[] = [
@@ -362,7 +362,7 @@ export function callReturnType(
           valid = false;
           break;
         } else {
-          // we know the param is a generic type
+          // now we know the param is a generic type
           const genParam = param as GenType;
           if (!validGenSpecPair(genParam, arg)) {
             valid = false;
@@ -371,7 +371,7 @@ export function callReturnType(
           genMap.set(genParam, arg);
         }
       } else {
-        // we know the param is a specific type, not generic
+        // now we know the param is a specific type
         if (param !== arg) {
           valid = false;
           break;
@@ -382,16 +382,21 @@ export function callReturnType(
     // move onto the next overload if invalidated in the last loop
     if (!valid) continue;
 
+    // TODO do the array thing with the return type
+
     // decide the return type, which could be generic
-    const paramGenMapping = genMap.get(info.ret as any);
-    if (paramGenMapping !== undefined) {
+    const [ret, retSize] = parseArrayType(info.ret);
+    const retGenMapping = genMap.get(ret as any);
+    if (retGenMapping !== undefined) {
       // if return type is generic and there is no match, invalid function
-      if (paramGenMapping === null) {
+      if (retGenMapping === null) {
         throw new TinslError(
           "function has a generic return type that was never matched in the arguments"
         );
       }
-      return paramGenMapping;
+      return retSize === null
+        ? retGenMapping
+        : { typ: retGenMapping, size: retSize };
     }
 
     // return type is already specific type
