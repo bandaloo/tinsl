@@ -185,6 +185,16 @@ export const keywords = [
   "def",
   "once",
   "loop",
+  // types added for generics
+  "genType",
+  "genBType",
+  "genIType",
+  "genUType",
+  "mat",
+  "vec",
+  "bvec",
+  "ivec",
+  "uvec",
 ] as const;
 
 export const lexer = moo.compile({

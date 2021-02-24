@@ -78,6 +78,15 @@ declare var kw_mat3x4: any;
 declare var kw_mat4x2: any;
 declare var kw_mat4x3: any;
 declare var kw_mat4x4: any;
+declare var kw_genType: any;
+declare var kw_genBType: any;
+declare var kw_genIType: any;
+declare var kw_genUType: any;
+declare var kw_mat: any;
+declare var kw_vec: any;
+declare var kw_bvec: any;
+declare var kw_ivec: any;
+declare var kw_uvec: any;
 declare var comma: any;
 declare var float: any;
 declare var kw_true: any;
@@ -381,6 +390,15 @@ const grammar: Grammar = {
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x2") ? {type: "kw_mat4x2"} : kw_mat4x2)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x3") ? {type: "kw_mat4x3"} : kw_mat4x3)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x4") ? {type: "kw_mat4x4"} : kw_mat4x4)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genType") ? {type: "kw_genType"} : kw_genType)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genBType") ? {type: "kw_genBType"} : kw_genBType)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genIType") ? {type: "kw_genIType"} : kw_genIType)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genUType") ? {type: "kw_genUType"} : kw_genUType)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat") ? {type: "kw_mat"} : kw_mat)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec") ? {type: "kw_vec"} : kw_vec)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bvec") ? {type: "kw_bvec"} : kw_bvec)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_ivec") ? {type: "kw_ivec"} : kw_ivec)], "postprocess": id},
+    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uvec") ? {type: "kw_uvec"} : kw_uvec)], "postprocess": id},
     {"name": "Args$ebnf$1", "symbols": []},
     {"name": "Args$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("comma") ? {type: "comma"} : comma), "_", "Expr"]},
     {"name": "Args$ebnf$1", "symbols": ["Args$ebnf$1", "Args$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},

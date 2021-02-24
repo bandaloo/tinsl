@@ -250,7 +250,6 @@ Expr -> Ternary {% id %}
 MiddleTernary ->
     %question_mark _ Expr _ %colon {% d => { return { tok: d[0], expr: d[2] } } %}
 
-# TODO float constructor call shouldn't be possible?
 TypeName ->
     TypeWord (_ %lbracket (_ %int):? _ %rbracket):?
       {% d => new TypeName(d[0], d[1] === null ? null : d[1][2] === null ? 0 : parseInt(d[1][2][1])) %}
@@ -284,6 +283,16 @@ TypeWord ->
   | %kw_mat4x2 {% id %}
   | %kw_mat4x3 {% id %}
   | %kw_mat4x4 {% id %}
+  # generics
+  | %kw_genType  {% id %}
+  | %kw_genBType {% id %}
+  | %kw_genIType {% id %}
+  | %kw_genUType {% id %}
+  | %kw_mat      {% id %}
+  | %kw_vec      {% id %}
+  | %kw_bvec     {% id %}
+  | %kw_ivec     {% id %}
+  | %kw_uvec     {% id %}
 
 Args ->
     Expr (%comma _ Expr):* {% sep %}
