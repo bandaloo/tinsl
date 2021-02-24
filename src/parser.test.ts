@@ -483,6 +483,17 @@ describe("function and procedure declarations", () => {
     );
   });
 
+  it("parses function declaration no args with spaces in parens", () => {
+    checkProgram(
+      `float foo (       ) {
+  +1.;
+  -2.;
+  return 1.;
+}`,
+      [funcNoParams]
+    );
+  });
+
   it("parses function redundant semicolons after", () => {
     checkProgram(
       `float foo () {

@@ -53,10 +53,9 @@ TopLevel ->
 # TODO some sort of define?
 
 # TODO this is a bad name
-# TODO make ( ) with space a valid no arg declaration
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params _):? %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
-      {% ([typ, , id, , , params, , , , , , body, ]: any) => new FuncDef(
+    TypeName _ %ident _ %lparen (_ Params):? _ %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
+      {% ([typ, , id, , , params, , , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
       %}
@@ -81,17 +80,9 @@ RenderBlock ->
         )
       %}
 
-# TODO test without this whitespace
 Uniform
     -> %kw_uniform _ TypeName _ %ident (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
 
-# for (<INIT>; <cond>; <loop>)
-#ForInit ->
-#    Decl   {% id %}
-#  | Expr   {% id %}
-#  | Assign {% id %}
-
-# for (<init>; <COND>; <LOOP>)
 # and statements/expressions allowed to appear in render block
 RenderLevel ->
     Decl {% id %}
@@ -156,10 +147,6 @@ If ->
 
 Else ->
     %kw_else _ BlockBody {% d => new Else(d[2], d[0]) %}
-
-#ElseContinue ->
-#    If        {% id %}
-#  | BlockBody {% id %}
 
 BlockBody ->
     FuncLine                                           {% d => [d[0]] %}

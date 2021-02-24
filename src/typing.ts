@@ -333,8 +333,6 @@ export function callReturnType(
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
       const param = info.params[i];
-      //console.log("arg", arg);
-      //console.log("param", param);
       const argGenMapping = genMap.get(param as any);
       if (argGenMapping !== undefined) {
         // if it is null, this generic type already has a mapping

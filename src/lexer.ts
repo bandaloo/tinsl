@@ -263,8 +263,6 @@ export const lexer = moo.compile({
   },
 });
 
-// TODO tilde is reserved apparently (p. 40)
-
 /*
 lexer.reset("vec4 color = vec4(1., 0.1, 3.0, 0.);\n");
 while (true) {
