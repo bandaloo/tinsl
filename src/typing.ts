@@ -40,10 +40,15 @@ export type SpecType =
   | "mat4x3"
   | "mat4x4";
 
+export interface ArrayType<T> {
+  typ: T;
+  size: number;
+}
+
 export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
-  params: TotalType[];
+  params: (TotalType | ArrayType<TotalType>)[]; // TODO include array types
   ret: TotalType;
 }
 
@@ -326,13 +331,29 @@ export function callReturnType(
     }
   };
 
+  const parseArrayType = <T extends string>(
+    tempParam: T | ArrayType<T>
+  ): [T, number | null] =>
+    typeof tempParam === "object"
+      ? [tempParam.typ, tempParam.size]
+      : [tempParam, null];
+
   for (const info of infoArr) {
     clearMap();
+    // num of params and num of args don't match, so move on
     if (info.params.length !== args.length) continue;
     let valid = true;
     for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      const param = info.params[i];
+      const [arg, argSize] = parseArrayType(args[i]);
+      const [param, paramSize] = parseArrayType(info.params[i]);
+
+      // if one type is an array and the other is not, or arrays are not same
+      // size, move on
+      if (argSize !== paramSize) {
+        valid = false;
+        break;
+      }
+
       const argGenMapping = genMap.get(param as any);
       if (argGenMapping !== undefined) {
         // if it is null, this generic type already has a mapping

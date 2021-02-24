@@ -309,7 +309,7 @@ Param ->
 Atom ->
     %float    {% d => new FloatExpr(d[0]) %}
   | %int      {% d => new IntExpr(d[0]) %}
-  | %uint      {% d => new UIntExpr(d[0]) %}
+  | %uint     {% d => new UIntExpr(d[0]) %}
   | %ident    {% d => new IdentExpr(d[0]) %}
   | %kw_true  {% d => new BoolExpr(d[0]) %}
   | %kw_false {% d => new BoolExpr(d[0]) %}
