@@ -13,12 +13,14 @@ import {
   Expr,
   FloatExpr,
   ForLoop,
+  Frag,
   FuncDef,
   IdentExpr,
   If,
   IntExpr,
   Param,
   ProcDef,
+  Refresh,
   RenderBlock,
   Return,
   SubscriptExpr,
@@ -603,9 +605,16 @@ int[2] foo () {
   });
 });
 
-// TODO rename this test
-describe("top level", () => {
+describe("render block", () => {
   const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
+  const refreshBl = new RenderBlock(
+    false,
+    [vec(1, 2, 3, 4), new Refresh(tok("refresh"))],
+    null,
+    0,
+    null,
+    tok("{")
+  );
   const completeBlock = new RenderBlock(
     true,
     [vec(1, 2, 3, 4), vec(5, 6, 7, 8)],
@@ -657,6 +666,10 @@ describe("top level", () => {
       bl,
       bl,
     ]);
+  });
+
+  it("parses refresh in a renderblock", () => {
+    checkProgram(`{vec4(1., 2., 3., 4.); refresh;}->0`, [refreshBl]);
   });
 
   it("parses function decl and renderblock", () => {
@@ -1007,4 +1020,15 @@ describe("function calls and subscripting", () => {
   });
 });
 
+describe("frag", () => {
+  it("parses a frag expression with no sampler number", () => {
+    checkExpr("frag", new Frag(tok("frag")));
+  });
+
+  it("parses a frag expression with sampler number, no coords", () => {
+    checkExpr("frag0", new Frag(tok("frag0")));
+  });
+});
+
 // TODO parsing empty program
+// TODO nested renderblocks

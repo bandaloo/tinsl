@@ -16,6 +16,7 @@ declare var kw_loop: any;
 declare var kw_once: any;
 declare var kw_uniform: any;
 declare var kw_return: any;
+declare var kw_refresh: any;
 declare var kw_const: any;
 declare var assignment: any;
 declare var kw_def: any;
@@ -91,6 +92,7 @@ declare var comma: any;
 declare var float: any;
 declare var kw_true: any;
 declare var kw_false: any;
+declare var frag: any;
 declare var assign_add: any;
 declare var assign_sub: any;
 declare var assign_mult: any;
@@ -128,7 +130,9 @@ import {
   Else,
   Uniform,
   ProcDef,
-  TopDef
+  TopDef,
+  Refresh,
+  Frag,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -236,6 +240,7 @@ const grammar: Grammar = {
     {"name": "Uniform", "symbols": [(nearleyLexer.has("kw_uniform") ? {type: "kw_uniform"} : kw_uniform), "_", "TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "Uniform$ebnf$1"], "postprocess": d => new Uniform(d[2], d[4])},
     {"name": "RenderLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Expr"], "postprocess": id},
+    {"name": "RenderLevel", "symbols": ["Refresh"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Assign"], "postprocess": id},
@@ -253,6 +258,7 @@ const grammar: Grammar = {
     {"name": "RenderLine$ebnf$1", "symbols": ["RenderLine$ebnf$1", "RenderLine$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "RenderLine", "symbols": ["RenderLevel", "RenderLine$ebnf$1", "_"], "postprocess": d => d[0]},
     {"name": "Return", "symbols": [(nearleyLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "Expr"], "postprocess": d => new Return(d[2], d[0])},
+    {"name": "Refresh", "symbols": [(nearleyLexer.has("kw_refresh") ? {type: "kw_refresh"} : kw_refresh)], "postprocess": d => new Refresh(d[0])},
     {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
     {"name": "Decl$ebnf$1", "symbols": ["Decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Decl$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -416,6 +422,7 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_true") ? {type: "kw_true"} : kw_true)], "postprocess": d => new BoolExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_false") ? {type: "kw_false"} : kw_false)], "postprocess": d => new BoolExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("frag") ? {type: "frag"} : frag)], "postprocess": d => new Frag(d[0])},
     {"name": "Atom$ebnf$1", "symbols": ["Args"], "postprocess": id},
     {"name": "Atom$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "Atom", "symbols": ["TypeName", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Atom$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : [])},

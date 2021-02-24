@@ -181,10 +181,11 @@ export const keywords = [
   // specific to tinsl
   "fn",
   "pr",
-  "let",
+  "let", // TODO not used
   "def",
   "once",
   "loop",
+  "refresh",
   // types added for generics
   "genType",
   "genBType",
@@ -257,6 +258,9 @@ export const lexer = moo.compile({
   colon: ":",
   semicolon: ";", // TODO remove this
   period: ".",
+  frag: {
+    match: /frag[0-9]*/,
+  },
   ident: {
     match: /[_a-zA-Z][_a-zA-Z0-9]*/,
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),

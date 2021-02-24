@@ -24,7 +24,9 @@ import {
   Else,
   Uniform,
   ProcDef,
-  TopDef
+  TopDef,
+  Refresh,
+  Frag,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -85,8 +87,9 @@ Uniform
 
 # and statements/expressions allowed to appear in render block
 RenderLevel ->
-    Decl {% id %}
-  | Expr {% id %}
+    Decl    {% id %}
+  | Expr    {% id %}
+  | Refresh {% id %}
 
 # statements/expressions allowed within function bodies
 FuncLevel ->
@@ -106,6 +109,9 @@ RenderLine ->
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
+
+Refresh ->
+    %kw_refresh {% d => new Refresh(d[0]) %}
 
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
@@ -291,12 +297,21 @@ Param ->
     TypeName _ %ident (_ %assignment _ Expr):?
       {% d => new Param(d[0], d[2], d[3] === null ? null : d[3][3]) %}
 
+#Frag ->
+#    %kw_frag (_ %lparen _ %int _ (%comma _ %Expr _ ):? %lparen):?
+#      {% d => new Frag(d[1] !== null ? null : parseInt(d[1][3].text), d[1] !== null && d[1][5] !== null ? d[1][5][2] : null, d[0]) %}
+
+#Frag ->
+#    %kw_frag (_ %lparen _ %int _ (%comma _ %Expr _ ):? %lparen):?
+#      {% d => new Frag(d[1] !== null ? parseInt(d[1][3].text) : null, d[1] !== null && d[1][5] !== null ? d[1][5][2] : null, d[0]) %}
+
 Atom ->
     %float    {% d => new FloatExpr(d[0]) %}
   | %int      {% d => new IntExpr(d[0]) %}
   | %ident    {% d => new IdentExpr(d[0]) %}
   | %kw_true  {% d => new BoolExpr(d[0]) %}
   | %kw_false {% d => new BoolExpr(d[0]) %}
+  | %frag     {% d => new Frag(d[0]) %}
   | TypeName _ %lparen _ Args:? _ %rparen
       {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
 

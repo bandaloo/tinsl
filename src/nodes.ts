@@ -785,4 +785,69 @@ export class TopDef extends Node {
   }
 }
 
+// TODO statement not expression
+export class Refresh extends Expr {
+  id: Token;
+
+  constructor(id: Token) {
+    super();
+    this.id = id;
+  }
+
+  toJson(): object {
+    return { name: "refresh" };
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.id;
+  }
+
+  getSubExpressions(): Expr[] {
+    throw new Error("Method not implemented.");
+  }
+
+  getType(): TotalType {
+    throw new Error("Method not implemented.");
+  }
+}
+
+export class Frag extends Expr {
+  sampler: number | null;
+  tokn: Token;
+
+  constructor(tokn: Token) {
+    super();
+    const matches = tokn.text.match(/frag([0-9]+)*/);
+    if (matches === null) throw new Error("frag matches was null");
+    const num = matches[1];
+    this.sampler = num === undefined ? null : parseInt(num);
+    this.tokn = tokn;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [];
+  }
+
+  getType(): TotalType {
+    // TODO this might change if we support different texture types
+    return "vec4";
+  }
+
+  toJson(): object {
+    throw new Error("Method not implemented.");
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.tokn;
+  }
+}
+
 export type { Node, Expr };
