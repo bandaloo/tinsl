@@ -320,3 +320,5 @@ AssignSymbol ->
 _ -> (%ws | %comment | %multiline_comment):*
 
 __ -> (%ws | %comment | %multiline_comment):+
+
+# TODO assignments can be expressions!

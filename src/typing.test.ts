@@ -1,5 +1,12 @@
 import { expect } from "chai";
-import { dimensions, binaryTyping, unaryTyping, ternaryTyping } from "./typing";
+import {
+  dimensions,
+  binaryTyping,
+  unaryTyping,
+  ternaryTyping,
+  callReturnType,
+  builtIns,
+} from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
@@ -273,5 +280,54 @@ describe("ternary operator", () => {
     expect(ternaryTyping("bool", "mat2x2", "mat2")).to.equal("mat2");
     expect(ternaryTyping("bool", "mat2", "mat2x2")).to.equal("mat2");
     expect(ternaryTyping("bool", "mat2x2", "mat2x2")).to.equal("mat2");
+  });
+});
+
+describe("typing overloaded generic function calls", () => {
+  it("checks sin", () => {
+    expect(callReturnType(["float"], builtIns["sin"])).to.equal("float");
+    expect(callReturnType(["vec2"], builtIns["sin"])).to.equal("vec2");
+    expect(() => callReturnType(["mat2"], builtIns["sin"])).to.throw(
+      "no matching"
+    );
+  });
+
+  it("checks clamp", () => {
+    expect(
+      callReturnType(["vec2", "float", "float"], builtIns["clamp"])
+    ).to.equal("vec2");
+    expect(
+      callReturnType(["vec2", "vec2", "vec2"], builtIns["clamp"])
+    ).to.equal("vec2");
+    expect(callReturnType(["ivec3", "int", "int"], builtIns["clamp"])).to.equal(
+      "ivec3"
+    );
+    expect(
+      callReturnType(["ivec3", "ivec3", "ivec3"], builtIns["clamp"])
+    ).to.equal("ivec3");
+    expect(
+      callReturnType(["uvec4", "uint", "uint"], builtIns["clamp"])
+    ).to.equal("uvec4");
+    expect(
+      callReturnType(["uvec4", "uvec4", "uvec4"], builtIns["clamp"])
+    ).to.equal("uvec4");
+  });
+
+  it("checks clamp with no matching overload, throws", () => {
+    expect(() =>
+      callReturnType(["vec2", "vec2", "vec3"], builtIns["clamp"])
+    ).to.throw("no matching");
+  });
+
+  it("throws when has generic return type with no matching arg", () => {
+    expect(() =>
+      callReturnType(["int"], { params: ["genIType"], ret: "genBType" })
+    ).to.throw("generic");
+  });
+
+  it("tests multiple gen types with mix", () => {
+    expect(callReturnType(["vec2", "vec2", "bvec2"], builtIns["mix"])).to.equal(
+      "vec2"
+    );
   });
 });

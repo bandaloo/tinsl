@@ -1,4 +1,4 @@
-type GenType =
+export type GenType =
   | "genType"
   | "genBType"
   | "genIType"
@@ -8,8 +8,9 @@ type GenType =
   | "bvec"
   | "ivec"
   | "uvec";
+
 // TODO export this and spread it in lexer to get rid of repeated info
-type SpecType =
+export type SpecType =
   | "float"
   | "int"
   | "bool"
@@ -274,8 +275,112 @@ function toSimpleMatrix(m: string) {
     : m) as TotalType;
 }
 
-//function callReturnType(args: TotalType[], ) {
-//}
+function validGenSpecPair(gen: GenType, spec: SpecType) {
+  switch (gen) {
+    case "genType":
+      return spec === "float" || /^vec/.test(spec);
+    case "genBType":
+      return spec === "bool" || /^bvec/.test(spec);
+    case "genIType":
+      return spec === "int" || /^ivec/.test(spec);
+    case "genUType":
+      return spec === "uint" || /^uvec/.test(spec);
+    case "mat":
+      return /^mat/.test(spec);
+    case "vec":
+      return /^vec/.test(spec);
+    case "bvec":
+      return /^bvec/.test(spec);
+    case "ivec":
+      return /^ivec/.test(spec);
+    case "uvec":
+      return /^uvec/.test(spec);
+    default:
+      return false;
+  }
+}
+
+export function callReturnType(
+  args: SpecType[],
+  typeInfo: TypeInfo | TypeInfo[]
+) {
+  const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
+
+  const genArr: GenType[] = [
+    "genType",
+    "genBType",
+    "genIType",
+    "genUType",
+    "mat",
+    "vec",
+    "bvec",
+    "ivec",
+    "uvec",
+  ];
+
+  const genMap = new Map<GenType, SpecType | null>();
+
+  const clearMap = () => {
+    for (const g of genArr) {
+      genMap.set(g, null);
+    }
+  };
+
+  for (const info of infoArr) {
+    clearMap();
+    if (info.params.length !== args.length) continue;
+    let valid = true;
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const param = info.params[i];
+      //console.log("arg", arg);
+      //console.log("param", param);
+      const argGenMapping = genMap.get(param as any);
+      if (argGenMapping !== undefined) {
+        // if it is null, this generic type already has a mapping
+        // all future arguments must be of the same type
+        if (argGenMapping !== null && argGenMapping !== arg) {
+          valid = false;
+          break;
+        } else {
+          // we know the param is a generic type
+          const genParam = param as GenType;
+          if (!validGenSpecPair(genParam, arg)) {
+            valid = false;
+            break;
+          }
+          genMap.set(genParam, arg);
+        }
+      } else {
+        // we know the param is a specific type, not generic
+        if (param !== arg) {
+          valid = false;
+          break;
+        }
+      }
+    }
+
+    // move onto the next overload if invalidated in the last loop
+    if (!valid) continue;
+
+    // decide the return type, which could be generic
+    const paramGenMapping = genMap.get(info.ret as any);
+    if (paramGenMapping !== undefined) {
+      // if return type is generic and there is no match, invalid function
+      if (paramGenMapping === null) {
+        throw new TinslError(
+          "function has a generic return type that was never matched in the arguments"
+        );
+      }
+      return paramGenMapping;
+    }
+
+    // return type is already specific type
+    return info.ret as SpecType;
+  }
+
+  throw new TinslError("no matching overload for function");
+}
 
 /** checks if two types in an operation can be applied without type error */
 export function scalarOp(
