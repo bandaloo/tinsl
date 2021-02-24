@@ -90,6 +90,7 @@ declare var kw_ivec: any;
 declare var kw_uvec: any;
 declare var comma: any;
 declare var float: any;
+declare var uint: any;
 declare var kw_true: any;
 declare var kw_false: any;
 declare var frag: any;
@@ -133,6 +134,7 @@ import {
   TopDef,
   Refresh,
   Frag,
+  UIntExpr,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -419,6 +421,7 @@ const grammar: Grammar = {
     {"name": "Param", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "Param$ebnf$1"], "postprocess": d => new Param(d[0], d[2], d[3] === null ? null : d[3][3])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("float") ? {type: "float"} : float)], "postprocess": d => new FloatExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess": d => new IntExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("uint") ? {type: "uint"} : uint)], "postprocess": d => new UIntExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_true") ? {type: "kw_true"} : kw_true)], "postprocess": d => new BoolExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_false") ? {type: "kw_false"} : kw_false)], "postprocess": d => new BoolExpr(d[0])},

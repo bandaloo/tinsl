@@ -197,6 +197,16 @@ export class IntExpr extends AtomExpr {
   }
 }
 
+export class UIntExpr extends AtomExpr {
+  toJson() {
+    return this.jsonHelper("uint_expr");
+  }
+
+  getType(): TotalType {
+    return "uint";
+  }
+}
+
 export class IdentExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("ident_expr");

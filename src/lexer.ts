@@ -211,6 +211,7 @@ export const lexer = moo.compile({
   comment: /\/\/.*?$/,
   multiline_comment: /\/\*[^]*?\*\//,
   float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
+  uint: /[0-9]+u/,
   int: /[0-9]+/,
   assign_add: "+=",
   assign_sub: "-=",

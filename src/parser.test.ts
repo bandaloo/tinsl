@@ -27,6 +27,7 @@ import {
   TernaryExpr,
   TopDef,
   TypeName,
+  UIntExpr,
   UnaryExpr,
   Uniform,
 } from "./nodes";
@@ -104,12 +105,12 @@ const logicReverse = new BinaryExpr(
 );
 
 const bitwiseReverse = new BinaryExpr(
-  new IntExpr(tok("1")),
+  new UIntExpr(tok("1u")),
   tok("|"),
   new BinaryExpr(
-    new IntExpr(tok("2")),
+    new UIntExpr(tok("2u")),
     tok("^"),
-    new BinaryExpr(new IntExpr(tok("3")), tok("&"), new IntExpr(tok("4")))
+    new BinaryExpr(new UIntExpr(tok("3u")), tok("&"), new UIntExpr(tok("4u")))
   )
 );
 
@@ -193,7 +194,7 @@ describe("order of ops", () => {
   });
 
   it("parses in reverse precedence bitwise or, xor, and", () => {
-    checkExpr("1 | 2 ^ 3 & 4", bitwiseReverse);
+    checkExpr("1u | 2u ^ 3u & 4u", bitwiseReverse);
   });
 
   it("parses relational and equality", () => {

@@ -29,6 +29,12 @@ describe("numbers", () => {
     );
   });
 
+  it("lexes uints", () => {
+    expect(types(tokens(lexer, "0u 12u 012u 00012u"))).to.deep.equal(
+      uniform("uint", 4)
+    );
+  });
+
   it("lexes floats left of decimal", () => {
     expect(types(tokens(lexer, "0. 12. 012. 00012."))).to.deep.equal(
       uniform("float", 4)
