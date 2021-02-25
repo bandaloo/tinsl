@@ -1,6 +1,7 @@
 import * as nearley from "nearley";
 import grammar from "./grammar";
 import util from "util";
+import { constructors } from "./typing";
 
 console.log("running");
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -13,15 +14,13 @@ if (parser.results.length > 1) {
   console.error("ambiguous grammar!");
 }
 
-/*
 console.log(
-  util.inspect(parser.results, {
+  util.inspect(constructors, {
     showHidden: false,
     depth: null,
     colors: true,
   })
 );
-*/
 
 for (let i = 0; i < parser.results.length; i++) {
   console.log(

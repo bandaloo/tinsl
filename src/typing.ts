@@ -48,11 +48,11 @@ export interface ArrayType<T> {
 export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
-  params: (TotalType | ArrayType<TotalType>)[]; // TODO include array types
+  params: (TotalType | ArrayType<TotalType>)[];
   ret: TotalType | ArrayType<TotalType>;
 }
 
-interface BuiltIns {
+interface PrototypeDictionary {
   [key: string]: TypeInfo | TypeInfo[];
 }
 
@@ -67,7 +67,7 @@ export class TinslError extends Error {
 
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf
 // starting from p. 86
-export const builtIns: BuiltIns = {
+export const builtIns: PrototypeDictionary = {
   // trig
   radians: { params: ["genType"], ret: "genType" },
   degrees: { params: ["genType"], ret: "genType" },
@@ -256,9 +256,94 @@ export const builtIns: BuiltIns = {
   not: [{ params: ["bvec"], ret: "bool" }],
 };
 
+const preserveScalarType = (typ: SpecType): TypeInfo[] => [
+  { params: ["int"], ret: typ },
+  { params: ["float"], ret: typ },
+  { params: ["bool"], ret: typ },
+  { params: ["uint"], ret: typ },
+];
+
+const rep = <T extends unknown>(len: number, elem: T) =>
+  [...new Array(len)].map(() => elem);
+
+function constructorInfo(typ: SpecType): TypeInfo[] {
+  if (/^[i|u|b]?vec/.test(typ)) {
+    const base = extractVecBase(typ);
+    const num = parseInt(extractVecLength(typ));
+    const scalar = matchingVecScalar(typ);
+    return [
+      { params: rep(num, scalar), ret: typ },
+      ...(num > 2
+        ? [{ params: [base + (num - 1), scalar] as SpecType[], ret: typ }]
+        : []),
+    ];
+  }
+
+  if (/^mat/.test(typ)) {
+    const [m, n] = extractMatrixDimensions(typ).map((num) => parseInt(num));
+    const vec = "vec" + m;
+    // note that it doesn't simplify matrix type name
+    return [
+      { params: rep(m * n, "float"), ret: typ },
+      { params: rep(n, vec) as SpecType[], ret: typ },
+    ];
+  }
+
+  throw new Error("not a vector or matrix");
+}
+
+export const constructors: PrototypeDictionary = {
+  int: preserveScalarType("int"),
+  bool: preserveScalarType("bool"),
+  float: preserveScalarType("float"),
+  uint: preserveScalarType("uint"),
+
+  vec2: constructorInfo("vec2"),
+  vec3: constructorInfo("vec3"),
+  vec4: constructorInfo("vec4"),
+
+  ivec2: constructorInfo("ivec2"),
+  ivec3: constructorInfo("ivec3"),
+  ivec4: constructorInfo("ivec4"),
+
+  uvec2: constructorInfo("uvec2"),
+  uvec3: constructorInfo("uvec3"),
+  uvec4: constructorInfo("uvec4"),
+
+  bvec2: constructorInfo("bvec2"),
+  bvec3: constructorInfo("bvec3"),
+  bvec4: constructorInfo("bvec4"),
+
+  mat2: constructorInfo("mat2"),
+  mat3: constructorInfo("mat3"),
+  mat4: constructorInfo("mat4"),
+
+  mat2x2: constructorInfo("mat2x2"),
+  mat2x3: constructorInfo("mat2x3"),
+  mat2x4: constructorInfo("mat2x4"),
+
+  mat3x2: constructorInfo("mat3x2"),
+  mat3x3: constructorInfo("mat3x3"),
+  mat3x4: constructorInfo("mat3x4"),
+
+  mat4x2: constructorInfo("mat4x2"),
+  mat4x3: constructorInfo("mat4x3"),
+  mat4x4: constructorInfo("mat4x4"),
+};
+
 // helpers for type checking
 export function isScalar(typ: TotalType) {
   return ["float", "int", "uint"].includes(typ);
+}
+
+export function matchingVecScalar(vec: SpecType): SpecType {
+  return /^vec/.test(vec)
+    ? "float"
+    : /^ivec/.test(vec)
+    ? "int"
+    : /^uvec/.test(vec)
+    ? "uint"
+    : "bool";
 }
 
 function isIntBased(typ: TotalType) {
@@ -382,8 +467,6 @@ export function callReturnType(
     // move onto the next overload if invalidated in the last loop
     if (!valid) continue;
 
-    // TODO do the array thing with the return type
-
     // decide the return type, which could be generic
     const [ret, retSize] = parseArrayType(info.ret);
     const retGenMapping = genMap.get(ret as any);
@@ -429,10 +512,24 @@ export function scalarOp(
 cannot do scalar operation \`${left} ${op} ${right}\``);
 }
 
-function extractVecLength(typ: string) {
-  const matches = typ.match(/^[i|u]?vec(.+)/);
+export function extractVecBase(typ: string) {
+  const matches = typ.match(/^([i|u|b]?vec)/);
+  if (matches === null) throw new Error("could not match base of vec");
+  return matches[1];
+}
+
+export function extractVecLength(typ: string) {
+  const matches = typ.match(/^[i|u|b]?vec(.+)/); // TODO test bvec (was missing)
   if (matches === null) throw new Error("could not match size of vec");
   return matches[1];
+}
+
+export function extractMatrixDimensions(typ: string) {
+  const matches = typ.match(/^mat(.+)/);
+  if (matches === null) throw new Error("no dimensions matches mat");
+  const dims = matches[1].split("x");
+  if (dims.length === 1) return [dims[0], dims[0]];
+  return dims;
 }
 
 export function dimensions(typ: TotalType, side?: "left" | "right") {
@@ -445,11 +542,7 @@ export function dimensions(typ: TotalType, side?: "left" | "right") {
     return [size, "1"];
   }
 
-  const matches = typ.match(/^mat(.+)/);
-  if (matches === null) throw new Error("no dimensions matches mat");
-  const dims = matches[1].split("x");
-  if (dims.length === 1) return [dims[0], dims[0]];
-  return dims.reverse();
+  return extractMatrixDimensions(typ).reverse();
 }
 
 export function unaryTyping(op: string, typ: TotalType): TotalType {

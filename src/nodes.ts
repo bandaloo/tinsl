@@ -297,7 +297,7 @@ export class ConstructorExpr extends Expr {
   }
 
   getType(): TotalType {
-    throw new Error("Method not implemented.");
+    throw new Error("not implemented");
   }
 }
 

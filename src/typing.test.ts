@@ -6,6 +6,7 @@ import {
   ternaryTyping,
   callReturnType,
   builtIns,
+  constructors,
 } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
@@ -338,5 +339,51 @@ describe("typing overloaded generic function calls", () => {
         ret: { typ: "genIType", size: 8 },
       })
     ).to.deep.equal({ typ: "int", size: 8 });
+
+    expect(() =>
+      callReturnType([{ typ: "int", size: 16 }], {
+        params: [{ typ: "genIType", size: 8 }],
+        ret: { typ: "genIType", size: 8 },
+      })
+    ).to.throw("no matching");
+  });
+});
+
+describe("typing constructor calls", () => {
+  it("checks scalar conversions", () => {
+    expect(callReturnType(["bool"], constructors["int"])).to.equal("int");
+    expect(callReturnType(["float"], constructors["bool"])).to.equal("bool");
+    expect(callReturnType(["uint"], constructors["float"])).to.equal("float");
+    expect(callReturnType(["int"], constructors["uint"])).to.equal("uint");
+  });
+
+  it("checks vector constructors scalars", () => {
+    expect(callReturnType(["float", "float"], constructors["vec2"])).to.equal(
+      "vec2"
+    );
+    expect(callReturnType(["bool", "bool"], constructors["bvec2"])).to.equal(
+      "bvec2"
+    );
+    expect(
+      callReturnType(["int", "int", "int"], constructors["ivec3"])
+    ).to.equal("ivec3");
+    expect(
+      callReturnType(["uint", "uint", "uint", "uint"], constructors["uvec4"])
+    ).to.equal("uvec4");
+  });
+
+  it("checks vector constructors scalars first arg vector", () => {
+    expect(callReturnType(["vec2", "float"], constructors["vec3"])).to.equal(
+      "vec3"
+    );
+    expect(callReturnType(["uvec2", "uint"], constructors["uvec3"])).to.equal(
+      "uvec3"
+    );
+    expect(callReturnType(["ivec3", "int"], constructors["ivec4"])).to.equal(
+      "ivec4"
+    );
+    expect(callReturnType(["bvec3", "bool"], constructors["bvec4"])).to.equal(
+      "bvec4"
+    );
   });
 });
