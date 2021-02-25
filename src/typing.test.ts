@@ -386,4 +386,34 @@ describe("typing constructor calls", () => {
       "bvec4"
     );
   });
+
+  it("checks matrix constructors scalars", () => {
+    expect(
+      callReturnType(["float", "float", "float", "float"], constructors["mat2"])
+    ).to.equal("mat2");
+    expect(
+      callReturnType(
+        ["float", "float", "float", "float"],
+        constructors["mat2x2"]
+      )
+    ).to.equal("mat2x2");
+    expect(
+      callReturnType(
+        ["float", "float", "float", "float", "float", "float"],
+        constructors["mat2x3"]
+      )
+    ).to.equal("mat2x3");
+  });
+
+  it("checks matrix constructors vectors", () => {
+    expect(callReturnType(["vec2", "vec2"], constructors["mat2"])).to.equal(
+      "mat2"
+    );
+    expect(callReturnType(["vec2", "vec2"], constructors["mat2x2"])).to.equal(
+      "mat2x2"
+    );
+    expect(
+      callReturnType(["vec3", "vec3", "vec3", "vec3"], constructors["mat3x4"])
+    ).to.equal("mat3x4");
+  });
 });
