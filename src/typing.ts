@@ -1,7 +1,7 @@
-import { TinslError } from "./err";
+import { TinslError, TinslLineError } from "./err";
 import { containsRepeats } from "./util";
 
-export type GenType =
+export type GenTypeSimple =
   | "genType"
   | "genBType"
   | "genIType"
@@ -12,8 +12,20 @@ export type GenType =
   | "ivec"
   | "uvec";
 
+export type GenType =
+  | "genType"
+  | "genBType"
+  | "genIType"
+  | "genUType"
+  | "mat"
+  | "vec"
+  | "bvec"
+  | "ivec"
+  | "uvec"
+  | ArrayType<GenTypeSimple>;
+
 // TODO export this and spread it in lexer to get rid of repeated info
-export type SpecType =
+export type SpecTypeSimple =
   | "float"
   | "int"
   | "bool"
@@ -43,6 +55,8 @@ export type SpecType =
   | "mat4x3"
   | "mat4x4";
 
+export type SpecType = SpecTypeSimple | ArrayType<SpecTypeSimple>;
+
 export interface ArrayType<T> {
   typ: T;
   size: number;
@@ -51,8 +65,8 @@ export interface ArrayType<T> {
 export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
-  params: (TotalType | ArrayType<TotalType>)[];
-  ret: TotalType | ArrayType<TotalType>;
+  params: TotalType[];
+  ret: TotalType;
 }
 
 interface PrototypeDictionary {
@@ -260,11 +274,11 @@ const preserveScalarType = (typ: SpecType): TypeInfo[] => [
 const rep = <T extends unknown>(len: number, elem: T) =>
   [...new Array(len)].map(() => elem);
 
-export const isVec = (typ: SpecType) => /^[i|u|b]?vec/.test(typ);
+export const isVec = (typ: SpecTypeSimple) => /^[i|u|b]?vec/.test(typ);
 
-export const isMat = (typ: SpecType) => /^mat/.test(typ);
+export const isMat = (typ: SpecTypeSimple) => /^mat/.test(typ);
 
-function constructorInfo(typ: SpecType): TypeInfo[] {
+function constructorInfo(typ: SpecTypeSimple): TypeInfo[] {
   if (isVec(typ)) {
     const base = extractVecBase(typ);
     const num = parseInt(extractVecLength(typ));
@@ -330,13 +344,13 @@ export const constructors: PrototypeDictionary = {
 };
 
 // helpers for type checking
-export function isScalar(typ: TotalType) {
+export function isScalar(typ: SpecTypeSimple) {
   return ["float", "int", "uint"].includes(typ);
 }
 
 // TODO should use specific type where total type is used some places
 
-export function matchingVecScalar(vec: SpecType): SpecType {
+export function matchingVecScalar(vec: SpecTypeSimple): SpecType {
   return /^vec/.test(vec)
     ? "float"
     : /^ivec/.test(vec)
@@ -346,7 +360,7 @@ export function matchingVecScalar(vec: SpecType): SpecType {
     : "bool";
 }
 
-function isIntBased(typ: TotalType) {
+function isIntBased(typ: SpecTypeSimple) {
   return ["int", "uint"].includes(typ) || /^[i|u]vec/.test(typ);
 }
 
@@ -355,17 +369,17 @@ function dimensionMismatch(op: string, left: TotalType, right: TotalType) {
 cannot do vector/matrix operation \`${left} ${op} ${right}\``);
 }
 
-function toSimpleMatrix(m: string) {
+function toSimpleMatrix(m: SpecTypeSimple) {
   return (m === "mat2x2"
     ? "mat2"
     : m === "mat3x3"
     ? "mat3"
     : m === "mat4x4"
     ? "mat4"
-    : m) as SpecType;
+    : m) as SpecTypeSimple;
 }
 
-function validGenSpecPair(gen: GenType, spec: SpecType) {
+function validGenSpecPair(gen: GenType, spec: SpecTypeSimple) {
   switch (gen) {
     case "genType":
       return spec === "float" || /^vec/.test(spec);
@@ -391,12 +405,12 @@ function validGenSpecPair(gen: GenType, spec: SpecType) {
 }
 
 export function callReturnType(
-  args: (SpecType | ArrayType<SpecType>)[],
+  args: SpecType[],
   typeInfo: TypeInfo | TypeInfo[]
-): SpecType | ArrayType<SpecType> {
+): SpecType {
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
 
-  const genArr: GenType[] = [
+  const genArr: GenTypeSimple[] = [
     "genType",
     "genBType",
     "genIType",
@@ -408,7 +422,7 @@ export function callReturnType(
     "uvec",
   ];
 
-  const genMap = new Map<GenType, SpecType | null>();
+  const genMap = new Map<GenTypeSimple, SpecTypeSimple | null>();
 
   const clearMap = () => {
     for (const g of genArr) {
@@ -448,7 +462,7 @@ export function callReturnType(
           break;
         } else {
           // now we know the param is a generic type
-          const genParam = param as GenType;
+          const genParam = param as GenTypeSimple;
           if (!validGenSpecPair(genParam, arg)) {
             valid = false;
             break;
@@ -492,8 +506,8 @@ export function callReturnType(
 /** checks if two types in an operation can be applied without type error */
 export function scalarOp(
   op: string,
-  left: SpecType,
-  right: SpecType
+  left: SpecTypeSimple,
+  right: SpecTypeSimple
 ): SpecType {
   if (isScalar(right) && !isScalar(left)) [left, right] = [right, left];
   if (
@@ -532,7 +546,7 @@ export function extractMatrixDimensions(typ: string) {
   return dims;
 }
 
-export function dimensions(typ: TotalType, side?: "left" | "right") {
+export function dimensions(typ: SpecTypeSimple, side?: "left" | "right") {
   if (/^vec/.test(typ)) {
     const size = extractVecLength(typ);
     if (side === undefined) throw new Error("side was undefined for vec");
@@ -545,7 +559,9 @@ export function dimensions(typ: TotalType, side?: "left" | "right") {
   return extractMatrixDimensions(typ).reverse();
 }
 
-export function unaryTyping(op: string, typ: TotalType): TotalType {
+export function unaryTyping(op: string, typ: SpecType): SpecType {
+  if (typeof typ === "object")
+    throw new TinslError("cannot perform unary operation on an array");
   typ = toSimpleMatrix(typ);
   if (["+", "-", "++", "--"].includes(op)) {
     // TODO we'll have to check if ++, -- value is valid l-value
@@ -582,6 +598,8 @@ export function binaryTyping(
   left: SpecType,
   right: SpecType
 ): SpecType {
+  if (typeof left === "object" || typeof right === "object")
+    throw new TinslError("cannot perform binary operation on array types");
   [left, right] = [left, right].map(toSimpleMatrix);
 
   if ("+-/*%&|^".includes(op)) {
@@ -599,7 +617,7 @@ floating point scalars, vectors or matrices${
     if (left === right) return left;
 
     // matrix mult
-    const matrixMultTypeMatch = (left: TotalType, right: TotalType) =>
+    const matrixMultTypeMatch = (left: SpecTypeSimple, right: SpecTypeSimple) =>
       (/^vec/.test(left) && /^mat/.test(right)) ||
       (/^mat/.test(left) && /^vec/.test(right)) ||
       (/^mat/.test(left) && /^mat/.test(right));
@@ -696,10 +714,22 @@ must be a scalar or same-length vector if the expression to left is a vector`);
 }
 
 export function ternaryTyping(
-  condType: TotalType,
-  ifType: TotalType,
-  elseType: TotalType
+  condType: SpecType,
+  ifType: SpecType,
+  elseType: SpecType
 ): TotalType {
+  if (typeof condType === "object") {
+    throw new TinslError(
+      "cannot have array type as condition in ternary expression"
+    );
+  }
+
+  if (typeof ifType === "object" || typeof elseType === "object") {
+    throw new TinslError(
+      "cannot have ternary expression evaluate to an array type"
+    );
+  }
+
   [ifType, elseType] = [ifType, elseType].map(toSimpleMatrix);
 
   if (condType !== "bool") {
@@ -720,6 +750,11 @@ export function vectorAccessTyping(
   vec: SpecType,
   leftHand: boolean
 ) {
+  if (typeof vec === "object")
+    throw new TinslError(
+      "cannot access properties of an array with . operator (use [])"
+    );
+
   if (comps.length > 4) {
     throw new TinslError(
       "too many components; " +

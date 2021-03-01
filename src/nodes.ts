@@ -1,6 +1,13 @@
 import type { Token } from "moo";
 import { TinslError, wrapTypeError } from "./err";
-import { binaryTyping, isVec, SpecType, TotalType, vectorAccessTyping } from "./typing";
+import {
+  binaryTyping,
+  constructors,
+  isVec,
+  SpecType,
+  TotalType,
+  vectorAccessTyping,
+} from "./typing";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -118,10 +125,8 @@ export class BinaryExpr extends Expr {
 
       // dots can only act on vecs for now (no structs)
       if (this.operator.text === ".") {
-        if (!isVec(lType)) {
-          throw new TinslError(
-            `left side of ${op} op must be a vector`
-          );
+        if (typeof lType === "string" && !isVec(lType)) {
+          throw new TinslError(`left side of ${op} op must be a vector`);
         }
         if (!(this.right instanceof IdentExpr)) {
           throw new TinslError(
@@ -324,7 +329,12 @@ export class ConstructorExpr extends Expr {
   }
 
   getType(): SpecType {
-    throw new Error("not implemented");
+    /*
+    wrapTypeError(() => {
+      constructors[""];
+    }, this.open);
+    */
+    throw new Error("Method not yet implemented");
   }
 }
 
