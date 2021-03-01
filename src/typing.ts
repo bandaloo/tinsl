@@ -260,8 +260,12 @@ const preserveScalarType = (typ: SpecType): TypeInfo[] => [
 const rep = <T extends unknown>(len: number, elem: T) =>
   [...new Array(len)].map(() => elem);
 
+export const isVec = (typ: SpecType) => /^[i|u|b]?vec/.test(typ);
+
+export const isMat = (typ: SpecType) => /^mat/.test(typ);
+
 function constructorInfo(typ: SpecType): TypeInfo[] {
-  if (/^[i|u|b]?vec/.test(typ)) {
+  if (isVec(typ)) {
     const base = extractVecBase(typ);
     const num = parseInt(extractVecLength(typ));
     const scalar = matchingVecScalar(typ);
@@ -273,7 +277,7 @@ function constructorInfo(typ: SpecType): TypeInfo[] {
     ];
   }
 
-  if (/^mat/.test(typ)) {
+  if (isMat(typ)) {
     const [m, n] = extractMatrixDimensions(typ).map((num) => parseInt(num));
     const vec = "vec" + m;
     // note that it doesn't simplify matrix type name
@@ -358,7 +362,7 @@ function toSimpleMatrix(m: string) {
     ? "mat3"
     : m === "mat4x4"
     ? "mat4"
-    : m) as TotalType;
+    : m) as SpecType;
 }
 
 function validGenSpecPair(gen: GenType, spec: SpecType) {
@@ -488,9 +492,9 @@ export function callReturnType(
 /** checks if two types in an operation can be applied without type error */
 export function scalarOp(
   op: string,
-  left: TotalType,
-  right: TotalType
-): TotalType {
+  left: SpecType,
+  right: SpecType
+): SpecType {
   if (isScalar(right) && !isScalar(left)) [left, right] = [right, left];
   if (
     (left === "float" && (/^vec/.test(right) || /^mat/.test(right))) ||
@@ -575,9 +579,9 @@ scalar booleans. for boolean vectors, use not(val)`);
 // TODO make op specific type?
 export function binaryTyping(
   op: string,
-  left: TotalType,
-  right: TotalType
-): TotalType {
+  left: SpecType,
+  right: SpecType
+): SpecType {
   [left, right] = [left, right].map(toSimpleMatrix);
 
   if ("+-/*%&|^".includes(op)) {
@@ -608,8 +612,8 @@ floating point scalars, vectors or matrices${
       if (n1 !== n2)
         throw new TinslError("matrix and/or vector dimension mismatch");
       if (m === "1" || p === "1")
-        return `vec${Math.max(parseInt(m), parseInt(p))}` as TotalType;
-      return `mat${p === m ? m : p + "x" + m}` as TotalType;
+        return `vec${Math.max(parseInt(m), parseInt(p))}` as SpecType;
+      return `mat${p === m ? m : p + "x" + m}` as SpecType;
     }
 
     return scalarOp(op, left, right);

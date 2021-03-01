@@ -1,5 +1,6 @@
 import type { Token } from "moo";
-import { TotalType } from "./typing";
+import { TinslError, wrapTypeError } from "./err";
+import { binaryTyping, isVec, SpecType, TotalType, vectorAccessTyping } from "./typing";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -26,7 +27,7 @@ abstract class Node {
 // TODO not quite the right name; includes stmts and exprs
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
-  abstract getType(): TotalType;
+  abstract getType(): SpecType;
 }
 
 export class RenderBlock extends Node {
@@ -78,6 +79,7 @@ export class BinaryExpr extends Expr {
   left: Expr;
   operator: Token;
   right: Expr;
+  isLeftHand = false; // TODO update this in validator
 
   constructor(left: Expr, operator: Token, right: Expr) {
     super();
@@ -109,8 +111,33 @@ export class BinaryExpr extends Expr {
     }${this.right.translate()})`;
   }
 
-  getType(): TotalType {
-    throw new Error("Method not implemented.");
+  getType(): SpecType {
+    return wrapTypeError(() => {
+      const lType = this.left.getType();
+      const op = this.operator.text;
+
+      // dots can only act on vecs for now (no structs)
+      if (this.operator.text === ".") {
+        if (!isVec(lType)) {
+          throw new TinslError(
+            `left side of ${op} op must be a vector`
+          );
+        }
+        if (!(this.right instanceof IdentExpr)) {
+          throw new TinslError(
+            `right side of ${op} op must be components to access`
+          );
+        }
+
+        return vectorAccessTyping(
+          this.right.getToken().text,
+          lType,
+          this.isLeftHand
+        );
+      }
+
+      return binaryTyping(op, lType, this.right.getType());
+    }, this.getToken());
   }
 }
 
@@ -147,7 +174,7 @@ export class UnaryExpr extends Expr {
     };
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -182,7 +209,7 @@ export class FloatExpr extends AtomExpr {
     return this.jsonHelper("float_expr");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     return "float";
   }
 }
@@ -192,7 +219,7 @@ export class IntExpr extends AtomExpr {
     return this.jsonHelper("int_expr");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     return "int";
   }
 }
@@ -202,7 +229,7 @@ export class UIntExpr extends AtomExpr {
     return this.jsonHelper("uint_expr");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     return "uint";
   }
 }
@@ -212,7 +239,7 @@ export class IdentExpr extends AtomExpr {
     return this.jsonHelper("ident_expr");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -222,7 +249,7 @@ export class BoolExpr extends AtomExpr {
     return this.jsonHelper("bool_expr");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     return "bool";
   }
 }
@@ -259,7 +286,7 @@ export class CallExpr extends Expr {
     };
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -296,7 +323,7 @@ export class ConstructorExpr extends Expr {
     };
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("not implemented");
   }
 }
@@ -333,7 +360,7 @@ export class SubscriptExpr extends Expr {
     };
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -383,7 +410,7 @@ export class Decl extends Expr {
     return this.assign;
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -426,7 +453,7 @@ export class Assign extends Expr {
     return this.assign;
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -545,7 +572,7 @@ export class Return extends Expr {
     return [this.expr];
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -585,7 +612,7 @@ export class TernaryExpr extends Expr {
     return this.token;
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -634,7 +661,7 @@ export class ForLoop extends Expr {
     return this.token;
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -675,7 +702,7 @@ export class If extends Expr {
     throw new Error("Method not implemented.");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -710,7 +737,7 @@ export class Else extends Expr {
     return this.token;
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -820,7 +847,7 @@ export class Refresh extends Expr {
     throw new Error("Method not implemented.");
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
@@ -842,7 +869,7 @@ export class Frag extends Expr {
     return [];
   }
 
-  getType(): TotalType {
+  getType(): SpecType {
     // TODO this might change if we support different texture types
     return "vec4";
   }
