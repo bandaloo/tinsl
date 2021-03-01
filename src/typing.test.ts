@@ -7,6 +7,7 @@ import {
   callReturnType,
   builtIns,
   constructors,
+  vectorAccessTyping,
 } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
@@ -415,5 +416,43 @@ describe("typing constructor calls", () => {
     expect(
       callReturnType(["vec3", "vec3", "vec3", "vec3"], constructors["mat3x4"])
     ).to.equal("mat3x4");
+  });
+});
+
+describe("checks that vector access is correct", () => {
+  it("vec access no repeat", () => {
+    expect(vectorAccessTyping("xy", "vec2", false)).to.equal("vec2");
+    expect(vectorAccessTyping("rg", "uvec2", false)).to.equal("uvec2");
+    expect(vectorAccessTyping("st", "bvec2", false)).to.equal("bvec2");
+  });
+
+  it("vec access repeating", () => {
+    expect(vectorAccessTyping("xxyy", "ivec2", false)).to.equal("ivec4");
+    expect(vectorAccessTyping("rrgg", "bvec2", false)).to.equal("bvec4");
+    expect(vectorAccessTyping("sstt", "uvec2", false)).to.equal("uvec4");
+  });
+});
+
+describe("invalid vector access", () => {
+  it("too many components", () => {
+    expect(() => vectorAccessTyping("xyzwx", "vec2", false)).to.throw(
+      "too many"
+    );
+  });
+
+  it("scalar access", () => {
+    expect(() => vectorAccessTyping("x", "float", false)).to.throw("scalar");
+  });
+
+  it("out of bounds component access", () => {
+    expect(() => vectorAccessTyping("xyz", "vec2", false)).to.throw("length 2");
+  });
+
+  it("mixed sets of components", () => {
+    expect(() => vectorAccessTyping("ry", "vec2", false)).to.throw("mixed");
+  });
+
+  it("left hand contains repeats", () => {
+    expect(() => vectorAccessTyping("rrg", "vec2", true)).to.throw("left");
   });
 });

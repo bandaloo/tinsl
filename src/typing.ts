@@ -1,3 +1,6 @@
+import { TinslError } from "./err";
+import { containsRepeats } from "./util";
+
 export type GenType =
   | "genType"
   | "genBType"
@@ -54,15 +57,6 @@ interface TypeInfo {
 
 interface PrototypeDictionary {
   [key: string]: TypeInfo | TypeInfo[];
-}
-
-// TODO should use specific type where total type is used some places
-
-export class TinslError extends Error {
-  constructor(message?: string) {
-    super(message);
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
 }
 
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf
@@ -335,6 +329,8 @@ export const constructors: PrototypeDictionary = {
 export function isScalar(typ: TotalType) {
   return ["float", "int", "uint"].includes(typ);
 }
+
+// TODO should use specific type where total type is used some places
 
 export function matchingVecScalar(vec: SpecType): SpecType {
   return /^vec/.test(vec)
@@ -714,8 +710,62 @@ must have the same type`);
 
   return ifType;
 }
-// TODO page 61 conversions
 
+export function vectorAccessTyping(
+  comps: string,
+  vec: SpecType,
+  leftHand: boolean
+) {
+  if (comps.length > 4) {
+    throw new TinslError(
+      "too many components; " +
+        "cannot access greater than 4 components on a vector"
+    );
+  }
+
+  if (isScalar(vec))
+    throw new TinslError(
+      "cannot access components of a scalar. " +
+        "can only access components of vector"
+    );
+
+  if (leftHand && containsRepeats(comps)) {
+    throw new TinslError(
+      "components for the left hand of an assignment cannot contain repeats"
+    );
+  }
+
+  const base = extractVecBase(vec);
+  const len = parseInt(extractVecLength(vec));
+  const sets = ["rgba", "xyzw", "stpq"];
+  const domains = sets.join("");
+  let prevSet: number | undefined = undefined;
+
+  for (const c of comps) {
+    const trueIndex = domains.lastIndexOf(c);
+    const index = trueIndex % 4;
+    if (index !== -1) {
+      if (index > len - 1)
+        throw new TinslError(
+          `component ${c} cannot be used \
+on a vector of length ${len}`
+        );
+      const set = Math.floor(trueIndex / 4);
+      if (prevSet !== undefined && prevSet !== set) {
+        throw new TinslError(
+          `mixed sets (${sets.join(", ")}) in components ${comps}`
+        );
+      }
+      prevSet = set;
+    } else {
+      throw new TinslError(
+        `component ${c} does not belong in any set ${sets.join(", ")}`
+      );
+    }
+  }
+
+  return (base + comps.length) as SpecType;
+}
 // note: modf is skipped because it has an output parameter
 
 // TODO check for valid l-value for dot application in assignment
