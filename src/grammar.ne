@@ -126,11 +126,16 @@ Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
 
 ForInit ->
-    RenderLevel {% id %}
-  | Assign      {% id %}
+    Decl   {% id %}
+  | Expr   {% id %}
+  | Assign {% id %}
+
+ForFinal ->
+    Expr   {% id %}
+  | Assign {% id %}
 
 ForLoop ->
-    %kw_for _ %lparen (_ ForInit):? %lbc (_ RenderLevel):? %lbc (_ RenderLevel):? _ %rparen _ BlockBody
+    %kw_for _ %lparen (_ ForInit):? %lbc (_ Expr):? %lbc (_ ForFinal):? _ %rparen _ BlockBody
       {% ([kw, , , init, , cond, , loop, , , , body]: any) =>
         new ForLoop(
           init === null ? null : init[1],
@@ -335,3 +340,5 @@ _ -> (%ws | %comment | %multiline_comment):*
 __ -> (%ws | %comment | %multiline_comment):+
 
 # TODO assignments can be expressions!
+
+# TODO optional out arrow in render block
