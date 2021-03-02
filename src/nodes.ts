@@ -2,10 +2,8 @@ import type { Token } from "moo";
 import { TinslError, wrapTypeError } from "./err";
 import {
   binaryTyping,
-  constructors,
   isVec,
   SpecType,
-  TotalType,
   vectorAccessTyping,
 } from "./typing";
 
@@ -34,7 +32,7 @@ abstract class Node {
 // TODO not quite the right name; includes stmts and exprs
 abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
-  abstract getType(): SpecType;
+  abstract getType(): SpecType; // TODO or undefined? also used for type checking
 }
 
 export class RenderBlock extends Expr {

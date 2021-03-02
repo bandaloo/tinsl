@@ -1,7 +1,5 @@
 import chai, { expect } from "chai";
 import chaiExclude from "chai-exclude";
-import * as nearley from "nearley";
-import grammar from "./grammar";
 import {
   Assign,
   BinaryExpr,
@@ -31,50 +29,9 @@ import {
   UnaryExpr,
   Uniform,
 } from "./nodes";
-import util from "util";
-import { tok } from "./testhelpers";
+import { checkExpr, checkProgram, parse, tok } from "./testhelpers";
 
 chai.use(chaiExclude);
-
-// TODO test rendundant spaces before semicolons
-
-// TODO move this into parser.ts
-function parse(str: string) {
-  const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-  try {
-    parser.feed(str);
-  } catch (e) {
-    console.error("parser error");
-  }
-  if (parser.results.length > 1) {
-    console.log(
-      util.inspect(parser.results, {
-        showHidden: false,
-        depth: null,
-        colors: true,
-      })
-    );
-    throw new Error("ambiguous grammar! length: " + parser.results.length);
-  }
-  return parser.results[0];
-}
-
-function extractExpr(str: string, semicolon: boolean) {
-  return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
-}
-
-const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
-
-// TODO rename
-function checkExpr(str: string, eql: object, semicolon = true) {
-  expect(extractExpr(str, semicolon))
-    .excludingEvery(excludes)
-    .to.deep.equal(eql);
-}
-
-function checkProgram(str: string, eql: object) {
-  expect(parse(str)).excludingEvery(excludes).to.deep.equal(eql);
-}
 
 const oneTwoThreeForward = (op1: string, op2: string) =>
   new BinaryExpr(
