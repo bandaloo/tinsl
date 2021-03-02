@@ -259,6 +259,7 @@ const grammar: Grammar = {
     {"name": "RenderLine$ebnf$1$subexpression$2", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "RenderLine$ebnf$1", "symbols": ["RenderLine$ebnf$1", "RenderLine$ebnf$1$subexpression$2"], "postprocess": (d) => d[0].concat([d[1]])},
     {"name": "RenderLine", "symbols": ["RenderLevel", "RenderLine$ebnf$1", "_"], "postprocess": d => d[0]},
+    {"name": "RenderLine", "symbols": ["RenderBlock", "_"], "postprocess": d => d[0]},
     {"name": "Return", "symbols": [(nearleyLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "Expr"], "postprocess": d => new Return(d[2], d[0])},
     {"name": "Refresh", "symbols": [(nearleyLexer.has("kw_refresh") ? {type: "kw_refresh"} : kw_refresh)], "postprocess": d => new Refresh(d[0])},
     {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},

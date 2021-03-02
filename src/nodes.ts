@@ -37,7 +37,7 @@ abstract class Expr extends Node {
   abstract getType(): SpecType;
 }
 
-export class RenderBlock extends Node {
+export class RenderBlock extends Expr {
   once: boolean;
   inNum: number | null;
   outNum: number;
@@ -79,6 +79,14 @@ export class RenderBlock extends Node {
 
   getToken(): Token {
     return this.open;
+  }
+
+  getSubExpressions(): Expr[] {
+    throw new Error("Method not implemented.");
+  }
+
+  getType(): SpecType {
+    throw new Error("Method not implemented.");
   }
 }
 

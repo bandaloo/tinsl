@@ -608,6 +608,14 @@ int[2] foo () {
 
 describe("render block", () => {
   const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
+  const nestedBl = new RenderBlock(
+    false,
+    [vec(1, 2, 3, 4), bl, vec(5, 6, 7, 8)],
+    null,
+    0,
+    null,
+    tok("{")
+  );
   const refreshBl = new RenderBlock(
     false,
     [vec(1, 2, 3, 4), new Refresh(tok("refresh"))],
@@ -667,6 +675,20 @@ describe("render block", () => {
       bl,
       bl,
     ]);
+  });
+
+  it("parses nested render blocks", () => {
+    checkProgram(
+      `
+{
+  vec4(1., 2., 3., 4.);
+  {
+    vec4(1., 2., 3., 4.);
+  } -> 0
+  vec4(5., 6., 7., 8.);
+} -> 0`,
+      [nestedBl]
+    );
   });
 
   it("parses refresh in a renderblock", () => {
@@ -1032,4 +1054,3 @@ describe("frag", () => {
 });
 
 // TODO parsing empty program
-// TODO nested renderblocks

@@ -107,6 +107,7 @@ FuncLine ->
 
 RenderLine ->
     RenderLevel (%lbc):+ _ {% d => d[0] %}
+  | RenderBlock _          {% d => d[0] %}
 
 Return ->
     %kw_return _ Expr {% d => new Return(d[2], d[0]) %}
