@@ -40,7 +40,7 @@ abstract class Expr extends Node {
 export class RenderBlock extends Expr {
   once: boolean;
   inNum: number | Expr | null;
-  outNum: number;
+  outNum: number | Expr;
   loopNum: number | Expr | null;
   body: Expr[]; // TODO rename to body?
   open: Token;
@@ -49,7 +49,7 @@ export class RenderBlock extends Expr {
     once: boolean,
     body: Expr[],
     inNum: number | Expr | null,
-    outNum: number,
+    outNum: number | Expr,
     loopNum: number | Expr | null,
     open: Token
   ) {

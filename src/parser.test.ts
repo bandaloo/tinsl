@@ -624,14 +624,19 @@ describe("render block", () => {
     null,
     tok("{")
   );
-  const completeBlock = new RenderBlock(
-    true,
-    [vec(1, 2, 3, 4), vec(5, 6, 7, 8)],
-    0,
-    1,
-    2,
-    tok("{")
-  );
+  const completeBlock = (
+    inNum: number | Expr = 0,
+    outNum: number | Expr = 1,
+    loopNum: number | Expr = 2
+  ) =>
+    new RenderBlock(
+      true,
+      [vec(1, 2, 3, 4), vec(5, 6, 7, 8)],
+      inNum,
+      outNum,
+      loopNum,
+      tok("{")
+    );
 
   it("parses a render block minimal options minimal ws", () => {
     checkProgram("{vec4(1., 2., 3., 4.);}->0", [bl]);
@@ -647,7 +652,23 @@ describe("render block", () => {
   vec4(1., 2., 3., 4.);
   vec4(5., 6., 7., 8.);
 } -> 1`,
-      [completeBlock]
+      [completeBlock()]
+    );
+  });
+
+  it("parses complete render block where all numbers are identifiers", () => {
+    checkProgram(
+      `inNum -> loop loopNum once {
+  vec4(1., 2., 3., 4.);
+  vec4(5., 6., 7., 8.);
+} -> outNum`,
+      [
+        completeBlock(
+          new IdentExpr(tok("inNum")),
+          new IdentExpr(tok("outNum")),
+          new IdentExpr(tok("loopNum"))
+        ),
+      ]
     );
   });
 
@@ -659,14 +680,14 @@ describe("render block", () => {
   vec4(5., 6., 7., 8.);;
   ;
 } -> 1`,
-      [completeBlock]
+      [completeBlock()]
     );
   });
 
   it("parses a render block with all options minimal ws", () => {
     checkProgram(
       `0->loop 2once{vec4(1., 2., 3., 4.);vec4(5., 6., 7., 8.);}->1`,
-      [completeBlock]
+      [completeBlock()]
     );
   });
 
