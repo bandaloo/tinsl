@@ -2,7 +2,9 @@ import { expect } from "chai";
 import { Token } from "moo";
 import nearley from "nearley";
 import util from "util";
+import { TinslLineError } from "./err";
 import grammar from "./grammar";
+import { tinslNearleyError } from "./util";
 
 export function tok(val: string): Token {
   return {
@@ -21,8 +23,9 @@ export function parse(str: string) {
   try {
     parser.feed(str);
   } catch (e) {
-    console.error("parser error");
+    throw tinslNearleyError(e);
   }
+
   if (parser.results.length > 1) {
     console.log(
       util.inspect(parser.results, {

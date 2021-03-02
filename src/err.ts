@@ -11,7 +11,7 @@ export class TinslLineError extends Error {
   line: number | undefined;
   col: number | undefined;
 
-  constructor(message: string, tokn: Token) {
+  constructor(message: string, tokn: Token | { line: number; col: number }) {
     super(message);
     this.line = tokn.line;
     this.col = tokn.col;
