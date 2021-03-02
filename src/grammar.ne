@@ -71,14 +71,14 @@ ProcBlock ->
       %}
 
 RenderBlock ->
-    (%int _ %arrow _):? (%kw_loop _ %int _):? (%kw_once _):? %lbrace (%lbc):* _ (RenderLine):* %rbrace _ %arrow _ %int
+    (Expr _ %arrow _):? (%kw_loop _ Expr _):? (%kw_once _):? %lbrace (%lbc):* _ (RenderLine):* %rbrace _ %arrow _ Expr
       {% ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
           body.map((e: any) => e[0]),
-          inNumBl !== null ? parseInt(inNumBl[0].text) : null,
-          parseInt(outNum.text),
-          loopNumBl !== null ? parseInt(loopNumBl[2].text) : null,
+          inNumBl !== null ? (inNumBl[0] instanceof IntExpr ? parseInt(inNumBl[0].getToken().text) : inNumBl[0]) : null,
+          outNum instanceof IntExpr ? parseInt(outNum.getToken().text) : outNum,
+          loopNumBl !== null ? (loopNumBl[2] instanceof IntExpr ? parseInt(loopNumBl[2].getToken().text) : loopNumBl[2]) : null,
           open
         )
       %}

@@ -10,7 +10,6 @@ declare var lbrace: any;
 declare var lbc: any;
 declare var rbrace: any;
 declare var kw_pr: any;
-declare var int: any;
 declare var arrow: any;
 declare var kw_loop: any;
 declare var kw_once: any;
@@ -51,6 +50,7 @@ declare var xor: any;
 declare var or: any;
 declare var question_mark: any;
 declare var colon: any;
+declare var int: any;
 declare var kw_int: any;
 declare var kw_uint: any;
 declare var kw_float: any;
@@ -210,10 +210,10 @@ const grammar: Grammar = {
           id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
               },
-    {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_"]},
+    {"name": "RenderBlock$ebnf$1$subexpression$1", "symbols": ["Expr", "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_"]},
     {"name": "RenderBlock$ebnf$1", "symbols": ["RenderBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "RenderBlock$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("kw_loop") ? {type: "kw_loop"} : kw_loop), "_", (nearleyLexer.has("int") ? {type: "int"} : int), "_"]},
+    {"name": "RenderBlock$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("kw_loop") ? {type: "kw_loop"} : kw_loop), "_", "Expr", "_"]},
     {"name": "RenderBlock$ebnf$2", "symbols": ["RenderBlock$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$2", "symbols": [], "postprocess": () => null},
     {"name": "RenderBlock$ebnf$3$subexpression$1", "symbols": [(nearleyLexer.has("kw_once") ? {type: "kw_once"} : kw_once), "_"]},
@@ -225,13 +225,13 @@ const grammar: Grammar = {
     {"name": "RenderBlock$ebnf$5", "symbols": []},
     {"name": "RenderBlock$ebnf$5$subexpression$1", "symbols": ["RenderLine"]},
     {"name": "RenderBlock$ebnf$5", "symbols": ["RenderBlock$ebnf$5", "RenderBlock$ebnf$5$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "RenderBlock$ebnf$4", "_", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", (nearleyLexer.has("int") ? {type: "int"} : int)], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
+    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "RenderBlock$ebnf$4", "_", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", "Expr"], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , , , , outNum]: any) =>
         new RenderBlock(
           onceBl !== null && onceBl[0] !== null,
           body.map((e: any) => e[0]),
-          inNumBl !== null ? parseInt(inNumBl[0].text) : null,
-          parseInt(outNum.text),
-          loopNumBl !== null ? parseInt(loopNumBl[2].text) : null,
+          inNumBl !== null ? (inNumBl[0] instanceof IntExpr ? parseInt(inNumBl[0].getToken().text) : inNumBl[0]) : null,
+          outNum instanceof IntExpr ? parseInt(outNum.getToken().text) : outNum,
+          loopNumBl !== null ? (loopNumBl[2] instanceof IntExpr ? parseInt(loopNumBl[2].getToken().text) : loopNumBl[2]) : null,
           open
         )
               },
