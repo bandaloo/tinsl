@@ -36,7 +36,7 @@ export function parse(str: string) {
   return parser.results[0];
 }
 
-function extractExpr(str: string, semicolon: boolean) {
+export function extractExpr(str: string, semicolon: boolean) {
   return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
 }
 

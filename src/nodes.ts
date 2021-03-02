@@ -2,6 +2,8 @@ import type { Token } from "moo";
 import { TinslError, wrapTypeError } from "./err";
 import {
   binaryTyping,
+  callReturnType,
+  constructors,
   isVec,
   SpecType,
   vectorAccessTyping,
@@ -335,12 +337,11 @@ export class ConstructorExpr extends Expr {
   }
 
   getType(): SpecType {
-    /*
-    wrapTypeError(() => {
-      constructors[""];
+    return wrapTypeError(() => {
+      const info = constructors[this.typ.getToken().text];
+      const argTypes = this.args.map((a) => a.getType());
+      return callReturnType(argTypes, info);
     }, this.open);
-    */
-    throw new Error("Method not yet implemented");
   }
 }
 

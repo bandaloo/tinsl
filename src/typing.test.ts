@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { extractExpr } from "./testhelpers";
 import {
   dimensions,
   binaryTyping,
@@ -454,5 +455,50 @@ describe("invalid vector access", () => {
 
   it("left hand contains repeats", () => {
     expect(() => vectorAccessTyping("rrg", "vec2", true)).to.throw("left");
+  });
+});
+
+describe("typing a binary expression", () => {
+  const vecTest = (typ: string, num: number, ending: string, comps: string) => {
+    const expr =
+      typ +
+      num +
+      "(" +
+      [...new Array(num)].map(() => ending).join(", ") +
+      ")." +
+      comps;
+    expect(extractExpr(expr, true).getType()).to.equal(typ + comps.length);
+  };
+
+  const totalTest = (num: number, comps: string) => {
+    vecTest("vec", num, "1.", comps);
+    vecTest("ivec", num, "1", comps);
+    vecTest("uvec", num, "1u", comps);
+    vecTest("bvec", num, "false", comps);
+  };
+
+  it(".xy is on a gvec2 is a gvec2", () => {
+    totalTest(2, "xy");
+  });
+
+  it(".rg, rbg is on a gvec3 is a gvec2, gvec3", () => {
+    totalTest(3, "rg");
+    totalTest(3, "rgb");
+  });
+
+  it(".st, stp, stpq, is on a gvec4 is a gvec2, gvec3, gvec4", () => {
+    totalTest(4, "st");
+    totalTest(4, "stp");
+    totalTest(4, "stpq");
+  });
+
+  it("throws when left side not a vector", () => {
+    expect(() => extractExpr("(123).xy", true).getType()).to.throw("vector");
+  });
+
+  it("throws when right side not component access", () => {
+    expect(() => extractExpr("vec2(1., 2.).(3)", true).getType()).to.throw(
+      "components"
+    );
   });
 });
