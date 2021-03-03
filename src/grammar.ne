@@ -36,7 +36,6 @@ const nearleyLexer = (lexer as unknown) as NearleyLexer;
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
-//const typ = (d: any) => new TypeName(d);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 %}
 
@@ -53,9 +52,6 @@ TopLevel ->
   | ProcBlock   {% id %}
   | TopDef    {% id %}
 
-# TODO some sort of define?
-
-# TODO this is a bad name
 DefBlock ->
     TypeName _ %ident _ %lparen (_ Params):? _ %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
       {% ([typ, , id, , , params, , , , , , , body, ]: any) => new FuncDef(
@@ -85,8 +81,8 @@ RenderBlock ->
         }
       %}
 
-Uniform
-    -> %kw_uniform _ TypeName _ %ident (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
+Uniform ->
+    %kw_uniform _ TypeName _ %ident (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
 
 # and statements/expressions allowed to appear in render block
 RenderLevel ->
@@ -101,11 +97,10 @@ FuncLevel ->
   | Assign {% id %}
   | Return {% id %}
 
-# TODO more tests for ending whitespace of for and if statements
 FuncLine ->
     FuncLevel (%lbc):+ _ {% d => d[0] %}
   | ForLoop              {% d => d[0] %}
-  | If {% id %}
+  | If                   {% id %}
 
 RenderLine ->
     RenderLevel (%lbc):+ _ {% d => d[0] %}
@@ -122,8 +117,7 @@ Decl ->
       {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
 
 TopDef ->
-    %kw_def _ %ident __ Expr
-      {% d => new TopDef(d[2], d[4]) %}
+    %kw_def _ %ident __ Expr {% d => new TopDef(d[2], d[4]) %}
 
 Assign ->
     Expr _ AssignSymbol _ Expr {% d => new Assign(d[0], d[2], d[4]) %}
@@ -248,7 +242,6 @@ Ternary ->
 
 Expr -> Ternary {% id %}
 
-# helpers
 MiddleTernary ->
     %question_mark _ Expr _ %colon {% d => { return { tok: d[0], expr: d[2] } } %}
 
@@ -306,14 +299,6 @@ Param ->
     TypeName _ %ident (_ %assignment _ Expr):?
       {% d => new Param(d[0], d[2], d[3] === null ? null : d[3][3]) %}
 
-#Frag ->
-#    %kw_frag (_ %lparen _ %int _ (%comma _ %Expr _ ):? %lparen):?
-#      {% d => new Frag(d[1] !== null ? null : parseInt(d[1][3].text), d[1] !== null && d[1][5] !== null ? d[1][5][2] : null, d[0]) %}
-
-#Frag ->
-#    %kw_frag (_ %lparen _ %int _ (%comma _ %Expr _ ):? %lparen):?
-#      {% d => new Frag(d[1] !== null ? parseInt(d[1][3].text) : null, d[1] !== null && d[1][5] !== null ? d[1][5][2] : null, d[0]) %}
-
 Atom ->
     %float    {% d => new FloatExpr(d[0]) %}
   | %int      {% d => new IntExpr(d[0]) %}
@@ -341,7 +326,3 @@ AssignSymbol ->
 _ -> (%ws | %comment | %multiline_comment):*
 
 __ -> (%ws | %comment | %multiline_comment):+
-
-# TODO assignments can be expressions!
-
-# TODO optional out arrow in render block

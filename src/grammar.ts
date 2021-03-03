@@ -143,7 +143,6 @@ const nearleyLexer = (lexer as unknown) as NearleyLexer;
 const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
-//const typ = (d: any) => new TypeName(d);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
 interface NearleyToken {  value: any;
