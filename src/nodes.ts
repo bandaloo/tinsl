@@ -6,6 +6,7 @@ import {
   constructors,
   isVec,
   SpecType,
+  ternaryTyping,
   vectorAccessTyping,
 } from "./typing";
 
@@ -630,7 +631,13 @@ export class TernaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    throw new Error("Method not implemented.");
+    return wrapTypeError(() => {
+      return ternaryTyping(
+        this.bool.getType(),
+        this.expr1.getType(),
+        this.expr2.getType()
+      );
+    }, this.getToken());
   }
 }
 

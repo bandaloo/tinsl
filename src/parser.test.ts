@@ -793,6 +793,7 @@ for
     checkExpr(`for(int i=0;i<3;i++){;;j++;;;;}`, fullForLoop1, false);
     checkExpr(`for(int i=0;i<3;i++){;;j++;;k++;;}`, fullForLoop2, false);
   });
+
   const declHelper = (str: string) =>
     new Decl(
       false,

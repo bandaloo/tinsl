@@ -657,7 +657,7 @@ compare scalars. for vectors, use ${
       }(left, right) instead.`);
     }
 
-    return left;
+    return "bool";
   }
 
   if (["==", "!="].includes(op)) {
@@ -717,7 +717,7 @@ export function ternaryTyping(
   condType: SpecType,
   ifType: SpecType,
   elseType: SpecType
-): TotalType {
+): SpecType {
   if (typeof condType === "object") {
     throw new TinslError(
       "cannot have array type as condition in ternary expression"

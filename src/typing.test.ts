@@ -192,10 +192,10 @@ describe("unary typing", () => {
 
 describe("relational and equality typing", () => {
   it("compares valid values", () => {
-    expect(binaryTyping(">", "int", "int")).to.equal("int");
-    expect(binaryTyping("<", "float", "float")).to.equal("float");
-    expect(binaryTyping(">=", "uint", "uint")).to.equal("uint");
-    expect(binaryTyping(">=", "int", "int")).to.equal("int");
+    expect(binaryTyping(">", "int", "int")).to.equal("bool");
+    expect(binaryTyping("<", "float", "float")).to.equal("bool");
+    expect(binaryTyping(">=", "uint", "uint")).to.equal("bool");
+    expect(binaryTyping(">=", "int", "int")).to.equal("bool");
   });
 
   it("compares mismatching values which throws", () => {
@@ -220,6 +220,10 @@ describe("relational and equality typing", () => {
   it("compares for equality different types, throws", () => {
     expect(() => binaryTyping("==", "int", "float")).to.throw("equality");
     expect(() => binaryTyping("!=", "mat4x2", "mat2x4")).to.throw("equality");
+  });
+
+  it("parses and type checks comparison", () => {
+    expect(extractExpr("1 < 2", true).getType()).to.equal("bool");
   });
 });
 
@@ -283,6 +287,12 @@ describe("ternary operator", () => {
     expect(ternaryTyping("bool", "mat2x2", "mat2")).to.equal("mat2");
     expect(ternaryTyping("bool", "mat2", "mat2x2")).to.equal("mat2");
     expect(ternaryTyping("bool", "mat2x2", "mat2x2")).to.equal("mat2");
+  });
+
+  it("parses and type checks ternary", () => {
+    expect(
+      extractExpr("1 < 2 ? ivec2(1, 2) : ivec2(3, 4)", true).getType()
+    ).to.equal("ivec2");
   });
 });
 
