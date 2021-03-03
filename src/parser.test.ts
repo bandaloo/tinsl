@@ -9,6 +9,7 @@ import {
   Decl,
   Else,
   Expr,
+  ExSt,
   FloatExpr,
   ForLoop,
   Frag,
@@ -581,6 +582,7 @@ describe("render block", () => {
     null,
     tok("{")
   );
+
   const completeBlock = (
     inNum: number | Expr = 0,
     outNum: number | Expr = 1,
@@ -719,7 +721,7 @@ describe("top level definitions", () => {
 describe("for loops", () => {
   const emptyForLoop = new ForLoop(null, null, null, [], tok("for"));
 
-  const forLoop = (body: Expr[]) =>
+  const forLoop = (body: ExSt[]) =>
     new ForLoop(
       new Decl(
         false,

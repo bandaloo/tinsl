@@ -32,23 +32,29 @@ abstract class Node {
   }
 }
 
-// TODO not quite the right name; includes stmts and exprs
-abstract class Expr extends Node {
-  abstract getSubExpressions(): Expr[];
-  abstract getType(): SpecType; // TODO or undefined? also used for type checking
+abstract class Stmt extends Node {
+  abstract getSubExprStmts(): ExSt[];
+  abstract typeCheck(): void;
 }
 
-export class RenderBlock extends Expr {
+abstract class Expr extends Node {
+  abstract getSubExpressions(): Expr[];
+  abstract getType(): SpecType;
+}
+
+export type ExSt = Expr | Stmt;
+
+export class RenderBlock extends Stmt {
   once: boolean;
   inNum: number | Expr | null;
   outNum: number | Expr;
   loopNum: number | Expr | null;
-  body: Expr[]; // TODO rename to body?
+  body: ExSt[];
   open: Token;
 
   constructor(
     once: boolean,
-    body: Expr[],
+    body: ExSt[],
     inNum: number | Expr | null,
     outNum: number | Expr,
     loopNum: number | Expr | null,
@@ -82,11 +88,11 @@ export class RenderBlock extends Expr {
     return this.open;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): Expr[] {
     throw new Error("Method not implemented.");
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
@@ -383,18 +389,18 @@ export class SubscriptExpr extends Expr {
   }
 }
 
-export class Decl extends Expr {
+export class Decl extends Stmt {
   constant: boolean;
   typ: TypeName;
   id: Token;
-  expr: Expr;
+  expr: ExSt;
   assign: Token;
 
   constructor(
     constant: boolean,
     typ: TypeName,
     id: Token,
-    expr: Expr,
+    expr: ExSt,
     assign: Token
   ) {
     super();
@@ -405,7 +411,7 @@ export class Decl extends Expr {
     this.assign = assign;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     return [this.expr];
   }
 
@@ -428,7 +434,7 @@ export class Decl extends Expr {
     return this.assign;
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
@@ -436,19 +442,19 @@ export class Decl extends Expr {
 // TODO assignment isn't really an expression
 // we will reject invalid left-hand assignments not in the grammar but in a
 // second pass; this will lead to better error messages
-export class Assign extends Expr {
-  left: Expr;
+export class Assign extends Stmt {
+  left: ExSt;
   assign: Token;
-  right: Expr;
+  right: ExSt;
 
-  constructor(left: Expr, assign: Token, right: Expr) {
+  constructor(left: ExSt, assign: Token, right: ExSt) {
     super();
     this.left = left;
     this.assign = assign;
     this.right = right;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     return [this.left, this.right];
   }
 
@@ -471,7 +477,7 @@ export class Assign extends Expr {
     return this.assign;
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
@@ -507,9 +513,9 @@ export class TypeName extends Node {
 export class Param extends Node {
   typ: TypeName;
   id: Token;
-  def: Expr | null;
+  def: ExSt | null;
 
-  constructor(typ: TypeName, id: Token, def: Expr | null = null) {
+  constructor(typ: TypeName, id: Token, def: ExSt | null = null) {
     super();
     this.typ = typ;
     this.id = id;
@@ -533,9 +539,9 @@ export class FuncDef extends Node {
   typ: TypeName;
   id: Token;
   params: Param[];
-  body: Expr[];
+  body: ExSt[];
 
-  constructor(typ: TypeName, id: Token, params: Param[], body: Expr[]) {
+  constructor(typ: TypeName, id: Token, params: Param[], body: ExSt[]) {
     super();
     this.typ = typ;
     this.id = id;
@@ -564,11 +570,11 @@ export class FuncDef extends Node {
 }
 
 // TODO also a statement not an expression
-export class Return extends Expr {
-  expr: Expr;
+export class Return extends Stmt {
+  expr: ExSt;
   ret: Token;
 
-  constructor(expr: Expr, ret: Token) {
+  constructor(expr: ExSt, ret: Token) {
     super();
     this.expr = expr;
     this.ret = ret;
@@ -586,11 +592,11 @@ export class Return extends Expr {
     return this.ret;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     return [this.expr];
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
@@ -641,18 +647,18 @@ export class TernaryExpr extends Expr {
   }
 }
 
-export class ForLoop extends Expr {
-  init: Expr | null;
+export class ForLoop extends Stmt {
+  init: ExSt | null;
   cond: Expr | null;
   loop: Expr | null;
-  body: Expr[];
+  body: ExSt[];
   token: Token;
 
   constructor(
-    init: Expr | null,
+    init: ExSt | null,
     cond: Expr | null,
     loop: Expr | null,
-    body: Expr[],
+    body: ExSt[],
     token: Token
   ) {
     super();
@@ -663,7 +669,7 @@ export class ForLoop extends Expr {
     this.token = token;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     return this.body;
   }
 
@@ -685,19 +691,19 @@ export class ForLoop extends Expr {
     return this.token;
   }
 
-  getType(): SpecType {
+  typeCheck(): SpecType {
     throw new Error("Method not implemented.");
   }
 }
 
 // TODO stmt
-export class If extends Expr {
-  cond: Expr;
-  body: Expr[];
+export class If extends Stmt {
+  cond: ExSt;
+  body: ExSt[];
   token: Token;
   cont: Else | null;
 
-  constructor(cond: Expr, body: Expr[], token: Token, cont: Else | null) {
+  constructor(cond: ExSt, body: ExSt[], token: Token, cont: Else | null) {
     super();
     this.cond = cond;
     this.body = body;
@@ -705,7 +711,7 @@ export class If extends Expr {
     this.cont = cont;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     throw new Error("Method not implemented.");
   }
 
@@ -726,23 +732,23 @@ export class If extends Expr {
     throw new Error("Method not implemented.");
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
 
 // TODO stmt
-export class Else extends Expr {
-  body: Expr[];
+export class Else extends Stmt {
+  body: ExSt[];
   token: Token;
 
-  constructor(body: Expr[], token: Token) {
+  constructor(body: ExSt[], token: Token) {
     super();
     this.body = body;
     this.token = token;
   }
 
-  getSubExpressions(): Expr[] {
+  getSubExprStmts(): ExSt[] {
     return this.body;
   }
 
@@ -761,7 +767,7 @@ export class Else extends Expr {
     return this.token;
   }
 
-  getType(): SpecType {
+  typeCheck() {
     throw new Error("Method not implemented.");
   }
 }
@@ -792,9 +798,9 @@ export class Uniform extends Node {
 export class ProcDef extends Node {
   id: Token;
   params: Param[];
-  body: Expr[];
+  body: ExSt[];
 
-  constructor(id: Token, params: Param[], body: Expr[]) {
+  constructor(id: Token, params: Param[], body: ExSt[]) {
     super();
     this.id = id;
     this.params = params;
@@ -821,9 +827,9 @@ export class ProcDef extends Node {
 
 export class TopDef extends Node {
   id: Token;
-  expr: Expr;
+  expr: ExSt;
 
-  constructor(id: Token, expr: Expr) {
+  constructor(id: Token, expr: ExSt) {
     super();
     this.id = id;
     this.expr = expr;
@@ -847,7 +853,7 @@ export class TopDef extends Node {
 }
 
 // TODO statement not expression
-export class Refresh extends Expr {
+export class Refresh extends Stmt {
   id: Token;
 
   constructor(id: Token) {
@@ -867,12 +873,12 @@ export class Refresh extends Expr {
     return this.id;
   }
 
-  getSubExpressions(): Expr[] {
-    throw new Error("Method not implemented.");
+  getSubExprStmts(): ExSt[] {
+    return [];
   }
 
-  getType(): SpecType {
-    throw new Error("Method not implemented.");
+  typeCheck() {
+    return;
   }
 }
 
@@ -899,7 +905,7 @@ export class Frag extends Expr {
   }
 
   toJson(): object {
-    throw new Error("Method not implemented.");
+    return { name: "frag", sampler: this.sampler };
   }
 
   translate(): string {
@@ -911,4 +917,4 @@ export class Frag extends Expr {
   }
 }
 
-export type { Node, Expr };
+export type { Node, Expr, Stmt };
