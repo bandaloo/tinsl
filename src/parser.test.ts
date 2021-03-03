@@ -565,6 +565,14 @@ int[2] foo () {
 });
 
 describe("render block", () => {
+  const empty = new RenderBlock(
+    false,
+    [vec(1, 2, 3, 4)],
+    null,
+    null,
+    null,
+    tok("{")
+  );
   const bl = new RenderBlock(false, [vec(1, 2, 3, 4)], null, 0, null, tok("{"));
   const nestedBl = new RenderBlock(
     false,
@@ -597,7 +605,11 @@ describe("render block", () => {
       tok("{")
     );
 
-  it("parses a render block minimal options minimal ws", () => {
+  it("parses an empty render block", () => {
+    checkProgram("{vec4(1., 2., 3., 4.);}", [empty]);
+  });
+
+  it("parses a render block only out number minimal ws", () => {
     checkProgram("{vec4(1., 2., 3., 4.);}->0", [bl]);
   });
 

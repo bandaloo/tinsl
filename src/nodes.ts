@@ -47,7 +47,7 @@ export type ExSt = Expr | Stmt;
 export class RenderBlock extends Stmt {
   once: boolean;
   inNum: number | Expr | null;
-  outNum: number | Expr;
+  outNum: number | Expr | null;
   loopNum: number | Expr | null;
   body: ExSt[];
   open: Token;
@@ -56,7 +56,7 @@ export class RenderBlock extends Stmt {
     once: boolean,
     body: ExSt[],
     inNum: number | Expr | null,
-    outNum: number | Expr,
+    outNum: number | Expr | null,
     loopNum: number | Expr | null,
     open: Token
   ) {
