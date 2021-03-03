@@ -228,15 +228,17 @@ const grammar: Grammar = {
     {"name": "RenderBlock$ebnf$6$subexpression$1", "symbols": ["_", (nearleyLexer.has("arrow") ? {type: "arrow"} : arrow), "_", "Expr"]},
     {"name": "RenderBlock$ebnf$6", "symbols": ["RenderBlock$ebnf$6$subexpression$1"], "postprocess": id},
     {"name": "RenderBlock$ebnf$6", "symbols": [], "postprocess": () => null},
-    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "RenderBlock$ebnf$4", "_", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "RenderBlock$ebnf$6"], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , outNumBl]: any) =>
-        new RenderBlock(
-          onceBl !== null && onceBl[0] !== null,
-          body.map((e: any) => e[0]),
-          inNumBl !== null ? (inNumBl[0] instanceof IntExpr ? parseInt(inNumBl[0].getToken().text) : inNumBl[0]) : null,
-          outNumBl !== null ? (outNumBl[3] instanceof IntExpr ? parseInt(outNumBl[3].getToken().text) : outNumBl[3]) : null,
-          loopNumBl !== null ? (loopNumBl[2] instanceof IntExpr ? parseInt(loopNumBl[2].getToken().text) : loopNumBl[2]) : null,
-          open
-        )
+    {"name": "RenderBlock", "symbols": ["RenderBlock$ebnf$1", "RenderBlock$ebnf$2", "RenderBlock$ebnf$3", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "RenderBlock$ebnf$4", "_", "RenderBlock$ebnf$5", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "RenderBlock$ebnf$6"], "postprocess":  ([inNumBl, loopNumBl, onceBl, open, , , body, , outNumBl]: any) => {
+          const blockHelper = (bl: null | any[], num: number) => bl !== null ? (bl[num] instanceof IntExpr ? parseInt(bl[num].getToken().text) : bl[num]) : null;
+          return new RenderBlock(
+            onceBl !== null && onceBl[0] !== null,
+            body.map((e: any) => e[0]),
+            blockHelper(inNumBl, 0),
+            blockHelper(outNumBl, 3),
+            blockHelper(loopNumBl, 2),
+            open
+          )
+        }
               },
     {"name": "Uniform$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("lbc") ? {type: "lbc"} : lbc)]},
     {"name": "Uniform$ebnf$1", "symbols": ["Uniform$ebnf$1$subexpression$1"]},

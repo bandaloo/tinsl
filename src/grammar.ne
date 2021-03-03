@@ -72,15 +72,17 @@ ProcBlock ->
 
 RenderBlock ->
     (Expr _ %arrow _):? (%kw_loop _ Expr _):? (%kw_once _):? %lbrace (%lbc):* _ (RenderLine):* %rbrace (_ %arrow _ Expr):?
-      {% ([inNumBl, loopNumBl, onceBl, open, , , body, , outNumBl]: any) =>
-        new RenderBlock(
-          onceBl !== null && onceBl[0] !== null,
-          body.map((e: any) => e[0]),
-          inNumBl !== null ? (inNumBl[0] instanceof IntExpr ? parseInt(inNumBl[0].getToken().text) : inNumBl[0]) : null,
-          outNumBl !== null ? (outNumBl[3] instanceof IntExpr ? parseInt(outNumBl[3].getToken().text) : outNumBl[3]) : null,
-          loopNumBl !== null ? (loopNumBl[2] instanceof IntExpr ? parseInt(loopNumBl[2].getToken().text) : loopNumBl[2]) : null,
-          open
-        )
+      {% ([inNumBl, loopNumBl, onceBl, open, , , body, , outNumBl]: any) => {
+          const blockHelper = (bl: null | any[], num: number) => bl !== null ? (bl[num] instanceof IntExpr ? parseInt(bl[num].getToken().text) : bl[num]) : null;
+          return new RenderBlock(
+            onceBl !== null && onceBl[0] !== null,
+            body.map((e: any) => e[0]),
+            blockHelper(inNumBl, 0),
+            blockHelper(outNumBl, 3),
+            blockHelper(loopNumBl, 2),
+            open
+          )
+        }
       %}
 
 Uniform
