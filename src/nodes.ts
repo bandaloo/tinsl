@@ -7,6 +7,7 @@ import {
   constructors,
   isVec,
   SpecType,
+  SpecTypeSimple,
   ternaryTyping,
   unaryTyping,
   vectorAccessTyping,
@@ -376,6 +377,24 @@ export class ConstructorExpr extends Expr {
 
   getType(): SpecType {
     return wrapTypeError(() => {
+      if (this.typ.size !== null) {
+        const arrType = this.typ.getToken().text as SpecTypeSimple;
+        // TODO matching sizes
+        for (const a of this.args) {
+          if (a.getType() !== arrType) {
+            throw new TinslError(
+              `argument in array constructor was not of type ${arrType}`
+            );
+          }
+        }
+        if (this.typ.size !== 0 && this.typ.size !== this.args.length) {
+          throw new TinslError(`${this.args.length} args passed into array \
+constructor but needed ${this.typ.size} because size was specified. to fix, \
+you can leave the size unspecified with ${arrType}[] instead of \
+${arrType}[${this.args.length}]`);
+        }
+        return { typ: arrType, size: this.args.length };
+      }
       const info = constructors[this.typ.getToken().text];
       const argTypes = this.args.map((a) => a.getType());
       return callReturnType(argTypes, info);
@@ -538,6 +557,12 @@ export class TypeName extends Node {
 
   getToken(): Token {
     return this.token;
+  }
+
+  toSpecType(): SpecType {
+    const simple = this.token.text as SpecTypeSimple;
+    if (this.size === null) return simple;
+    return { typ: simple, size: this.size };
   }
 }
 

@@ -9,6 +9,8 @@ import {
   builtIns,
   constructors,
   vectorAccessTyping,
+  ArrayType,
+  SpecType,
 } from "./typing";
 
 describe("regex on vec and mat dimensions", () => {
@@ -431,6 +433,28 @@ describe("typing constructor calls", () => {
     expect(
       callReturnType(["vec3", "vec3", "vec3", "vec3"], constructors["mat3x4"])
     ).to.equal("mat3x4");
+  });
+});
+
+describe("array constructor", () => {
+  const arrayInt3: ArrayType<SpecType> = { typ: "int", size: 3 };
+
+  it("parses and checks array constructor unspecified size", () => {
+    expect(extractExpr("int[](1, 2, 3)", true).getType()).to.deep.equal(
+      arrayInt3
+    );
+  });
+
+  it("parses and checks array constructor specified size", () => {
+    expect(extractExpr("int[3](1, 2, 3)", true).getType()).to.deep.equal(
+      arrayInt3
+    );
+  });
+
+  it("throws when sizes don't match", () => {
+    expect(() => extractExpr("int[3](1, 2, 3, 4)", true).getType()).to.throw(
+      "size"
+    );
   });
 });
 
