@@ -540,3 +540,13 @@ describe("typing a binary expression", () => {
     );
   });
 });
+
+describe("declaration type checks", () => {
+  it("parses and checks a valid assignment", () => {
+    expect(extractExpr("int a = 1", true).typeCheck()).to.equal(undefined);
+  });
+
+  it("tries to assign float to an int and throws", () => {
+    expect(() => extractExpr("int a = 1.", true).typeCheck()).to.throw("type");
+  });
+});

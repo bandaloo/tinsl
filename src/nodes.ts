@@ -1,5 +1,5 @@
 import type { Token } from "moo";
-import { TinslError, wrapTypeError } from "./err";
+import { TinslError, wrapError } from "./err";
 import {
   binaryTyping,
   builtIns,
@@ -149,7 +149,7 @@ export class BinaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapTypeError(() => {
+    return wrapError(() => {
       const lType = this.left.getType();
       const op = this.operator.text;
 
@@ -210,7 +210,7 @@ export class UnaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapTypeError(
+    return wrapError(
       () => unaryTyping(this.operator.text, this.argument.getType()),
       this.getToken()
     );
@@ -326,7 +326,7 @@ export class CallExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapTypeError(() => {
+    return wrapError(() => {
       if (!(this.call instanceof IdentExpr)) {
         throw new TinslError("invalid function call");
       }
@@ -376,7 +376,7 @@ export class ConstructorExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapTypeError(() => {
+    return wrapError(() => {
       if (this.typ.size !== null) {
         const arrType = this.typ.getToken().text as SpecTypeSimple;
         // TODO matching sizes
@@ -443,14 +443,14 @@ export class Decl extends Stmt {
   constant: boolean;
   typ: TypeName;
   id: Token;
-  expr: ExSt;
+  expr: Expr;
   assign: Token;
 
   constructor(
     constant: boolean,
     typ: TypeName,
     id: Token,
-    expr: ExSt,
+    expr: Expr,
     assign: Token
   ) {
     super();
@@ -485,7 +485,13 @@ export class Decl extends Stmt {
   }
 
   typeCheck() {
-    throw new Error("Method not implemented.");
+    wrapError(() => {
+      if (!this.typ.equals(this.expr.getType())) {
+        throw new TinslError(
+          "left side type of assignment does not match right side type"
+        );
+      }
+    }, this.getToken());
   }
 }
 
@@ -559,10 +565,20 @@ export class TypeName extends Node {
     return this.token;
   }
 
+  // TODO maybe not needed
   toSpecType(): SpecType {
     const simple = this.token.text as SpecTypeSimple;
     if (this.size === null) return simple;
     return { typ: simple, size: this.size };
+  }
+
+  equals(typ: SpecType): boolean {
+    if (typeof typ === "string") {
+      if (this.size !== null) return false;
+      return this.token.text === typ;
+    }
+
+    return typ.size === this.size && typ.typ === this.token.text;
   }
 }
 
@@ -693,7 +709,7 @@ export class TernaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapTypeError(() => {
+    return wrapError(() => {
       return ternaryTyping(
         this.bool.getType(),
         this.expr1.getType(),

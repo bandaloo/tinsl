@@ -20,7 +20,7 @@ export class TinslLineError extends Error {
   }
 }
 
-export function wrapTypeError(callback: () => SpecType, tokn: Token): SpecType {
+export function wrapError<T>(callback: () => T, tokn: Token): T {
   try {
     return callback();
   } catch (e: unknown) {
