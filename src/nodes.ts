@@ -2,11 +2,13 @@ import type { Token } from "moo";
 import { TinslError, wrapTypeError } from "./err";
 import {
   binaryTyping,
+  builtIns,
   callReturnType,
   constructors,
   isVec,
   SpecType,
   ternaryTyping,
+  unaryTyping,
   vectorAccessTyping,
 } from "./typing";
 
@@ -14,6 +16,16 @@ import {
 // TODO do we want a list of tokens for each node?
 
 // TODO check the json conversion functions for tokens
+
+function typeCheckExprStmts(arr: ExSt[]) {
+  for (const e of arr) {
+    if (e instanceof Expr) {
+      e.getType();
+    } else {
+      e.typeCheck();
+    }
+  }
+}
 
 function commaSeparatedNodes(exprs: Node[]) {
   return exprs.map((s) => s.translate()).join();
@@ -93,7 +105,9 @@ export class RenderBlock extends Stmt {
   }
 
   typeCheck() {
-    throw new Error("Method not implemented.");
+    // TODO if inNum, outNum and loopNum are idents make sure they can be
+    // determined at compile time
+    typeCheckExprStmts(this.body);
   }
 }
 
@@ -195,7 +209,10 @@ export class UnaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    throw new Error("Method not implemented.");
+    return wrapTypeError(
+      () => unaryTyping(this.operator.text, this.argument.getType()),
+      this.getToken()
+    );
   }
 }
 
@@ -254,16 +271,6 @@ export class UIntExpr extends AtomExpr {
   }
 }
 
-export class IdentExpr extends AtomExpr {
-  toJson() {
-    return this.jsonHelper("ident_expr");
-  }
-
-  getType(): SpecType {
-    throw new Error("Method not implemented.");
-  }
-}
-
 export class BoolExpr extends AtomExpr {
   toJson() {
     return this.jsonHelper("bool_expr");
@@ -271,6 +278,17 @@ export class BoolExpr extends AtomExpr {
 
   getType(): SpecType {
     return "bool";
+  }
+}
+
+export class IdentExpr extends AtomExpr {
+  toJson() {
+    return this.jsonHelper("ident_expr");
+  }
+
+  getType(): SpecType {
+    // TODO ask the codebuilder to resolve identifier
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -307,7 +325,20 @@ export class CallExpr extends Expr {
   }
 
   getType(): SpecType {
-    throw new Error("Method not implemented.");
+    return wrapTypeError(() => {
+      if (!(this.call instanceof IdentExpr)) {
+        throw new TinslError("invalid function call");
+      }
+      const info = builtIns[this.call.getToken().text];
+      if (info !== undefined) {
+        return callReturnType(
+          this.args.map((a) => a.getType()),
+          info
+        );
+      }
+      throw new Error("Method not implemented for non built-ins");
+      // TODO ask the codebuilder to resolve identifier
+    }, this.getToken());
   }
 }
 

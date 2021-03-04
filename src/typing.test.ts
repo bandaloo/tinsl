@@ -305,6 +305,10 @@ describe("typing overloaded generic function calls", () => {
     );
   });
 
+  it("parses expression and checks built-in function type", () => {
+    expect(extractExpr("sin(vec2(1., 2.))", true).getType()).to.equal("vec2");
+  });
+
   it("checks clamp", () => {
     expect(
       callReturnType(["vec2", "float", "float"], builtIns["clamp"])
