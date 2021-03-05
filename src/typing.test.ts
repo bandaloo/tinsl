@@ -550,3 +550,10 @@ describe("declaration type checks", () => {
     expect(() => extractExpr("int a = 1.", true).typeCheck()).to.throw("type");
   });
 });
+
+describe("for loop type check", () => {
+  // TODO can't do a meaningful for loop until we build an identifier dictionary
+  it("parses and checks for loop", () => {
+    expect(() => extractExpr("for (;;) { }", false).typeCheck()).to.not.throw();
+  });
+});

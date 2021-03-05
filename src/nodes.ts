@@ -722,14 +722,14 @@ export class TernaryExpr extends Expr {
 export class ForLoop extends Stmt {
   init: ExSt | null;
   cond: Expr | null;
-  loop: Expr | null;
+  loop: ExSt | null;
   body: ExSt[];
   token: Token;
 
   constructor(
     init: ExSt | null,
     cond: Expr | null,
-    loop: Expr | null,
+    loop: ExSt | null,
     body: ExSt[],
     token: Token
   ) {
@@ -763,8 +763,17 @@ export class ForLoop extends Stmt {
     return this.token;
   }
 
-  typeCheck(): SpecType {
-    throw new Error("Method not implemented.");
+  typeCheck(): void {
+    wrapError(() => {
+      if (this.cond !== null && this.cond.getType() !== "bool") {
+        throw new TinslError("conditional in a for loop must be a boolean");
+      }
+      typeCheckExprStmts([
+        ...this.body,
+        ...(this.init ? [this.init] : []),
+        ...(this.loop ? [this.loop] : []),
+      ]);
+    }, this.getToken());
   }
 }
 
