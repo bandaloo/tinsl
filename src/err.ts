@@ -1,4 +1,5 @@
 import { Token } from "moo";
+import { Expr, ExSt, Stmt } from "./nodes";
 import { SpecType } from "./typing";
 
 export class TinslError extends Error {
@@ -7,6 +8,7 @@ export class TinslError extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
+
 export class TinslLineError extends Error {
   line: number | undefined;
   col: number | undefined;
@@ -20,11 +22,12 @@ export class TinslLineError extends Error {
   }
 }
 
-export function wrapError<T>(callback: () => T, tokn: Token): T {
+export function wrapErrorHelper<T>(callback: () => T, exSt: ExSt): T {
   try {
     return callback();
   } catch (e: unknown) {
-    if (e instanceof TinslError) throw new TinslLineError(e.message, tokn);
+    if (e instanceof TinslError)
+      throw new TinslLineError(e.message, exSt.getToken());
     throw e;
   }
 }

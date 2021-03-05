@@ -1,5 +1,5 @@
 import type { Token } from "moo";
-import { TinslError, wrapError } from "./err";
+import { TinslError, wrapErrorHelper } from "./err";
 import {
   binaryTyping,
   builtIns,
@@ -45,14 +45,45 @@ abstract class Node {
   }
 }
 
-abstract class Stmt extends Node {
-  abstract getSubExprStmts(): ExSt[];
-  abstract typeCheck(): void;
+interface IdentDictionary {
+  [key: string]: TopDef | FuncDef | Expr | undefined;
+  // TODO but TopDef and FuncDef can only be at top level
 }
 
-abstract class Expr extends Node {
+interface LexicalScope {
+  upperScope: LexicalScope | null;
+  idents: IdentDictionary;
+}
+
+abstract class TinslProgram {
+  topScope: LexicalScope = { upperScope: null, idents: {} };
+  body: ExSt[];
+
+  constructor(body: ExSt[]) {
+    this.body = body;
+  }
+}
+
+abstract class ExStBase extends Node {
+  scope: LexicalScope | undefined;
+}
+
+export abstract class Stmt extends ExStBase {
+  abstract getSubExprStmts(): ExSt[];
+  abstract typeCheck(): void;
+  wrapError(callback: () => void): void {
+    return wrapErrorHelper(callback, this);
+  }
+}
+
+export abstract class Expr extends ExStBase {
+  cachedType: SpecType | undefined;
   abstract getSubExpressions(): Expr[];
   abstract getType(): SpecType;
+  wrapError(callback: () => SpecType): SpecType {
+    if (this.cachedType !== undefined) return this.cachedType;
+    return wrapErrorHelper(callback, this);
+  }
 }
 
 export type ExSt = Expr | Stmt;
@@ -149,7 +180,7 @@ export class BinaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapError(() => {
+    return this.wrapError(() => {
       const lType = this.left.getType();
       const op = this.operator.text;
 
@@ -172,7 +203,7 @@ export class BinaryExpr extends Expr {
       }
 
       return binaryTyping(op, lType, this.right.getType());
-    }, this.getToken());
+    });
   }
 }
 
@@ -210,9 +241,8 @@ export class UnaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapError(
-      () => unaryTyping(this.operator.text, this.argument.getType()),
-      this.getToken()
+    return this.wrapError(() =>
+      unaryTyping(this.operator.text, this.argument.getType())
     );
   }
 }
@@ -326,7 +356,7 @@ export class CallExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapError(() => {
+    return this.wrapError(() => {
       if (!(this.call instanceof IdentExpr)) {
         throw new TinslError("invalid function call");
       }
@@ -339,7 +369,7 @@ export class CallExpr extends Expr {
       }
       throw new Error("Method not implemented for non built-ins");
       // TODO ask the codebuilder to resolve identifier
-    }, this.getToken());
+    });
   }
 }
 
@@ -376,7 +406,7 @@ export class ConstructorExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapError(() => {
+    return this.wrapError(() => {
       if (this.typ.size !== null) {
         const arrType = this.typ.getToken().text as SpecTypeSimple;
         // TODO matching sizes
@@ -398,7 +428,7 @@ ${arrType}[${this.args.length}]`);
       const info = constructors[this.typ.getToken().text];
       const argTypes = this.args.map((a) => a.getType());
       return callReturnType(argTypes, info);
-    }, this.open);
+    });
   }
 }
 
@@ -485,19 +515,16 @@ export class Decl extends Stmt {
   }
 
   typeCheck() {
-    wrapError(() => {
+    this.wrapError(() => {
       if (!this.typ.equals(this.expr.getType())) {
         throw new TinslError(
           "left side type of assignment does not match right side type"
         );
       }
-    }, this.getToken());
+    });
   }
 }
 
-// TODO assignment isn't really an expression
-// we will reject invalid left-hand assignments not in the grammar but in a
-// second pass; this will lead to better error messages
 export class Assign extends Stmt {
   left: ExSt;
   assign: Token;
@@ -607,7 +634,7 @@ export class Param extends Node {
   }
 }
 
-export class FuncDef extends Node {
+export class FuncDef extends Stmt {
   typ: TypeName;
   id: Token;
   params: Param[];
@@ -638,6 +665,14 @@ export class FuncDef extends Node {
 
   getToken(): Token {
     return this.id;
+  }
+
+  getSubExprStmts(): ExSt[] {
+    return this.body;
+  }
+
+  typeCheck(): void {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -709,13 +744,13 @@ export class TernaryExpr extends Expr {
   }
 
   getType(): SpecType {
-    return wrapError(() => {
+    return this.wrapError(() => {
       return ternaryTyping(
         this.bool.getType(),
         this.expr1.getType(),
         this.expr2.getType()
       );
-    }, this.getToken());
+    });
   }
 }
 
@@ -764,7 +799,7 @@ export class ForLoop extends Stmt {
   }
 
   typeCheck(): void {
-    wrapError(() => {
+    this.wrapError(() => {
       if (this.cond !== null && this.cond.getType() !== "bool") {
         throw new TinslError("conditional in a for loop must be a boolean");
       }
@@ -773,7 +808,7 @@ export class ForLoop extends Stmt {
         ...(this.init ? [this.init] : []),
         ...(this.loop ? [this.loop] : []),
       ]);
-    }, this.getToken());
+    });
   }
 }
 
@@ -997,5 +1032,3 @@ export class Frag extends Expr {
     return this.tokn;
   }
 }
-
-export type { Node, Expr, Stmt };
