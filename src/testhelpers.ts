@@ -4,7 +4,7 @@ import nearley from "nearley";
 import util from "util";
 import { TinslLineError } from "./err";
 import grammar from "./grammar";
-import { TinslProgram } from "./nodes";
+import { ExSt, TinslProgram } from "./nodes";
 import { tinslNearleyError } from "./util";
 
 export function tok(val: string): Token {
@@ -42,6 +42,11 @@ export function parse(str: string) {
 
 export function extractExpr(str: string, semicolon: boolean) {
   return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
+}
+
+export function parseAndCheck(str: string) {
+  const res = parse(str) as ExSt[];
+  new TinslProgram(res).typeCheck();
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];

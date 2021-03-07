@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Decl, IntExpr, LexicalScope, TypeName } from "./nodes";
-import { extractExpr, tok } from "./testhelpers";
+import { extractExpr, parseAndCheck, tok } from "./testhelpers";
 import {
   dimensions,
   binaryTyping,
@@ -614,5 +614,18 @@ describe("lexical scope", () => {
     expect(() =>
       innerScope.addToScope(declInner.getToken().text, decl("inner", 3))
     ).to.throw('duplicate identifier "inner"');
+  });
+});
+
+describe("checks entire programs", () => {
+  it("defines a function and uses it", () => {
+    expect(
+      parseAndCheck(`
+vec4 foo () {
+  return vec4(1., 1., 1., 1.);
+}
+
+{ foo(); } -> 0`)
+    );
   });
 });

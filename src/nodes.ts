@@ -1,5 +1,6 @@
 import type { Token } from "moo";
 import { TinslError, wrapErrorHelper } from "./err";
+import { checkExpr } from "./testhelpers";
 import {
   binaryTyping,
   builtIns,
@@ -18,7 +19,7 @@ import {
 
 // TODO check the json conversion functions for tokens
 
-function typeCheckExprStmts(arr: ExSt[], scope?: LexicalScope) {
+function typeCheckExprStmts(arr: ExSt[], scope: LexicalScope) {
   for (const e of arr) {
     if (e instanceof Expr) {
       e.getType(scope);
@@ -45,7 +46,7 @@ abstract class Node {
   }
 }
 
-type IdentResult = TopDef | Decl | FuncDef;
+type IdentResult = TopDef | Decl | FuncDef | Param;
 
 interface IdentDictionary {
   [key: string]: IdentResult | undefined;
@@ -55,9 +56,15 @@ interface IdentDictionary {
 export class LexicalScope {
   private upperScope?: LexicalScope;
   private idents: IdentDictionary = {};
+  private _returnType?: SpecType;
 
-  constructor(upperScope?: LexicalScope) {
+  get returnType() {
+    return this._returnType;
+  }
+
+  constructor(upperScope?: LexicalScope, returnType?: SpecType) {
     this.upperScope = upperScope;
+    this._returnType = returnType;
   }
 
   addToScope(name: string, result: IdentResult) {
@@ -76,10 +83,13 @@ export class LexicalScope {
 
 export abstract class Stmt extends Node {
   abstract getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] };
-  abstract typeCheck(scope?: LexicalScope): void;
+  abstract typeCheck(scope: LexicalScope): void;
 
-  wrapError(callback: () => void): void {
-    return wrapErrorHelper(callback, this);
+  wrapError(
+    callback: (scope: LexicalScope) => void,
+    scope: LexicalScope
+  ): void {
+    return wrapErrorHelper(callback, this, scope);
   }
 }
 
@@ -89,7 +99,7 @@ export abstract class Expr extends Node {
   abstract getSubExpressions(): Expr[];
 
   wrapError(
-    callback: () => SpecType,
+    callback: (scope: LexicalScope) => SpecType,
     scope: LexicalScope | undefined
   ): SpecType {
     if (scope === undefined) {
@@ -99,7 +109,7 @@ export abstract class Expr extends Node {
         );
       return this.cachedType;
     }
-    return wrapErrorHelper(callback, this);
+    return wrapErrorHelper(callback, this, scope);
   }
 }
 
@@ -118,9 +128,8 @@ export class TinslProgram extends Stmt {
     return { outer: [], inner: this.body };
   }
 
-  typeCheck(scope?: LexicalScope): void {
-    const innerScope = new LexicalScope(scope);
-    typeCheckExprStmts(this.body, innerScope);
+  typeCheck(scope: LexicalScope = new LexicalScope()): void {
+    typeCheckExprStmts(this.body, scope);
   }
 
   toJson(): object {
@@ -184,7 +193,7 @@ export class RenderBlock extends Stmt {
     throw new Error("Method not implemented.");
   }
 
-  typeCheck(scope?: LexicalScope) {
+  typeCheck(scope: LexicalScope): void {
     // TODO if inNum, outNum and loopNum are idents make sure they can be
     // determined at compile time
     const innerScope = new LexicalScope(scope);
@@ -419,19 +428,29 @@ export class CallExpr extends Expr {
   }
 
   getType(scope?: LexicalScope): SpecType {
-    return this.wrapError(() => {
+    return this.wrapError((scope: LexicalScope) => {
       if (!(this.call instanceof IdentExpr)) {
         throw new TinslError("invalid function call");
       }
-      const info = builtIns[this.call.getToken().text];
+      const name = this.call.getToken().text;
+      const info = builtIns[name];
       if (info !== undefined) {
         return callReturnType(
           this.args.map((a) => a.getType(scope)),
           info
         );
       }
-      throw new Error("Method not implemented for non built-ins");
-      // TODO ask the codebuilder to resolve identifier
+      // not a built-in, so try to resolve identifier name
+      const res = scope.resolve(name);
+      if (res === undefined) {
+        throw new TinslError(`function "${name}" is not defined`);
+      }
+      if (!(res instanceof FuncDef)) {
+        throw new TinslError(
+          `identifier "${name}" does not refer to a function definition`
+        );
+      }
+      return res.typ.toSpecType();
     }, scope);
   }
 }
@@ -578,22 +597,21 @@ export class Decl extends Stmt {
     return this.id;
   }
 
-  typeCheck(scope?: LexicalScope) {
+  typeCheck(scope: LexicalScope): void {
     // TODO add itself to lexical scope
-    this.wrapError(() => {
+    this.wrapError((scope: LexicalScope) => {
       if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
           "left side type of assignment does not match right side type"
         );
       }
-    });
+    }, scope);
   }
 
   getRightType(scope?: LexicalScope) {
     return this.expr.getType(scope);
   }
 }
-
 export class Assign extends Stmt {
   left: Expr;
   assign: Token;
@@ -629,7 +647,7 @@ export class Assign extends Stmt {
     return this.assign;
   }
 
-  typeCheck() {
+  typeCheck(scope: LexicalScope): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -701,6 +719,10 @@ export class Param extends Node {
   getToken(): Token {
     return this.id;
   }
+
+  getRightType(): SpecType {
+    return this.typ.toSpecType();
+  }
 }
 
 export class FuncDef extends Stmt {
@@ -740,17 +762,21 @@ export class FuncDef extends Stmt {
     return this.body;
   }
 
-  typeCheck(): void {
-    throw new Error("Method not implemented.");
+  typeCheck(scope: LexicalScope): void {
+    // TODO recursive functions are not allowed
+    // add all the params to the scope
+    scope.addToScope(this.getToken().text, this);
+    const innerScope = new LexicalScope(scope, this.typ.toSpecType());
+    for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
+    typeCheckExprStmts(this.body, innerScope);
   }
 }
 
-// TODO also a statement not an expression
 export class Return extends Stmt {
-  expr: ExSt;
+  expr: Expr;
   ret: Token;
 
-  constructor(expr: ExSt, ret: Token) {
+  constructor(expr: Expr, ret: Token) {
     super();
     this.expr = expr;
     this.ret = ret;
@@ -772,8 +798,10 @@ export class Return extends Stmt {
     return [this.expr];
   }
 
-  typeCheck() {
-    throw new Error("Method not implemented.");
+  typeCheck(scope: LexicalScope): void {
+    if (this.expr.getType(scope) === scope.returnType) return;
+    // TODO better error message
+    throw new TinslError(`function return type does not match`);
   }
 }
 
@@ -874,8 +902,8 @@ export class ForLoop extends Stmt {
     return this.token;
   }
 
-  typeCheck(scope?: LexicalScope): void {
-    this.wrapError(() => {
+  typeCheck(scope: LexicalScope): void {
+    this.wrapError((scope: LexicalScope) => {
       if (this.cond !== null && this.cond.getType(scope) !== "bool") {
         throw new TinslError("conditional in a for loop must be a boolean");
       }
@@ -883,7 +911,7 @@ export class ForLoop extends Stmt {
       const innerScope = new LexicalScope(scope);
       typeCheckExprStmts(outer, scope);
       typeCheckExprStmts(inner, innerScope);
-    });
+    }, scope);
   }
 }
 
@@ -923,7 +951,7 @@ export class If extends Stmt {
     throw new Error("Method not implemented.");
   }
 
-  typeCheck() {
+  typeCheck(scope: LexicalScope): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -957,7 +985,7 @@ export class Else extends Stmt {
     return this.token;
   }
 
-  typeCheck() {
+  typeCheck(scope: LexicalScope): void {
     throw new Error("Method not implemented.");
   }
 }
@@ -1045,7 +1073,7 @@ export class TopDef extends Stmt {
     return [this.expr];
   }
 
-  typeCheck(): void {
+  typeCheck(scope: LexicalScope): void {
     throw new Error("Method not implemented.");
   }
 
@@ -1079,7 +1107,7 @@ export class Refresh extends Stmt {
     return [];
   }
 
-  typeCheck() {
+  typeCheck(scope: LexicalScope): void {
     return;
   }
 }

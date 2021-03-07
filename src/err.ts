@@ -1,5 +1,5 @@
 import { Token } from "moo";
-import { Expr, ExSt, Stmt } from "./nodes";
+import { Expr, ExSt, LexicalScope, Stmt } from "./nodes";
 import { SpecType } from "./typing";
 
 export class TinslError extends Error {
@@ -22,9 +22,13 @@ export class TinslLineError extends Error {
   }
 }
 
-export function wrapErrorHelper<T>(callback: () => T, exSt: ExSt): T {
+export function wrapErrorHelper<T>(
+  callback: (scope: LexicalScope) => T,
+  exSt: ExSt,
+  scope: LexicalScope
+): T {
   try {
-    return callback();
+    return callback(scope);
   } catch (e: unknown) {
     if (e instanceof TinslError)
       throw new TinslLineError(e.message, exSt.getToken());
