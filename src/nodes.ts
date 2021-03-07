@@ -18,12 +18,12 @@ import {
 
 // TODO check the json conversion functions for tokens
 
-function typeCheckExprStmts(arr: ExSt[]) {
+function typeCheckExprStmts(arr: ExSt[], scope?: LexicalScope) {
   for (const e of arr) {
     if (e instanceof Expr) {
-      e.getType();
+      e.getType(scope);
     } else {
-      e.typeCheck();
+      e.typeCheck(scope);
     }
   }
 }
@@ -45,12 +45,14 @@ abstract class Node {
   }
 }
 
+type IdentResult = TopDef | Decl | FuncDef;
+
 interface IdentDictionary {
-  [key: string]: TopDef | FuncDef | Expr | undefined;
+  [key: string]: IdentResult | undefined;
   // TODO but TopDef and FuncDef can only be at top level
 }
 
-interface LexicalScope {
+export interface LexicalScope {
   upperScope: LexicalScope | null;
   idents: IdentDictionary;
 }
@@ -64,24 +66,31 @@ abstract class TinslProgram {
   }
 }
 
-abstract class ExStBase extends Node {
-  scope: LexicalScope | undefined;
-}
+export abstract class Stmt extends Node {
+  abstract getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] };
+  abstract typeCheck(scope?: LexicalScope): void;
 
-export abstract class Stmt extends ExStBase {
-  abstract getSubExprStmts(): ExSt[];
-  abstract typeCheck(): void;
   wrapError(callback: () => void): void {
     return wrapErrorHelper(callback, this);
   }
 }
 
-export abstract class Expr extends ExStBase {
+export abstract class Expr extends Node {
   cachedType: SpecType | undefined;
+  abstract getType(scope?: LexicalScope): SpecType;
   abstract getSubExpressions(): Expr[];
-  abstract getType(): SpecType;
-  wrapError(callback: () => SpecType): SpecType {
-    if (this.cachedType !== undefined) return this.cachedType;
+
+  wrapError(
+    callback: () => SpecType,
+    scope: LexicalScope | undefined
+  ): SpecType {
+    if (scope === undefined) {
+      if (this.cachedType === undefined)
+        throw new Error(
+          "cached type and lexical scope were somehow both undefined"
+        );
+      return this.cachedType;
+    }
     return wrapErrorHelper(callback, this);
   }
 }
@@ -132,14 +141,14 @@ export class RenderBlock extends Stmt {
     return this.open;
   }
 
-  getSubExprStmts(): Expr[] {
+  getExprStmts(): Expr[] {
     throw new Error("Method not implemented.");
   }
 
-  typeCheck() {
+  typeCheck(scope?: LexicalScope) {
     // TODO if inNum, outNum and loopNum are idents make sure they can be
     // determined at compile time
-    typeCheckExprStmts(this.body);
+    typeCheckExprStmts(this.body, scope);
   }
 }
 
@@ -179,9 +188,9 @@ export class BinaryExpr extends Expr {
     }${this.right.translate()})`;
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
-      const lType = this.left.getType();
+      const lType = this.left.getType(scope);
       const op = this.operator.text;
 
       // dots can only act on vecs for now (no structs)
@@ -202,8 +211,8 @@ export class BinaryExpr extends Expr {
         );
       }
 
-      return binaryTyping(op, lType, this.right.getType());
-    });
+      return binaryTyping(op, lType, this.right.getType(scope));
+    }, scope);
   }
 }
 
@@ -240,9 +249,10 @@ export class UnaryExpr extends Expr {
     };
   }
 
-  getType(): SpecType {
-    return this.wrapError(() =>
-      unaryTyping(this.operator.text, this.argument.getType())
+  getType(scope?: LexicalScope): SpecType {
+    return this.wrapError(
+      () => unaryTyping(this.operator.text, this.argument.getType(scope)),
+      scope
     );
   }
 }
@@ -277,7 +287,7 @@ export class FloatExpr extends AtomExpr {
     return this.jsonHelper("float_expr");
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return "float";
   }
 }
@@ -287,7 +297,7 @@ export class IntExpr extends AtomExpr {
     return this.jsonHelper("int_expr");
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return "int";
   }
 }
@@ -297,7 +307,7 @@ export class UIntExpr extends AtomExpr {
     return this.jsonHelper("uint_expr");
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return "uint";
   }
 }
@@ -307,7 +317,7 @@ export class BoolExpr extends AtomExpr {
     return this.jsonHelper("bool_expr");
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return "bool";
   }
 }
@@ -317,7 +327,7 @@ export class IdentExpr extends AtomExpr {
     return this.jsonHelper("ident_expr");
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     // TODO ask the codebuilder to resolve identifier
     throw new Error("Method not implemented.");
   }
@@ -355,7 +365,7 @@ export class CallExpr extends Expr {
     };
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
       if (!(this.call instanceof IdentExpr)) {
         throw new TinslError("invalid function call");
@@ -363,13 +373,13 @@ export class CallExpr extends Expr {
       const info = builtIns[this.call.getToken().text];
       if (info !== undefined) {
         return callReturnType(
-          this.args.map((a) => a.getType()),
+          this.args.map((a) => a.getType(scope)),
           info
         );
       }
       throw new Error("Method not implemented for non built-ins");
       // TODO ask the codebuilder to resolve identifier
-    });
+    }, scope);
   }
 }
 
@@ -405,13 +415,13 @@ export class ConstructorExpr extends Expr {
     };
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
       if (this.typ.size !== null) {
         const arrType = this.typ.getToken().text as SpecTypeSimple;
         // TODO matching sizes
         for (const a of this.args) {
-          if (a.getType() !== arrType) {
+          if (a.getType(scope) !== arrType) {
             throw new TinslError(
               `argument in array constructor was not of type ${arrType}`
             );
@@ -426,9 +436,9 @@ ${arrType}[${this.args.length}]`);
         return { typ: arrType, size: this.args.length };
       }
       const info = constructors[this.typ.getToken().text];
-      const argTypes = this.args.map((a) => a.getType());
+      const argTypes = this.args.map((a) => a.getType(scope));
       return callReturnType(argTypes, info);
-    });
+    }, scope);
   }
 }
 
@@ -464,11 +474,12 @@ export class SubscriptExpr extends Expr {
     };
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     throw new Error("Method not implemented.");
   }
 }
 
+// TODO would be easier if this were an expression
 export class Decl extends Stmt {
   constant: boolean;
   typ: TypeName;
@@ -491,7 +502,7 @@ export class Decl extends Stmt {
     this.assign = assign;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return [this.expr];
   }
 
@@ -514,9 +525,10 @@ export class Decl extends Stmt {
     return this.assign;
   }
 
-  typeCheck() {
+  typeCheck(scope?: LexicalScope) {
+    // TODO add itself to lexical scope
     this.wrapError(() => {
-      if (!this.typ.equals(this.expr.getType())) {
+      if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
           "left side type of assignment does not match right side type"
         );
@@ -526,18 +538,18 @@ export class Decl extends Stmt {
 }
 
 export class Assign extends Stmt {
-  left: ExSt;
+  left: Expr;
   assign: Token;
-  right: ExSt;
+  right: Expr;
 
-  constructor(left: ExSt, assign: Token, right: ExSt) {
+  constructor(left: Expr, assign: Token, right: Expr) {
     super();
     this.left = left;
     this.assign = assign;
     this.right = right;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return [this.left, this.right];
   }
 
@@ -667,7 +679,7 @@ export class FuncDef extends Stmt {
     return this.id;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return this.body;
   }
 
@@ -699,7 +711,7 @@ export class Return extends Stmt {
     return this.ret;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return [this.expr];
   }
 
@@ -743,14 +755,14 @@ export class TernaryExpr extends Expr {
     return this.token;
   }
 
-  getType(): SpecType {
+  getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
       return ternaryTyping(
-        this.bool.getType(),
-        this.expr1.getType(),
-        this.expr2.getType()
+        this.bool.getType(scope),
+        this.expr1.getType(scope),
+        this.expr2.getType(scope)
       );
-    });
+    }, scope);
   }
 }
 
@@ -776,8 +788,15 @@ export class ForLoop extends Stmt {
     this.token = token;
   }
 
-  getSubExprStmts(): ExSt[] {
-    return this.body;
+  getExprStmts() {
+    return {
+      outer: [
+        ...(this.init ? [this.init] : []),
+        ...(this.cond ? [this.cond] : []),
+        ...(this.loop ? [this.loop] : []),
+      ],
+      inner: this.body,
+    };
   }
 
   toJson(): object {
@@ -798,16 +817,19 @@ export class ForLoop extends Stmt {
     return this.token;
   }
 
-  typeCheck(): void {
+  typeCheck(scope?: LexicalScope): void {
     this.wrapError(() => {
-      if (this.cond !== null && this.cond.getType() !== "bool") {
+      if (this.cond !== null && this.cond.getType(scope) !== "bool") {
         throw new TinslError("conditional in a for loop must be a boolean");
       }
-      typeCheckExprStmts([
-        ...this.body,
-        ...(this.init ? [this.init] : []),
-        ...(this.loop ? [this.loop] : []),
-      ]);
+      typeCheckExprStmts(
+        [
+          ...this.body,
+          ...(this.init ? [this.init] : []),
+          ...(this.loop ? [this.loop] : []),
+        ],
+        scope
+      );
     });
   }
 }
@@ -827,8 +849,8 @@ export class If extends Stmt {
     this.cont = cont;
   }
 
-  getSubExprStmts(): ExSt[] {
-    throw new Error("Method not implemented.");
+  getExprStmts() {
+    return { outer: [this.cond], inner: this.body };
   }
 
   toJson(): object {
@@ -864,7 +886,7 @@ export class Else extends Stmt {
     this.token = token;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return this.body;
   }
 
@@ -941,11 +963,11 @@ export class ProcDef extends Node {
   }
 }
 
-export class TopDef extends Node {
+export class TopDef extends Stmt {
   id: Token;
-  expr: ExSt;
+  expr: Expr;
 
-  constructor(id: Token, expr: ExSt) {
+  constructor(id: Token, expr: Expr) {
     super();
     this.id = id;
     this.expr = expr;
@@ -965,6 +987,14 @@ export class TopDef extends Node {
 
   getToken(): Token {
     return this.id;
+  }
+
+  getExprStmts(): ExSt[] {
+    return [this.expr];
+  }
+
+  typeCheck(): void {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -989,7 +1019,7 @@ export class Refresh extends Stmt {
     return this.id;
   }
 
-  getSubExprStmts(): ExSt[] {
+  getExprStmts(): ExSt[] {
     return [];
   }
 

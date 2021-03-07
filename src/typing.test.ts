@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { LexicalScope } from "./nodes";
 import { extractExpr } from "./testhelpers";
 import {
   dimensions,
@@ -12,6 +13,8 @@ import {
   ArrayType,
   SpecType,
 } from "./typing";
+
+const els: LexicalScope = { upperScope: null, idents: {} };
 
 describe("regex on vec and mat dimensions", () => {
   it("matches matmxn", () => {
@@ -225,7 +228,7 @@ describe("relational and equality typing", () => {
   });
 
   it("parses and type checks comparison", () => {
-    expect(extractExpr("1 < 2", true).getType()).to.equal("bool");
+    expect(extractExpr("1 < 2", true).getType(els)).to.equal("bool");
   });
 });
 
@@ -293,7 +296,7 @@ describe("ternary operator", () => {
 
   it("parses and type checks ternary", () => {
     expect(
-      extractExpr("1 < 2 ? ivec2(1, 2) : ivec2(3, 4)", true).getType()
+      extractExpr("1 < 2 ? ivec2(1, 2) : ivec2(3, 4)", true).getType(els)
     ).to.equal("ivec2");
   });
 });
@@ -308,7 +311,9 @@ describe("typing overloaded generic function calls", () => {
   });
 
   it("parses expression and checks built-in function type", () => {
-    expect(extractExpr("sin(vec2(1., 2.))", true).getType()).to.equal("vec2");
+    expect(extractExpr("sin(vec2(1., 2.))", true).getType(els)).to.equal(
+      "vec2"
+    );
   });
 
   it("checks clamp", () => {
@@ -440,19 +445,19 @@ describe("array constructor", () => {
   const arrayInt3: ArrayType<SpecType> = { typ: "int", size: 3 };
 
   it("parses and checks array constructor unspecified size", () => {
-    expect(extractExpr("int[](1, 2, 3)", true).getType()).to.deep.equal(
+    expect(extractExpr("int[](1, 2, 3)", true).getType(els)).to.deep.equal(
       arrayInt3
     );
   });
 
   it("parses and checks array constructor specified size", () => {
-    expect(extractExpr("int[3](1, 2, 3)", true).getType()).to.deep.equal(
+    expect(extractExpr("int[3](1, 2, 3)", true).getType(els)).to.deep.equal(
       arrayInt3
     );
   });
 
   it("throws when sizes don't match", () => {
-    expect(() => extractExpr("int[3](1, 2, 3, 4)", true).getType()).to.throw(
+    expect(() => extractExpr("int[3](1, 2, 3, 4)", true).getType(els)).to.throw(
       "size"
     );
   });
@@ -505,7 +510,7 @@ describe("typing a binary expression", () => {
       [...new Array(num)].map(() => ending).join(", ") +
       ")." +
       comps;
-    expect(extractExpr(expr, true).getType()).to.equal(typ + comps.length);
+    expect(extractExpr(expr, true).getType(els)).to.equal(typ + comps.length);
   };
 
   const totalTest = (num: number, comps: string) => {
@@ -531,11 +536,11 @@ describe("typing a binary expression", () => {
   });
 
   it("throws when left side not a vector", () => {
-    expect(() => extractExpr("(123).xy", true).getType()).to.throw("vector");
+    expect(() => extractExpr("(123).xy", true).getType(els)).to.throw("vector");
   });
 
   it("throws when right side not component access", () => {
-    expect(() => extractExpr("vec2(1., 2.).(3)", true).getType()).to.throw(
+    expect(() => extractExpr("vec2(1., 2.).(3)", true).getType(els)).to.throw(
       "components"
     );
   });
@@ -543,17 +548,21 @@ describe("typing a binary expression", () => {
 
 describe("declaration type checks", () => {
   it("parses and checks a valid assignment", () => {
-    expect(extractExpr("int a = 1", true).typeCheck()).to.equal(undefined);
+    expect(extractExpr("int a = 1", true).typeCheck(els)).to.equal(undefined);
   });
 
   it("tries to assign float to an int and throws", () => {
-    expect(() => extractExpr("int a = 1.", true).typeCheck()).to.throw("type");
+    expect(() => extractExpr("int a = 1.", true).typeCheck(els)).to.throw(
+      "type"
+    );
   });
 });
 
 describe("for loop type check", () => {
   // TODO can't do a meaningful for loop until we build an identifier dictionary
   it("parses and checks for loop", () => {
-    expect(() => extractExpr("for (;;) { }", false).typeCheck()).to.not.throw();
+    expect(() =>
+      extractExpr("for (;;) { }", false).typeCheck(els)
+    ).to.not.throw();
   });
 });
