@@ -52,13 +52,37 @@ interface IdentDictionary {
   // TODO but TopDef and FuncDef can only be at top level
 }
 
-export interface LexicalScope {
-  upperScope: LexicalScope | null;
-  idents: IdentDictionary;
+export class LexicalScope {
+  private upperScope?: LexicalScope;
+  private idents: IdentDictionary = {};
+
+  constructor(upperScope?: LexicalScope) {
+    this.upperScope = upperScope;
+  }
+
+  addToScope(name: string, result: IdentResult) {
+    if (this.idents[name] !== undefined) {
+      throw new TinslError(`duplicate identifier ${name}`);
+    }
+    this.idents[name] = result;
+  }
+
+  resolve(name: string): IdentResult | undefined {
+    if (this.idents[name] !== undefined) return this.idents[name];
+    if (this.upperScope === undefined) return;
+    return this.upperScope.resolve(name);
+  }
 }
 
+/*
+export interface LexicalScope {
+  upperScope?: LexicalScope;
+  idents: IdentDictionary;
+}
+*/
+
 abstract class TinslProgram {
-  topScope: LexicalScope = { upperScope: null, idents: {} };
+  topScope: LexicalScope = new LexicalScope();
   body: ExSt[];
 
   constructor(body: ExSt[]) {
@@ -148,7 +172,8 @@ export class RenderBlock extends Stmt {
   typeCheck(scope?: LexicalScope) {
     // TODO if inNum, outNum and loopNum are idents make sure they can be
     // determined at compile time
-    typeCheckExprStmts(this.body, scope);
+    const innerScope = new LexicalScope(scope);
+    typeCheckExprStmts(this.body, innerScope);
   }
 }
 
@@ -822,14 +847,10 @@ export class ForLoop extends Stmt {
       if (this.cond !== null && this.cond.getType(scope) !== "bool") {
         throw new TinslError("conditional in a for loop must be a boolean");
       }
-      typeCheckExprStmts(
-        [
-          ...this.body,
-          ...(this.init ? [this.init] : []),
-          ...(this.loop ? [this.loop] : []),
-        ],
-        scope
-      );
+      const { inner, outer } = this.getExprStmts();
+      const innerScope = new LexicalScope(scope);
+      typeCheckExprStmts(outer, scope);
+      typeCheckExprStmts(inner, innerScope);
     });
   }
 }
@@ -875,7 +896,6 @@ export class If extends Stmt {
   }
 }
 
-// TODO stmt
 export class Else extends Stmt {
   body: ExSt[];
   token: Token;
