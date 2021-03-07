@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { LexicalScope } from "./nodes";
-import { extractExpr } from "./testhelpers";
+import { Decl, IntExpr, LexicalScope, TypeName } from "./nodes";
+import { extractExpr, tok } from "./testhelpers";
 import {
   dimensions,
   binaryTyping,
@@ -566,5 +566,53 @@ describe("for loop type check", () => {
     expect(() =>
       extractExpr("for (;;) { }", false).typeCheck(els())
     ).to.not.throw();
+  });
+});
+
+describe("lexical scope", () => {
+  const decl = (name: string, int: number) =>
+    new Decl(
+      false,
+      new TypeName(tok("int"), null),
+      tok(name),
+      new IntExpr(tok("" + int)),
+      tok("=")
+    );
+
+  const declInner = decl("inner", 1);
+  const declOuter = decl("outer", 2);
+
+  const outerScope = new LexicalScope();
+  const innerScope = new LexicalScope(outerScope);
+
+  outerScope.addToScope(declOuter.getToken().text, declOuter);
+  innerScope.addToScope(declInner.getToken().text, declInner);
+
+  it("gets inner identifier in inner scope", () => {
+    expect(innerScope.resolve("inner")).to.equal(declInner);
+  });
+
+  it("gets outer identifier in inner scope", () => {
+    expect(innerScope.resolve("outer")).to.equal(declOuter);
+  });
+
+  it("gets outer identifier in outer scope", () => {
+    expect(outerScope.resolve("outer")).to.equal(declOuter);
+  });
+
+  it("tries to get inner identifier in outer scope, but is undefined", () => {
+    expect(outerScope.resolve("inner")).to.equal(undefined);
+  });
+
+  it("type checks inner + outer in the inner scope", () => {
+    expect(extractExpr("inner + outer", true).getType(innerScope)).to.equal(
+      "int"
+    );
+  });
+
+  it("tries to add duplicate identifier, throws", () => {
+    expect(() =>
+      innerScope.addToScope(declInner.getToken().text, decl("inner", 3))
+    ).to.throw('duplicate identifier "inner"');
   });
 });

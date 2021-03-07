@@ -4,6 +4,7 @@ import nearley from "nearley";
 import util from "util";
 import { TinslLineError } from "./err";
 import grammar from "./grammar";
+import { TinslProgram } from "./nodes";
 import { tinslNearleyError } from "./util";
 
 export function tok(val: string): Token {

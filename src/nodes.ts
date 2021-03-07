@@ -62,7 +62,7 @@ export class LexicalScope {
 
   addToScope(name: string, result: IdentResult) {
     if (this.idents[name] !== undefined) {
-      throw new TinslError(`duplicate identifier ${name}`);
+      throw new TinslError(`duplicate identifier "${name}"`);
     }
     this.idents[name] = result;
   }
@@ -71,22 +71,6 @@ export class LexicalScope {
     if (this.idents[name] !== undefined) return this.idents[name];
     if (this.upperScope === undefined) return;
     return this.upperScope.resolve(name);
-  }
-}
-
-/*
-export interface LexicalScope {
-  upperScope?: LexicalScope;
-  idents: IdentDictionary;
-}
-*/
-
-abstract class TinslProgram {
-  topScope: LexicalScope = new LexicalScope();
-  body: ExSt[];
-
-  constructor(body: ExSt[]) {
-    this.body = body;
   }
 }
 
@@ -120,6 +104,37 @@ export abstract class Expr extends Node {
 }
 
 export type ExSt = Expr | Stmt;
+
+export class TinslProgram extends Stmt {
+  topScope: LexicalScope = new LexicalScope();
+  body: ExSt[];
+
+  constructor(body: ExSt[]) {
+    super();
+    this.body = body;
+  }
+
+  getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
+    return { outer: [], inner: this.body };
+  }
+
+  typeCheck(scope?: LexicalScope): void {
+    const innerScope = new LexicalScope(scope);
+    typeCheckExprStmts(this.body, innerScope);
+  }
+
+  toJson(): object {
+    throw new Error("Method not implemented.");
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    throw new Error("cannot get token of outer program");
+  }
+}
 
 export class RenderBlock extends Stmt {
   once: boolean;
@@ -353,8 +368,21 @@ export class IdentExpr extends AtomExpr {
   }
 
   getType(scope?: LexicalScope): SpecType {
-    // TODO ask the codebuilder to resolve identifier
-    throw new Error("Method not implemented.");
+    return this.wrapError(() => {
+      if (scope === undefined)
+        throw new Error(
+          "scope was somehow undefined when trying to resolve identifier"
+        );
+      const name = this.getToken().text;
+      const res = scope.resolve(name);
+      if (res === undefined)
+        throw new TinslError(`undefined identifier ${name}`);
+      if (res instanceof FuncDef)
+        throw new TinslError(
+          `identifier ${name} is a function definition, not an expression`
+        );
+      return res.getRightType(scope);
+    }, scope);
   }
 }
 
@@ -547,7 +575,7 @@ export class Decl extends Stmt {
   }
 
   getToken(): Token {
-    return this.assign;
+    return this.id;
   }
 
   typeCheck(scope?: LexicalScope) {
@@ -559,6 +587,10 @@ export class Decl extends Stmt {
         );
       }
     });
+  }
+
+  getRightType(scope?: LexicalScope) {
+    return this.expr.getType(scope);
   }
 }
 
@@ -1015,6 +1047,10 @@ export class TopDef extends Stmt {
 
   typeCheck(): void {
     throw new Error("Method not implemented.");
+  }
+
+  getRightType(scope?: LexicalScope) {
+    return this.expr.getType(scope);
   }
 }
 
