@@ -117,6 +117,31 @@ export abstract class Expr extends Node {
 
 export type ExSt = Expr | Stmt;
 
+abstract class DefLike extends Stmt {
+  params: Param[];
+
+  constructor(params: Param[]) {
+    super();
+    this.params = params;
+  }
+
+  argsValid(args: Expr[]): void {
+    const paramTypes = this.params.map((p) => p.getRightType());
+    const argTypes = args.map((a) => a.getType());
+    if (paramTypes.length !== argTypes.length)
+      throw new TinslError("arguments length does not match parameter length");
+    for (let i = 0; i < paramTypes.length; i++)
+      if (paramTypes[i] !== argTypes[i])
+        throw new TinslError(
+          `argument ${i} has wrong type. is ${argTypes[i]} but needs to be ${
+            paramTypes[i]
+          } for ${this instanceof ProcDef ? "procedure" : "function"} call "${
+            this.getToken().text
+          }"`
+        );
+  }
+}
+
 function branchContainsReturn(exSts: ExSt[]) {
   return exSts.some(
     (e) => e instanceof Return || (e instanceof If && e.returnsInBoth())
@@ -463,6 +488,8 @@ export class CallExpr extends Expr {
           `identifier "${name}" does not refer to a function definition`
         );
       }
+      // make sure all the argument types match the param types
+      res.argsValid(this.args);
       return res.typ.toSpecType();
     }, scope);
   }
@@ -692,7 +719,6 @@ export class TypeName extends Node {
     return this.token;
   }
 
-  // TODO maybe not needed
   toSpecType(): SpecType {
     const simple = this.token.text as SpecTypeSimple;
     if (this.size === null) return simple;
@@ -738,17 +764,15 @@ export class Param extends Node {
   }
 }
 
-export class FuncDef extends Stmt {
+export class FuncDef extends DefLike {
   typ: TypeName;
   id: Token;
-  params: Param[];
   body: ExSt[];
 
   constructor(typ: TypeName, id: Token, params: Param[], body: ExSt[]) {
-    super();
+    super(params);
     this.typ = typ;
     this.id = id;
-    this.params = params;
     this.body = body;
   }
 
@@ -1060,13 +1084,12 @@ export class Uniform extends Node {
   }
 }
 
-export class ProcDef extends Stmt {
+export class ProcDef extends DefLike {
   id: Token;
-  params: Param[];
   body: ExSt[];
 
   constructor(id: Token, params: Param[], body: ExSt[]) {
-    super();
+    super(params);
     this.id = id;
     this.params = params;
     this.body = body;
@@ -1117,7 +1140,18 @@ export class ProcCall extends Stmt {
     return this.args;
   }
 
-  typeCheck(scope: LexicalScope): void {}
+  typeCheck(scope: LexicalScope): void {
+    this.wrapError((scope: LexicalScope) => {
+      const name = this.call.getToken().text;
+      const res = scope.resolve(this.call.getToken().text);
+      if (!(res instanceof ProcDef))
+        throw new TinslError(
+          `identifier "${name}" does not refer to a procedure definition`
+        );
+
+      res.argsValid(this.args);
+    }, scope);
+  }
 
   toJson(): object {
     return {

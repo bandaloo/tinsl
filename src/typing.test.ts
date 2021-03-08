@@ -622,7 +622,7 @@ describe("lexical scope", () => {
   });
 });
 
-describe("checks entire programs", () => {
+describe("checks function definitions and calls", () => {
   it("defines a function and uses it", () => {
     expect(() =>
       parseAndCheck(`
@@ -632,6 +632,79 @@ vec4 foo () {
 
 { foo() + foo(); } -> 0`)
     ).to.not.throw();
+  });
+
+  it("calls a user defined function with wrong args, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+vec4 foo (float a, float b) {
+  return vec4(a, b, a, b);
+}
+
+{ foo(.5, 1); } -> 0`)
+    ).to.throw("argument 1 has wrong type");
+  });
+});
+
+describe("checks procedure definitions and calls", () => {
+  it("defines a procedure and uses it", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo () {
+  vec4(1., 1., 1., 1.);
+}
+
+{ @foo(); } -> 0`)
+    ).to.not.throw();
+  });
+
+  it("calls a user defined function with wrong args, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (float a, float b) {
+  vec4(a, b, a, b);
+}
+
+{ @foo(.5, 1); } -> 0`)
+    ).to.throw("argument 1 has wrong type");
+  });
+});
+
+describe("params with same name in funcs and procs", () => {
+  it("defines a procedure with duplicate params", () => {
+    expect(() =>
+      parseAndCheck("pr foo (int a, int a) { vec4(1., 1., 1., 1.); }")
+    ).to.throw("duplicate");
+  });
+
+  it("defines a function with duplicate params", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo (int a, int a) { return vec4(1., 1., 1., 1.); }")
+    ).to.throw("duplicate");
+  });
+});
+
+describe("mixing up functions and procedures", () => {
+  it("defines a function, uses it as a procedure, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+vec4 foo () {
+  return vec4(1., 1., 1., 1.);
+}
+
+{ @foo(); } -> 0`)
+    ).to.throw("procedure");
+  });
+
+  it("defines a procedure, uses it as a function, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo () {
+  vec4(1., 1., 1., 1.);
+}
+
+{ foo(); } -> 0`)
+    ).to.throw("function");
   });
 });
 
@@ -714,7 +787,7 @@ int foo (bool b) {
     ).to.not.throw();
   });
 
-  it("returns in all branches of nested if statements", () => {
+  it("does not return in all branches of nested if statements", () => {
     expect(() =>
       parseAndCheck(`
 int foo (bool b) {

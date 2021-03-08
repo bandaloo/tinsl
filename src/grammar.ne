@@ -285,6 +285,7 @@ TypeWord ->
   | %kw_mat4x3 {% id %}
   | %kw_mat4x4 {% id %}
   # generics
+  # TODO get rid of these for now
   | %kw_genType  {% id %}
   | %kw_genBType {% id %}
   | %kw_genIType {% id %}
