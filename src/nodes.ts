@@ -504,7 +504,6 @@ export class ConstructorExpr extends Expr {
     return this.wrapError(() => {
       if (this.typ.size !== null) {
         const arrType = this.typ.getToken().text as SpecTypeSimple;
-        // TODO matching sizes
         for (const a of this.args) {
           if (a.getType(scope) !== arrType) {
             throw new TinslError(
@@ -611,8 +610,8 @@ export class Decl extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    // TODO add itself to lexical scope
     this.wrapError((scope: LexicalScope) => {
+      scope.addToScope(this.id.text, this);
       if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
           "left side type of assignment does not match right side type"
@@ -933,13 +932,15 @@ export class ForLoop extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
-      if (this.cond !== null && this.cond.getType(scope) !== "bool") {
-        throw new TinslError("conditional in a for loop must be a boolean");
-      }
       const { inner, outer } = this.getExprStmts();
       const innerScope = new LexicalScope(scope);
       typeCheckExprStmts(outer, scope);
       typeCheckExprStmts(inner, innerScope);
+
+      // has to be after checking the other expressions or else unknown ident
+      if (this.cond !== null && this.cond.getType(scope) !== "bool") {
+        throw new TinslError("conditional in a for loop must be a boolean");
+      }
     }, scope);
   }
 }
@@ -1173,7 +1174,6 @@ export class TopDef extends Stmt {
   }
 }
 
-// TODO statement not expression
 export class Refresh extends Stmt {
   id: Token;
 
