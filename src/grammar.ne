@@ -28,6 +28,7 @@ import {
   Refresh,
   Frag,
   UIntExpr,
+  ProcCall
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -86,9 +87,10 @@ Uniform ->
 
 # and statements/expressions allowed to appear in render block
 RenderLevel ->
-    Decl    {% id %}
-  | Expr    {% id %}
-  | Refresh {% id %}
+    Decl     {% id %}
+  | Expr     {% id %}
+  | Refresh  {% id %}
+  | ProcCall {% id %}
 
 # statements/expressions allowed within function bodies
 FuncLevel ->
@@ -153,6 +155,10 @@ If ->
           cont === null ? null : cont[0]
         )
       %}
+
+ProcCall ->
+    %at %ident _ %lparen _ Args:? _ %rparen
+      {% (d: any) => new ProcCall(d[3], new IdentExpr(d[1]), d[5] !== null ? d[5] : []) %}
 
 Else ->
     %kw_else _ BlockBody {% d => new Else(d[2], d[0]) %}

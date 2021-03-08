@@ -18,6 +18,7 @@ import {
   If,
   IntExpr,
   Param,
+  ProcCall,
   ProcDef,
   Refresh,
   RenderBlock,
@@ -1064,4 +1065,15 @@ describe("frag", () => {
   });
 });
 
+describe("proc call", () => {
+  it("checks proc with two args", () => {
+    const proc = new ProcCall(tok("("), new IdentExpr(tok("some_proc")), [
+      new IntExpr(tok("1")),
+      new IntExpr(tok("2")),
+    ]);
+    checkProgram("{@some_proc(1, 2);}", [
+      new RenderBlock(false, [proc], null, null, null, tok("{")),
+    ]);
+  });
+});
 // TODO parsing empty program

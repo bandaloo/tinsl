@@ -21,6 +21,7 @@ declare var assignment: any;
 declare var kw_def: any;
 declare var kw_for: any;
 declare var kw_if: any;
+declare var at: any;
 declare var kw_else: any;
 declare var lbracket: any;
 declare var rbracket: any;
@@ -135,6 +136,7 @@ import {
   Refresh,
   Frag,
   UIntExpr,
+  ProcCall
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -247,6 +249,7 @@ const grammar: Grammar = {
     {"name": "RenderLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "RenderLevel", "symbols": ["Refresh"], "postprocess": id},
+    {"name": "RenderLevel", "symbols": ["ProcCall"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Expr"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Decl"], "postprocess": id},
     {"name": "FuncLevel", "symbols": ["Assign"], "postprocess": id},
@@ -308,6 +311,9 @@ const grammar: Grammar = {
           cont === null ? null : cont[0]
         )
               },
+    {"name": "ProcCall$ebnf$1", "symbols": ["Args"], "postprocess": id},
+    {"name": "ProcCall$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "ProcCall", "symbols": [(nearleyLexer.has("at") ? {type: "at"} : at), (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "ProcCall$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new ProcCall(d[3], new IdentExpr(d[1]), d[5] !== null ? d[5] : [])},
     {"name": "Else", "symbols": [(nearleyLexer.has("kw_else") ? {type: "kw_else"} : kw_else), "_", "BlockBody"], "postprocess": d => new Else(d[2], d[0])},
     {"name": "BlockBody", "symbols": ["FuncLine"], "postprocess": d => [d[0]]},
     {"name": "BlockBody$ebnf$1", "symbols": []},

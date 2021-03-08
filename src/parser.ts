@@ -9,7 +9,7 @@ const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 //parser.feed("{(true ? true ? 1 : 2 : false) ? 3 : 4;}->0");
 //parser.feed("float foo (float bar) {for(int i=0;i<3;i++)j++;;}");
 //parser.feed("float foo (float bar) {if (1 < 2) {3; 4;} else 5}");
-parser.feed("float foo() {int[3] arr = int[3](1, 2, 3);}");
+parser.feed("{@some_proc(1, 2);}");
 if (parser.results.length > 1) {
   console.error("ambiguous grammar!");
 }

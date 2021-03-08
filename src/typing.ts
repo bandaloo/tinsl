@@ -404,83 +404,26 @@ function validGenSpecPair(gen: GenType, spec: SpecTypeSimple) {
   }
 }
 
+const parseArrayType = <T extends string>(
+  tempParam: T | ArrayType<T>
+): [T, number | null] =>
+  typeof tempParam === "object"
+    ? [tempParam.typ, tempParam.size]
+    : [tempParam, null];
+
 export function callReturnType(
   args: SpecType[],
   typeInfo: TypeInfo | TypeInfo[]
 ): SpecType {
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
 
-  const genArr: GenTypeSimple[] = [
-    "genType",
-    "genBType",
-    "genIType",
-    "genUType",
-    "mat",
-    "vec",
-    "bvec",
-    "ivec",
-    "uvec",
-  ];
-
-  const genMap = new Map<GenTypeSimple, SpecTypeSimple | null>();
-
-  const clearMap = () => {
-    for (const g of genArr) {
-      genMap.set(g, null);
-    }
-  };
-
-  const parseArrayType = <T extends string>(
-    tempParam: T | ArrayType<T>
-  ): [T, number | null] =>
-    typeof tempParam === "object"
-      ? [tempParam.typ, tempParam.size]
-      : [tempParam, null];
-
   for (const info of infoArr) {
-    clearMap();
-    // num of params and num of args don't match, so move on
-    if (info.params.length !== args.length) continue;
-    let valid = true;
-    for (let i = 0; i < args.length; i++) {
-      const [arg, argSize] = parseArrayType(args[i]);
-      const [param, paramSize] = parseArrayType(info.params[i]);
+    const genMap = callTypeCheck(args, info.params);
 
-      // if one type is an array and the other is not, or arrays are not same
-      // size, move on
-      if (argSize !== paramSize) {
-        valid = false;
-        break;
-      }
+    // not a match, try again
+    if (!genMap) continue;
 
-      const argGenMapping = genMap.get(param as any);
-      if (argGenMapping !== undefined) {
-        // if it is null, this generic type already has a mapping
-        // all future arguments must be of the same type
-        if (argGenMapping !== null && argGenMapping !== arg) {
-          valid = false;
-          break;
-        } else {
-          // now we know the param is a generic type
-          const genParam = param as GenTypeSimple;
-          if (!validGenSpecPair(genParam, arg)) {
-            valid = false;
-            break;
-          }
-          genMap.set(genParam, arg);
-        }
-      } else {
-        // now we know the param is a specific type
-        if (param !== arg) {
-          valid = false;
-          break;
-        }
-      }
-    }
-
-    // move onto the next overload if invalidated in the last loop
-    if (!valid) continue;
-
+    // return type is already specific type
     // decide the return type, which could be generic
     const [ret, retSize] = parseArrayType(info.ret);
     const retGenMapping = genMap.get(ret as any);
@@ -495,12 +438,73 @@ export function callReturnType(
         ? retGenMapping
         : { typ: retGenMapping, size: retSize };
     }
-
-    // return type is already specific type
     return info.ret as SpecType;
   }
-
   throw new TinslError("no matching overload for function");
+
+  // return type is already specific type
+}
+
+type GenMap = Map<GenTypeSimple, SpecTypeSimple | null>;
+
+export function callTypeCheck(
+  args: SpecType[],
+  params: TotalType[]
+): null | GenMap {
+  const genArr: GenTypeSimple[] = [
+    "genType",
+    "genBType",
+    "genIType",
+    "genUType",
+    "mat",
+    "vec",
+    "bvec",
+    "ivec",
+    "uvec",
+  ];
+
+  const genMap: GenMap = new Map<GenTypeSimple, SpecTypeSimple | null>();
+
+  // clear the map
+  for (const g of genArr) {
+    genMap.set(g, null);
+  }
+
+  // num of params and num of args don't match, so move on
+  if (params.length !== args.length) return null;
+  for (let i = 0; i < args.length; i++) {
+    const [arg, argSize] = parseArrayType(args[i]);
+    const [param, paramSize] = parseArrayType(params[i]);
+
+    // if one type is an array and the other is not, or arrays are not same
+    // size, move on
+    if (argSize !== paramSize) {
+      return null;
+    }
+
+    const argGenMapping = genMap.get(param as any);
+    if (argGenMapping !== undefined) {
+      // if it is null, this generic type already has a mapping
+      // all future arguments must be of the same type
+      if (argGenMapping !== null && argGenMapping !== arg) {
+        return null;
+      } else {
+        // now we know the param is a generic type
+        const genParam = param as GenTypeSimple;
+        if (!validGenSpecPair(genParam, arg)) {
+          return null;
+        }
+        genMap.set(genParam, arg);
+      }
+    } else {
+      // now we know the param is a specific type
+      if (param !== arg) {
+        return null;
+      }
+    }
+  }
+
+  return genMap;
 }
 
 /** checks if two types in an operation can be applied without type error */
@@ -811,3 +815,4 @@ on a vector of length ${len}`
 // aka no `pos.xyx = something;`
 
 // TODO length method for arrays
+// TODO does the grammar allow return statements inside procedures?

@@ -259,6 +259,7 @@ export const lexer = moo.compile({
   colon: ":",
   semicolon: ";", // TODO remove this
   period: ".",
+  at: "@",
   frag: {
     match: /frag[0-9]*/,
   },

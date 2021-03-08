@@ -48,7 +48,7 @@ abstract class Node {
   }
 }
 
-type IdentResult = TopDef | Decl | FuncDef | Param;
+type IdentResult = TopDef | Decl | FuncDef | ProcDef | Param;
 
 interface IdentDictionary {
   [key: string]: IdentResult | undefined;
@@ -58,7 +58,7 @@ interface IdentDictionary {
 export class LexicalScope {
   private upperScope?: LexicalScope;
   private idents: IdentDictionary = {};
-  private _returnType?: SpecType;
+  private _returnType?: SpecType | "render";
 
   get returnType() {
     return this._returnType;
@@ -394,10 +394,14 @@ export class IdentExpr extends AtomExpr {
       const res = scope.resolve(name);
       if (res === undefined)
         throw new TinslError(`undefined identifier ${name}`);
-      if (res instanceof FuncDef)
-        throw new TinslError(
-          `identifier ${name} is a function definition, not an expression`
+
+      const helper = (str: string) => {
+        return new TinslError(
+          `identifier ${name} is a ${str} definition, not an expression`
         );
+      };
+      if (res instanceof FuncDef) throw helper("function");
+      if (res instanceof ProcDef) throw helper("procedure");
       return res.getRightType(scope);
     }, scope);
   }
@@ -773,7 +777,6 @@ export class FuncDef extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     // TODO recursive functions are not allowed
-    // add all the params to the scope
     this.wrapError((scope: LexicalScope) => {
       if (!branchContainsReturn(this.body)) {
         throw new TinslError(
@@ -784,6 +787,7 @@ contain a return statement in all conditional branches`
         );
       }
 
+      // add all the params to the scope
       scope.addToScope(this.getToken().text, this);
       const innerScope = new LexicalScope(scope, this.typ.toSpecType());
       for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
@@ -1054,7 +1058,7 @@ export class Uniform extends Node {
   }
 }
 
-export class ProcDef extends Node {
+export class ProcDef extends Stmt {
   id: Token;
   params: Param[];
   body: ExSt[];
@@ -1080,7 +1084,53 @@ export class ProcDef extends Node {
   }
 
   getToken(): Token {
+    return this.id;
+  }
+
+  getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
+    return this.body;
+  }
+
+  typeCheck(scope: LexicalScope): void {
+    scope.addToScope(this.getToken().text, this);
+    const innerScope = new LexicalScope(scope);
+    for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
+    typeCheckExprStmts(this.body, innerScope);
+  }
+}
+
+export class ProcCall extends Stmt {
+  open: Token;
+  call: IdentExpr;
+  args: Expr[];
+
+  constructor(open: Token, call: IdentExpr, args: Expr[]) {
+    super();
+    this.open = open;
+    this.call = call;
+    this.args = args;
+  }
+
+  getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
+    return this.args;
+  }
+
+  typeCheck(scope: LexicalScope): void {}
+
+  toJson(): object {
+    return {
+      name: "proc_call",
+      call: this.call.toJson(),
+      args: this.args.map((e) => e.toJson()),
+    };
+  }
+
+  translate(): string {
     throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.open;
   }
 }
 
