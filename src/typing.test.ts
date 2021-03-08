@@ -619,13 +619,57 @@ describe("lexical scope", () => {
 
 describe("checks entire programs", () => {
   it("defines a function and uses it", () => {
-    expect(
+    expect(() =>
       parseAndCheck(`
 vec4 foo () {
   return vec4(1., 1., 1., 1.);
 }
 
-{ foo(); } -> 0`)
+{ foo() + foo(); } -> 0`)
+    ).to.not.throw();
+  });
+});
+
+describe("checks for return statements in all branches", () => {
+  it("no return statement at all", () => {
+    expect(() => parseAndCheck("vec4 foo () { vec4(1., 1., 1.); }")).to.throw(
+      "definitely"
     );
+  });
+
+  it("does not return in one of the branches, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    return 1;
+  } else {
+    2;
+  }
+}`)
+    ).to.throw("definitely");
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    1;
+  } else {
+    return 2;
+  }
+}`)
+    ).to.throw("definitely");
+  });
+
+  it("does not return in one of the branches, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    return 1;
+  } else {
+    return 2;
+  }
+}`)
+    ).to.not.throw();
   });
 });

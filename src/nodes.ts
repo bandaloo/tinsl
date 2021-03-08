@@ -6,6 +6,8 @@ import {
   builtIns,
   callReturnType,
   constructors,
+  extractMatrixDimensions,
+  extractVecBase,
   isVec,
   SpecType,
   SpecTypeSimple,
@@ -64,7 +66,7 @@ export class LexicalScope {
 
   constructor(upperScope?: LexicalScope, returnType?: SpecType) {
     this.upperScope = upperScope;
-    this._returnType = returnType;
+    this._returnType = returnType ?? upperScope?.returnType;
   }
 
   addToScope(name: string, result: IdentResult) {
@@ -114,6 +116,12 @@ export abstract class Expr extends Node {
 }
 
 export type ExSt = Expr | Stmt;
+
+function branchContainsReturn(exSts: ExSt[]) {
+  return exSts.some(
+    (e) => e instanceof Return || (e instanceof If && e.returnsInBoth())
+  );
+}
 
 export class TinslProgram extends Stmt {
   topScope: LexicalScope = new LexicalScope();
@@ -435,6 +443,7 @@ export class CallExpr extends Expr {
       const name = this.call.getToken().text;
       const info = builtIns[name];
       if (info !== undefined) {
+        // TODO better error message
         return callReturnType(
           this.args.map((a) => a.getType(scope)),
           info
@@ -765,6 +774,15 @@ export class FuncDef extends Stmt {
   typeCheck(scope: LexicalScope): void {
     // TODO recursive functions are not allowed
     // add all the params to the scope
+    if (!branchContainsReturn(this.body)) {
+      throw new TinslError(
+        `function "${
+          this.getToken().text
+        }" does not definitely return a value. this may be because it does not \
+contain a return statement in all conditional branches`
+      );
+    }
+
     scope.addToScope(this.getToken().text, this);
     const innerScope = new LexicalScope(scope, this.typ.toSpecType());
     for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
@@ -799,9 +817,14 @@ export class Return extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
+    const exprType = this.expr.getType(scope);
     if (this.expr.getType(scope) === scope.returnType) return;
     // TODO better error message
-    throw new TinslError(`function return type does not match`);
+    throw new TinslError(
+      `function return type does not match. \
+return expression was of type ${exprType} \
+but function definition is supposed to return ${scope.returnType} `
+    );
   }
 }
 
@@ -917,12 +940,12 @@ export class ForLoop extends Stmt {
 
 // TODO stmt
 export class If extends Stmt {
-  cond: ExSt;
+  cond: Expr;
   body: ExSt[];
   token: Token;
   cont: Else | null;
 
-  constructor(cond: ExSt, body: ExSt[], token: Token, cont: Else | null) {
+  constructor(cond: Expr, body: ExSt[], token: Token, cont: Else | null) {
     super();
     this.cond = cond;
     this.body = body;
@@ -952,7 +975,18 @@ export class If extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    throw new Error("Method not implemented.");
+    this.wrapError((scope: LexicalScope) => {
+      this.cond.getType(scope);
+      const innerScope = new LexicalScope(scope);
+      typeCheckExprStmts(this.body, innerScope);
+    }, scope);
+  }
+
+  returnsInBoth(): boolean {
+    return (
+      branchContainsReturn(this.body) &&
+      (this.cont === null || branchContainsReturn(this.cont.body))
+    );
   }
 }
 
@@ -986,7 +1020,10 @@ export class Else extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    throw new Error("Method not implemented.");
+    this.wrapError((scope: LexicalScope) => {
+      const innerScope = new LexicalScope(scope);
+      typeCheckExprStmts(this.body, innerScope);
+    }, scope);
   }
 }
 
