@@ -800,3 +800,70 @@ int foo (bool b) {
     ).to.throw("definitely");
   });
 });
+
+describe("const declarations", () => {
+  it("assigns constructor to const", () => {
+    expect(() =>
+      parseAndCheck(`
+vec4 foo () {
+  const float a = 1.;
+  const vec4 b = vec4(a, a, a, a);
+  return b;
+}`)
+    ).to.not.throw();
+  });
+
+  it("passes non-const into constructor in const assignment, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+vec4 foo () {
+  float a = 1.;
+  const vec4 b = vec4(a, a, a, a);
+  return b;
+}`)
+    ).to.throw("constant");
+  });
+
+  it("passes a const expr top def into constructor in const assign", () => {
+    expect(() =>
+      parseAndCheck(`
+def a 1.
+
+vec4 foo () {
+  const vec4 b = vec4(a, a, a, a);
+  return b;
+}`)
+    ).to.not.throw();
+  });
+
+  it("throws when def is non-constant", () => {
+    expect(() =>
+      parseAndCheck(`
+float bar () {
+  return 2.;
+}
+
+def a 1. + bar()
+
+vec4 foo () {
+  const vec4 b = vec4(a, a, a, a);
+  return b;
+}`)
+    ).to.throw("constant");
+  });
+
+  it("passes a const expr top def into built-in in const assign", () => {
+    expect(() =>
+      parseAndCheck(`
+def a 1.
+
+float foo () {
+  const float b = sin(a);
+  return b;
+}`)
+    ).to.not.throw();
+  });
+});
+
+// TODO should params be in the same scope as one another? defaults might
+// reorder them when compiling

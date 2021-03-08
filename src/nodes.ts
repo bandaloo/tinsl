@@ -99,6 +99,9 @@ export abstract class Expr extends Node {
   cachedType: SpecType | undefined;
   abstract getType(scope?: LexicalScope): SpecType;
   abstract getSubExpressions(): Expr[];
+  isConst(scope: LexicalScope): boolean {
+    return this.getSubExpressions().every((e) => e.isConst(scope));
+  }
 
   wrapError(
     callback: (scope: LexicalScope) => SpecType,
@@ -218,17 +221,44 @@ export class RenderBlock extends Stmt {
     throw new Error("parse for render blocks not implemented yet");
   }
 
-  getToken(): Token {
-    return this.open;
+  getExprStmts(): Expr[] {
+    return [
+      ...(this.inNum instanceof Expr ? [this.inNum] : []),
+      ...(this.outNum instanceof Expr ? [this.outNum] : []),
+      ...(this.loopNum instanceof Expr ? [this.loopNum] : []),
+    ];
   }
 
-  getExprStmts(): Expr[] {
-    throw new Error("Method not implemented.");
+  getToken(): Token {
+    return this.open;
   }
 
   typeCheck(scope: LexicalScope): void {
     // TODO if inNum, outNum and loopNum are idents make sure they can be
     // determined at compile time
+    const checkNum = (num: number | Expr | null, str: string) => {
+      if (num instanceof Expr) {
+        if (num instanceof IntExpr) {
+          return parseInt(num.getToken().text);
+        }
+        if (num instanceof IdentExpr) {
+          const res = scope.resolve(num.getToken().text);
+          if (res instanceof IntExpr) {
+            return parseInt(res.getToken().text);
+          }
+          throw new TinslError(`${str} number was an ident that did not \
+resolve to an atomic integer`);
+        }
+        throw new TinslError(`${str} number must be an atomic integer \
+or an identifier that resolves to a constant atomic integer`);
+      }
+      return num;
+    };
+
+    this.inNum = checkNum(this.inNum, "source texture");
+    this.outNum = checkNum(this.outNum, "destination texture");
+    this.loopNum = checkNum(this.loopNum, "loop");
+
     const innerScope = new LexicalScope(scope);
     typeCheckExprStmts(this.body, innerScope);
   }
@@ -430,6 +460,15 @@ export class IdentExpr extends AtomExpr {
       return res.getRightType(scope);
     }, scope);
   }
+
+  isConst(scope: LexicalScope): boolean {
+    const name = this.getToken().text;
+    const res = scope.resolve(name);
+    return (
+      (res instanceof VarDecl && res.constant) ||
+      (res instanceof TopDef && res.expr.isConst(scope))
+    );
+  }
 }
 
 export class CallExpr extends Expr {
@@ -492,6 +531,13 @@ export class CallExpr extends Expr {
       res.argsValid(this.args);
       return res.typ.toSpecType();
     }, scope);
+  }
+
+  isConst(scope: LexicalScope): boolean {
+    // built-in function calls with all constant args are constant expressions
+    return (
+      builtIns[this.call.getToken().text] !== undefined && super.isConst(scope)
+    );
   }
 }
 
@@ -639,6 +685,11 @@ export class VarDecl extends Stmt {
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
       scope.addToScope(this.id.text, this);
+      if (this.constant && !this.expr.isConst(scope)) {
+        throw new TinslError(
+          "right side of assignment is not a constant expression"
+        );
+      }
       if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
           "left side type of assignment does not match right side type"
@@ -1201,7 +1252,8 @@ export class TopDef extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    throw new Error("Method not implemented.");
+    scope.addToScope(this.getToken().text, this);
+    this.getRightType(scope);
   }
 
   getRightType(scope?: LexicalScope) {
