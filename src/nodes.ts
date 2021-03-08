@@ -48,7 +48,7 @@ abstract class Node {
   }
 }
 
-type IdentResult = TopDef | Decl | FuncDef | ProcDef | Param;
+type IdentResult = TopDef | VarDecl | FuncDef | ProcDef | Param;
 
 interface IdentDictionary {
   [key: string]: IdentResult | undefined;
@@ -564,7 +564,7 @@ export class SubscriptExpr extends Expr {
 }
 
 // TODO would be easier if this were an expression
-export class Decl extends Stmt {
+export class VarDecl extends Stmt {
   constant: boolean;
   typ: TypeName;
   id: Token;
@@ -592,7 +592,7 @@ export class Decl extends Stmt {
 
   toJson(): object {
     return {
-      name: "decl",
+      name: "var_decl",
       typ: this.typ.toJson(),
       id: this.id.text,
       expr: this.expr.toJson(),
@@ -624,6 +624,7 @@ export class Decl extends Stmt {
     return this.expr.getType(scope);
   }
 }
+
 export class Assign extends Stmt {
   left: Expr;
   assign: Token;

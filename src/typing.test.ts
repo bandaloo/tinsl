@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Decl, IntExpr, LexicalScope, TypeName } from "./nodes";
+import { VarDecl, IntExpr, LexicalScope, TypeName } from "./nodes";
 import { extractExpr, parseAndCheck, tok } from "./testhelpers";
 import {
   dimensions,
@@ -576,7 +576,7 @@ describe("for loop type check", () => {
 
 describe("lexical scope", () => {
   const decl = (name: string, int: number) =>
-    new Decl(
+    new VarDecl(
       false,
       new TypeName(tok("int"), null),
       tok(name),

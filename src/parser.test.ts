@@ -6,7 +6,7 @@ import {
   BoolExpr,
   CallExpr,
   ConstructorExpr,
-  Decl,
+  VarDecl,
   Else,
   Expr,
   ExSt,
@@ -320,7 +320,7 @@ describe("call expressions", () => {
 });
 
 describe("variable declarations", () => {
-  const vec2Decl = new Decl(
+  const vec2Decl = new VarDecl(
     true,
     new TypeName(tok("vec2")),
     tok("bar"),
@@ -334,7 +334,7 @@ describe("variable declarations", () => {
     new IntExpr(tok("3")),
   ];
 
-  const intArrayDecl = new Decl(
+  const intArrayDecl = new VarDecl(
     false,
     new TypeName(tok("int"), 0),
     tok("arr"),
@@ -345,7 +345,7 @@ describe("variable declarations", () => {
   it("parses non-constant variable declaration float", () => {
     checkExpr(
       "float foo = 1.",
-      new Decl(
+      new VarDecl(
         false,
         new TypeName(tok("float")),
         tok("foo"),
@@ -736,7 +736,7 @@ describe("for loops", () => {
 
   const forLoop = (body: ExSt[]) =>
     new ForLoop(
-      new Decl(
+      new VarDecl(
         false,
         new TypeName(tok("int")),
         tok("i"),
@@ -810,7 +810,7 @@ for
   });
 
   const declHelper = (str: string) =>
-    new Decl(
+    new VarDecl(
       false,
       new TypeName(tok("int")),
       tok(str),

@@ -11,7 +11,7 @@ import {
   CallExpr,
   IdentExpr,
   BoolExpr,
-  Decl,
+  VarDecl,
   TypeName,
   ConstructorExpr,
   Assign,
@@ -116,7 +116,7 @@ Refresh ->
 
 Decl ->
     (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
-      {% d => new Decl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
+      {% d => new VarDecl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
 
 TopDef ->
     %kw_def _ %ident __ Expr {% d => new TopDef(d[2], d[4]) %}
@@ -332,3 +332,5 @@ AssignSymbol ->
 _ -> (%ws | %comment | %multiline_comment):*
 
 __ -> (%ws | %comment | %multiline_comment):+
+
+# TODO local blocks are valid glsl
