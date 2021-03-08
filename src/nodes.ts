@@ -774,19 +774,21 @@ export class FuncDef extends Stmt {
   typeCheck(scope: LexicalScope): void {
     // TODO recursive functions are not allowed
     // add all the params to the scope
-    if (!branchContainsReturn(this.body)) {
-      throw new TinslError(
-        `function "${
-          this.getToken().text
-        }" does not definitely return a value. this may be because it does not \
+    this.wrapError((scope: LexicalScope) => {
+      if (!branchContainsReturn(this.body)) {
+        throw new TinslError(
+          `function "${
+            this.getToken().text
+          }" does not definitely return a value. this may be because it does not \
 contain a return statement in all conditional branches`
-      );
-    }
+        );
+      }
 
-    scope.addToScope(this.getToken().text, this);
-    const innerScope = new LexicalScope(scope, this.typ.toSpecType());
-    for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
-    typeCheckExprStmts(this.body, innerScope);
+      scope.addToScope(this.getToken().text, this);
+      const innerScope = new LexicalScope(scope, this.typ.toSpecType());
+      for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
+      typeCheckExprStmts(this.body, innerScope);
+    }, scope);
   }
 }
 
@@ -976,7 +978,8 @@ export class If extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
-      this.cond.getType(scope);
+      if (this.cond.getType(scope) !== "bool")
+        throw new TinslError("if condition must be a boolean expression");
       const innerScope = new LexicalScope(scope);
       typeCheckExprStmts(this.body, innerScope);
     }, scope);
@@ -985,7 +988,8 @@ export class If extends Stmt {
   returnsInBoth(): boolean {
     return (
       branchContainsReturn(this.body) &&
-      (this.cont === null || branchContainsReturn(this.cont.body))
+      this.cont !== null &&
+      branchContainsReturn(this.cont.body)
     );
   }
 }

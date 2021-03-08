@@ -631,10 +631,16 @@ vec4 foo () {
 });
 
 describe("checks for return statements in all branches", () => {
-  it("no return statement at all", () => {
+  it("no return statement at all, throws", () => {
     expect(() => parseAndCheck("vec4 foo () { vec4(1., 1., 1.); }")).to.throw(
       "definitely"
     );
+  });
+
+  it("does not return in if, throws", () => {
+    expect(() =>
+      parseAndCheck("int foo (bool b) { if (b) return 0; }")
+    ).to.throw("definitely");
   });
 
   it("does not return in one of the branches, throws", () => {
@@ -671,5 +677,48 @@ int foo (bool b) {
   }
 }`)
     ).to.not.throw();
+  });
+
+  it("returns in all branches of long else if chain", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    return 1;
+  } else if (b) {
+    return 2;
+  } else if (b) {
+    return 3;
+  } else {
+    return 4;
+  }
+}`)
+    ).to.not.throw();
+  });
+
+  it("returns in all branches of nested if statements", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    if (b) return 1; else return 2;
+  } else {
+    if (b) return 1; else return 2;
+  }
+}`)
+    ).to.not.throw();
+  });
+
+  it("returns in all branches of nested if statements", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo (bool b) {
+  if (b) {
+    if (b) return 1; else return 2;
+  } else {
+    if (b) return 1; else 2;
+  }
+}`)
+    ).to.throw("definitely");
   });
 });
