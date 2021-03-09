@@ -865,5 +865,72 @@ float foo () {
   });
 });
 
+describe("render block in procedure", () => {
+  it("simple render block no params", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo () {
+  0 -> loop 2 { vec4(1., 0., 0., 1.); } -> 1 
+}
+
+{ @foo(); }`)
+    ).to.not.throw();
+  });
+
+  it("parses and checks simple render block params", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int in_num, int out_num, int loop_num) {
+  in_num -> loop loop_num { vec4(1., 0., 0., 1.); } -> out_num
+}
+
+{ @foo(0, 1, 2); }`)
+    ).to.not.throw();
+  });
+
+  it("throws because param is not atomic int", () => {
+    const atomicParamSource = (str: string) => `
+pr foo (int in_num, int out_num, int loop_num) {
+  in_num -> loop loop_num { vec4(1., 0., 0., 1.); } -> out_num
+}
+
+{ @foo(${str}); }`;
+
+    expect(() => parseAndCheck(atomicParamSource("0 * 42, 1, 2"))).to.throw(
+      '"in_num" is not a compile time'
+    );
+    expect(() => parseAndCheck(atomicParamSource("0, 1 * 1, 2"))).to.throw(
+      '"out_num" is not a compile time'
+    );
+    expect(() => parseAndCheck(atomicParamSource("0, 1, 1+1"))).to.throw(
+      '"loop_num" is not a compile time'
+    );
+  });
+
+  it("throws when render block outside proc is not compile time", () => {
+    expect(() =>
+      parseAndCheck("(0 + 0) -> loop 2 { vec4(1., 2., 3., 4.); } -> 1")
+    ).to.throw("source texture");
+    expect(() =>
+      parseAndCheck("0 -> loop 1 + 1 { vec4(1., 2., 3., 4.); } -> 1")
+    ).to.throw("loop");
+    expect(() =>
+      parseAndCheck("0 -> loop 2 { vec4(1., 2., 3., 4.); } -> 2 - 1")
+    ).to.throw("destination texture");
+  });
+
+  it("parses and checks simple render block params", () => {
+    expect(() =>
+      parseAndCheck(`
+def in_num 0
+def out_num 1
+def loop_num 2
+
+in_num -> loop loop_num { vec4(1., 0., 0., 1.); } -> out_num
+`)
+    ).to.not.throw();
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling

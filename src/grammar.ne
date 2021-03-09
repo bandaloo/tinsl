@@ -82,6 +82,8 @@ RenderBlock ->
         }
       %}
 
+# TODO possible ambiguous grammar with out texture expression?
+
 Uniform ->
     %kw_uniform _ TypeName _ %ident (%lbc):+ {% d => new Uniform(d[2], d[4]) %}
 

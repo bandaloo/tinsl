@@ -1,13 +1,10 @@
 import type { Token } from "moo";
 import { TinslError, wrapErrorHelper } from "./err";
-import { checkExpr } from "./testhelpers";
 import {
   binaryTyping,
   builtIns,
   callReturnType,
   constructors,
-  extractMatrixDimensions,
-  extractVecBase,
   isVec,
   SpecType,
   SpecTypeSimple,
@@ -20,6 +17,31 @@ import {
 // TODO do we want a list of tokens for each node?
 
 // TODO check the json conversion functions for tokens
+const atomicIntHint =
+  "e.g. `42` or `some_num` where `def some_num 42` is defined earlier. " +
+  "these restrictions apply to expressions for source/target texture numbers " +
+  "or loop numbers of render blocks";
+
+export function compileTimeInt(expr: Expr, scope: LexicalScope) {
+  if (expr instanceof IntExpr) return parseInt(expr.getToken().text);
+  if (expr instanceof IdentExpr) {
+    const res = scope.resolve(expr.getToken().text);
+    if (res instanceof TopDef && res.expr instanceof IntExpr) {
+      return parseInt(res.expr.getToken().text);
+    }
+  }
+  return null;
+}
+
+export function compileTimeParam(expr: Expr, scope: LexicalScope) {
+  if (expr instanceof IdentExpr) {
+    const res = scope.resolve(expr.getToken().text);
+    if (res instanceof Param) {
+      return res;
+    }
+  }
+  return null;
+}
 
 function typeCheckExprStmts(arr: ExSt[], scope: LexicalScope) {
   for (const e of arr) {
@@ -128,12 +150,15 @@ abstract class DefLike extends Stmt {
     this.params = params;
   }
 
-  argsValid(args: Expr[]): void {
+  argsValid(args: Expr[], scope: LexicalScope): void {
     const paramTypes = this.params.map((p) => p.getRightType());
-    const argTypes = args.map((a) => a.getType());
+    const argTypes = args.map((a) => a.getType(scope));
+
+    // TODO could move this up
     if (paramTypes.length !== argTypes.length)
       throw new TinslError("arguments length does not match parameter length");
-    for (let i = 0; i < paramTypes.length; i++)
+
+    for (let i = 0; i < paramTypes.length; i++) {
       if (paramTypes[i] !== argTypes[i])
         throw new TinslError(
           `argument ${i} has wrong type. is ${argTypes[i]} but needs to be ${
@@ -142,6 +167,15 @@ abstract class DefLike extends Stmt {
             this.getToken().text
           }"`
         );
+
+      if (this.params[i].pureInt && compileTimeInt(args[i], scope) === null) {
+        throw new TinslError(
+          `argument for parameter "${
+            this.params[i].getToken().text
+          }" is not a compile time atomic int, ${atomicIntHint}`
+        );
+      }
+    }
   }
 }
 
@@ -234,25 +268,20 @@ export class RenderBlock extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    // TODO if inNum, outNum and loopNum are idents make sure they can be
-    // determined at compile time
     const checkNum = (num: number | Expr | null, str: string) => {
-      if (num instanceof Expr) {
-        if (num instanceof IntExpr) {
-          return parseInt(num.getToken().text);
-        }
-        if (num instanceof IdentExpr) {
-          const res = scope.resolve(num.getToken().text);
-          if (res instanceof IntExpr) {
-            return parseInt(res.getToken().text);
-          }
-          throw new TinslError(`${str} number was an ident that did not \
-resolve to an atomic integer`);
-        }
-        throw new TinslError(`${str} number must be an atomic integer \
-or an identifier that resolves to a constant atomic integer`);
+      if (num === null || typeof num === "number") return num;
+
+      const int = compileTimeInt(num, scope);
+      if (int !== null) return int;
+
+      const param = compileTimeParam(num, scope);
+      if (param !== null && param.getRightType() === "int") {
+        param.pureInt = true;
+        return num;
       }
-      return num;
+
+      throw new TinslError(`expression for ${str} number in render block \
+is not a compile time atomic int, ${atomicIntHint}`);
     };
 
     this.inNum = checkNum(this.inNum, "source texture");
@@ -528,7 +557,7 @@ export class CallExpr extends Expr {
         );
       }
       // make sure all the argument types match the param types
-      res.argsValid(this.args);
+      res.argsValid(this.args, scope);
       return res.typ.toSpecType();
     }, scope);
   }
@@ -580,7 +609,7 @@ export class ConstructorExpr extends Expr {
         for (const a of this.args) {
           if (a.getType(scope) !== arrType) {
             throw new TinslError(
-              `argument in array constructor was not of type ${arrType}`
+              `argument in array constructor is not of type ${arrType}`
             );
           }
         }
@@ -790,6 +819,7 @@ export class Param extends Node {
   typ: TypeName;
   id: Token;
   def: ExSt | null;
+  pureInt = false;
 
   constructor(typ: TypeName, id: Token, def: ExSt | null = null) {
     super();
@@ -1200,7 +1230,7 @@ export class ProcCall extends Stmt {
           `identifier "${name}" does not refer to a procedure definition`
         );
 
-      res.argsValid(this.args);
+      res.argsValid(this.args, scope);
     }, scope);
   }
 
