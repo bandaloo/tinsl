@@ -754,6 +754,7 @@ export function vectorAccessTyping(
   vec: SpecType,
   leftHand: boolean
 ) {
+  // TODO .length property of array
   if (typeof vec === "object")
     throw new TinslError(
       "cannot access properties of an array with . operator (use [])"

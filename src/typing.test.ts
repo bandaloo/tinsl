@@ -548,6 +548,33 @@ describe("typing a binary expression", () => {
   });
 });
 
+describe("array subscripting type check", () => {
+  it("subscripts an int array", () => {
+    expect(extractExpr("int[](1, 2, 3)[0]", true).getType(els())).to.equal(
+      "int"
+    );
+  });
+
+  it("subscripts vecs", () => {
+    expect(extractExpr("vec3(1., 2., 3.)[0]", true).getType(els())).to.equal(
+      "float"
+    );
+    expect(extractExpr("ivec3(1, 2, 3)[0]", true).getType(els())).to.equal(
+      "int"
+    );
+    expect(extractExpr("uvec3(1u, 2u, 3u)[0]", true).getType(els())).to.equal(
+      "uint"
+    );
+    expect(
+      extractExpr("bvec3(false, true, false)[0]", true).getType(els())
+    ).to.equal("bool");
+  });
+
+  it("tries to subscript non-array, throws", () => {
+    expect(() => extractExpr("1[0]", true).getType(els())).to.throw("index");
+  });
+});
+
 describe("declaration type checks", () => {
   it("parses and checks a valid assignment", () => {
     expect(extractExpr("int a = 1", true).typeCheck(els())).to.equal(undefined);

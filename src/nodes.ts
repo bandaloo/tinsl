@@ -6,6 +6,7 @@ import {
   callReturnType,
   constructors,
   isVec,
+  matchingVecScalar,
   SpecType,
   SpecTypeSimple,
   ternaryTyping,
@@ -185,6 +186,7 @@ function branchContainsReturn(exSts: ExSt[]) {
   );
 }
 
+// TODO don't need this
 export class TinslProgram extends Stmt {
   topScope: LexicalScope = new LexicalScope();
   body: ExSt[];
@@ -661,7 +663,16 @@ export class SubscriptExpr extends Expr {
   }
 
   getType(scope?: LexicalScope): SpecType {
-    throw new Error("Method not implemented.");
+    const typ = this.call.getType(scope);
+    if (typeof typ === "string") {
+      if (isVec(typ)) {
+        return matchingVecScalar(typ);
+      }
+      throw new TinslError(
+        "can only index arrays and vectors with square brackets"
+      );
+    }
+    return typ.typ;
   }
 }
 
