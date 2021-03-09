@@ -1140,6 +1140,28 @@ int foo () {
   });
 });
 
+describe("function return type inference", () => {
+  it("uses function with inferred return type", () => {
+    expect(() =>
+      parseAndCheck(`
+def output_num 0
+
+fn foo (int num) {
+  if (num == 1) return vec4(1., 0., 0., 1.);
+  else return vec4(0., 0., 0., 1.);
+}
+
+fn bar () {
+  a := vec4(1., 2., 3., 4.);
+  a += foo(1);
+  return a;
+}
+
+{ bar(); } -> output_num`)
+    ).to.not.throw();
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not
 // allowed and no side effects)

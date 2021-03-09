@@ -53,8 +53,12 @@ TopLevel ->
   | ProcBlock   {% id %}
   | TopDef    {% id %}
 
+OptionalTypeName ->
+    TypeName {% id %}
+  | %kw_fn   {% d => null %}
+
 DefBlock ->
-    TypeName _ %ident _ %lparen (_ Params):? _ %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
+    OptionalTypeName _ %ident _ %lparen (_ Params):? _ %rparen _ %lbrace (%lbc):* _ (FuncLine):* %rbrace
       {% ([typ, , id, , , params, , , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )

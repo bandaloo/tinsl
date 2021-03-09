@@ -3,6 +3,7 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
+declare var kw_fn: any;
 declare var ident: any;
 declare var lparen: any;
 declare var rparen: any;
@@ -186,6 +187,8 @@ const grammar: Grammar = {
     {"name": "TopLevel", "symbols": ["Uniform"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["ProcBlock"], "postprocess": id},
     {"name": "TopLevel", "symbols": ["TopDef"], "postprocess": id},
+    {"name": "OptionalTypeName", "symbols": ["TypeName"], "postprocess": id},
+    {"name": "OptionalTypeName", "symbols": [(nearleyLexer.has("kw_fn") ? {type: "kw_fn"} : kw_fn)], "postprocess": d => null},
     {"name": "DefBlock$ebnf$1$subexpression$1", "symbols": ["_", "Params"]},
     {"name": "DefBlock$ebnf$1", "symbols": ["DefBlock$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "DefBlock$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -195,7 +198,7 @@ const grammar: Grammar = {
     {"name": "DefBlock$ebnf$3", "symbols": []},
     {"name": "DefBlock$ebnf$3$subexpression$1", "symbols": ["FuncLine"]},
     {"name": "DefBlock$ebnf$3", "symbols": ["DefBlock$ebnf$3", "DefBlock$ebnf$3$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "DefBlock", "symbols": ["TypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "DefBlock$ebnf$2", "_", "DefBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , , , body, ]: any) => new FuncDef(
+    {"name": "DefBlock", "symbols": ["OptionalTypeName", "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "DefBlock$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen), "_", (nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "DefBlock$ebnf$2", "_", "DefBlock$ebnf$3", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess":  ([typ, , id, , , params, , , , , , , body, ]: any) => new FuncDef(
           typ, id, params === null ? [] : params[1], body.map((e: any) => e[0])
         )
               },

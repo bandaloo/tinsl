@@ -87,13 +87,19 @@ export class LexicalScope {
   private idents: IdentDictionary = {};
   private _returnType?: SpecType;
 
-  get returnType() {
+  get returnType(): SpecType | undefined {
     return this._returnType;
+  }
+
+  set returnType(typ: SpecType | undefined) {
+    this._returnType = typ;
+    if (this.upperScope === undefined) return;
+    this.upperScope.returnType = typ;
   }
 
   constructor(upperScope?: LexicalScope, returnType?: SpecType) {
     this.upperScope = upperScope;
-    this._returnType = returnType ?? upperScope?.returnType;
+    this._returnType = returnType ?? upperScope?._returnType;
   }
 
   addToScope(name: string, result: IdentResult) {
@@ -575,7 +581,7 @@ export class CallExpr extends Expr {
       }
       // make sure all the argument types match the param types
       res.argsValid(this.args, scope);
-      return res.typ.toSpecType();
+      return res.getReturnType();
     }, scope);
   }
 
@@ -917,11 +923,12 @@ export class Param extends Node {
 }
 
 export class FuncDef extends DefLike {
-  typ: TypeName;
+  typ: TypeName | null;
   id: Token;
   body: ExSt[];
+  private inferredType?: SpecType;
 
-  constructor(typ: TypeName, id: Token, params: Param[], body: ExSt[]) {
+  constructor(typ: TypeName | null, id: Token, params: Param[], body: ExSt[]) {
     super(params);
     this.typ = typ;
     this.id = id;
@@ -938,9 +945,12 @@ export class FuncDef extends DefLike {
   }
 
   translate(): string {
+    /*
     return `${this.typ.translate()} ${this.id.text}(${commaSeparatedNodes(
       this.params
     )}){${lineSeparatedNodes(this.body)}}\n`;
+    */
+    throw new Error("not implemented");
   }
 
   getToken(): Token {
@@ -954,26 +964,39 @@ export class FuncDef extends DefLike {
   typeCheck(scope: LexicalScope): void {
     // TODO recursive functions are not allowed
     this.wrapError((scope: LexicalScope) => {
-      const ret = this.typ.toSpecType();
-      if (typeof ret === "object" && ret.size === 0) {
-        throw new TinslError(`functions that return an array must have \
+      if (this.typ !== null) {
+        const ret = this.typ.toSpecType();
+        if (typeof ret === "object" && ret.size === 0) {
+          throw new TinslError(`functions that return an array must have \
 a defined size in the return type specifier`);
-      }
-      if (!branchContainsReturn(this.body)) {
-        throw new TinslError(
-          `function "${
-            this.getToken().text
-          }" does not definitely return a value. this may be because it does not \
+        }
+        if (!branchContainsReturn(this.body)) {
+          throw new TinslError(
+            `function "${
+              this.getToken().text
+            }" does not definitely return a value. this may be because it does not \
 contain a return statement in all conditional branches`
-        );
+          );
+        }
       }
 
       // add all the params to the scope
       scope.addToScope(this.getToken().text, this);
-      const innerScope = new LexicalScope(scope, this.typ.toSpecType());
+      const innerScope = new LexicalScope(
+        scope,
+        this.typ !== null ? this.typ.toSpecType() : undefined
+      );
       for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
       typeCheckExprStmts(this.body, innerScope);
+      this.inferredType = innerScope.returnType;
     }, scope);
+  }
+
+  getReturnType(): SpecType {
+    if (this.inferredType !== undefined) return this.inferredType;
+    throw new Error(
+      "inferred type was null (possibly called before typeCheck)"
+    );
   }
 }
 
@@ -1004,11 +1027,12 @@ export class Return extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    if (scope.returnType === undefined)
-      throw new Error(
-        "scope return type was somehow undefined at a return statement"
-      );
     const exprType = this.expr.getType(scope);
+    if (scope.returnType === undefined) {
+      scope.returnType = exprType;
+      return;
+    }
+
     if (compareTypes(this.expr.getType(scope), scope.returnType)) return;
     // TODO better error message
     throw new TinslError(
