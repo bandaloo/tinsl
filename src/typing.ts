@@ -62,6 +62,22 @@ export interface ArrayType<T> {
   size: number;
 }
 
+export function compareTypes(left: SpecType, right: SpecType) {
+  if (typeof left === "string" && typeof right === "string") {
+    return left === right;
+  }
+
+  if (typeof left === "object" && typeof right === "object") {
+    return left.typ === right.typ && left.size === right.size;
+  }
+  return false;
+}
+
+export function typeToString(typ: SpecType) {
+  if (typeof typ === "string") return typ;
+  return `${typ.typ}[${typ.size === 0 ? "" : typ.size}]`;
+}
+
 export type TotalType = GenType | SpecType;
 
 interface TypeInfo {
@@ -808,6 +824,7 @@ on a vector of length ${len}`
     }
   }
 
+  if (comps.length === 1) return matchingVecScalar(vec);
   return (base + comps.length) as SpecType;
 }
 // note: modf is skipped because it has an output parameter

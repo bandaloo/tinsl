@@ -1,15 +1,18 @@
 import type { Token } from "moo";
+import { type } from "os";
 import { TinslError, wrapErrorHelper } from "./err";
 import {
   binaryTyping,
   builtIns,
   callReturnType,
+  compareTypes,
   constructors,
   isVec,
   matchingVecScalar,
   SpecType,
   SpecTypeSimple,
   ternaryTyping,
+  typeToString,
   unaryTyping,
   vectorAccessTyping,
 } from "./typing";
@@ -81,7 +84,7 @@ interface IdentDictionary {
 export class LexicalScope {
   private upperScope?: LexicalScope;
   private idents: IdentDictionary = {};
-  private _returnType?: SpecType | "render";
+  private _returnType?: SpecType;
 
   get returnType() {
     return this._returnType;
@@ -119,7 +122,10 @@ export abstract class Stmt extends Node {
 }
 
 export abstract class Expr extends Node {
-  cachedType: SpecType | undefined;
+  cachedType?: SpecType;
+
+  validLVal: "valid" | "const" | "invalid" = "invalid";
+
   abstract getType(scope?: LexicalScope): SpecType;
   abstract getSubExpressions(): Expr[];
   isConst(scope: LexicalScope): boolean {
@@ -347,11 +353,16 @@ export class BinaryExpr extends Expr {
           );
         }
 
-        return vectorAccessTyping(
+        const ret = vectorAccessTyping(
           this.right.getToken().text,
           lType,
           this.isLeftHand
         );
+
+        // valid l-value when accessing a not constant-declared
+        this.validLVal = this.left.validLVal !== "const" ? "valid" : "const";
+
+        return ret;
       }
 
       return binaryTyping(op, lType, this.right.getType(scope));
@@ -488,6 +499,9 @@ export class IdentExpr extends AtomExpr {
       };
       if (res instanceof FuncDef) throw helper("function");
       if (res instanceof ProcDef) throw helper("procedure");
+      if (res instanceof VarDecl) {
+        this.validLVal = res.constant ? "const" : "valid";
+      }
       return res.getRightType(scope);
     }, scope);
   }
@@ -664,6 +678,10 @@ export class SubscriptExpr extends Expr {
 
   getType(scope?: LexicalScope): SpecType {
     const callType = this.call.getType(scope);
+
+    // valid l-value when accessing a not constant-declared
+    this.validLVal = this.call.validLVal !== "const" ? "valid" : "const";
+
     if (typeof callType === "string") {
       if (isVec(callType)) {
         return matchingVecScalar(callType);
@@ -676,6 +694,7 @@ export class SubscriptExpr extends Expr {
     if (!(indexType === "int" || indexType === "uint")) {
       throw new TinslError("index must be an integer");
     }
+
     return callType.typ;
   }
 }
@@ -736,7 +755,11 @@ export class VarDecl extends Stmt {
       }
       if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
-          "left side type of assignment does not match right side type"
+          `left side type, ${typeToString(
+            this.typ.toSpecType()
+          )} of declaration does not match right side type, ${typeToString(
+            this.expr.getType(scope)
+          )}`
         );
       }
     }, scope);
@@ -783,11 +806,32 @@ export class Assign extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    throw new Error("Method not implemented.");
+    if (!this.left.validLVal) {
+      throw new TinslError("left side of assignment is not valid");
+    }
+
+    const leftType = this.left.getType(scope);
+    const rightType = this.right.getType(scope);
+
+    if (!compareTypes(leftType, rightType)) {
+      throw new TinslError(
+        `left side of assignment was ${typeToString(
+          leftType
+        )} but right side expression was ${typeToString(rightType)}`
+      );
+    }
+
+    if (this.left.validLVal !== "valid") {
+      throw new TinslError(
+        "invalid l-value in assignment" +
+          (this.left.validLVal === "const"
+            ? ". this is because it was declared as constant"
+            : "")
+      );
+    }
   }
 }
 
-// TODO better name is type specifier
 export class TypeName extends Node {
   token: Token;
   size: number | null; // size of 0 is unspecified, aka `float[]`
@@ -826,7 +870,9 @@ export class TypeName extends Node {
       return this.token.text === typ;
     }
 
-    return typ.size === this.size && typ.typ === this.token.text;
+    return (
+      (this.size === 0 || typ.size === this.size) && typ.typ === this.token.text
+    );
   }
 }
 
@@ -898,6 +944,11 @@ export class FuncDef extends DefLike {
   typeCheck(scope: LexicalScope): void {
     // TODO recursive functions are not allowed
     this.wrapError((scope: LexicalScope) => {
+      const ret = this.typ.toSpecType();
+      if (typeof ret === "object" && ret.size === 0) {
+        throw new TinslError(`functions that return an array must have \
+a defined size in the return type specifier`);
+      }
       if (!branchContainsReturn(this.body)) {
         throw new TinslError(
           `function "${
@@ -943,13 +994,19 @@ export class Return extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
+    if (scope.returnType === undefined)
+      throw new Error(
+        "scope return type was somehow undefined at a return statement"
+      );
     const exprType = this.expr.getType(scope);
-    if (this.expr.getType(scope) === scope.returnType) return;
+    if (compareTypes(this.expr.getType(scope), scope.returnType)) return;
     // TODO better error message
     throw new TinslError(
       `function return type does not match. \
-return expression was of type ${exprType} \
-but function definition is supposed to return ${scope.returnType} `
+return expression was of type ${typeToString(exprType)} \
+but function definition is supposed to return ${typeToString(
+        scope.returnType
+      )} `
     );
   }
 }

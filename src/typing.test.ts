@@ -464,6 +464,13 @@ describe("array constructor", () => {
 });
 
 describe("checks that vector access is correct", () => {
+  it("access scalar with single component", () => {
+    expect(vectorAccessTyping("x", "vec2", false)).to.equal("float");
+    expect(vectorAccessTyping("r", "ivec2", false)).to.equal("int");
+    expect(vectorAccessTyping("s", "uvec2", false)).to.equal("uint");
+    expect(vectorAccessTyping("y", "bvec2", false)).to.equal("bool");
+  });
+
   it("vec access no repeat", () => {
     expect(vectorAccessTyping("xy", "vec2", false)).to.equal("vec2");
     expect(vectorAccessTyping("rg", "uvec2", false)).to.equal("uvec2");
@@ -971,5 +978,123 @@ in_num -> loop loop_num { vec4(1., 0., 0., 1.); } -> out_num
   });
 });
 
+describe("array return type of function", () => {
+  it("returning a correct array", () => {
+    expect(() =>
+      parseAndCheck(`
+int[5] foo () {
+  return int[](1, 2, 3, 4, 5);
+}`)
+    ).to.not.throw();
+  });
+
+  it("size of return type is unspecified, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int[] foo () {
+  return int[](1, 2, 3, 4, 5);
+}`)
+    ).to.throw("size");
+  });
+});
+
+describe("parses and checks assignments", () => {
+  it("performs simple reassignment", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  int a = 1;
+  a = 2;
+  return a;
+}`)
+    ).to.not.throw();
+  });
+
+  it("tries to assign entire const array", () => {
+    expect(() =>
+      parseAndCheck(`
+int[5] foo () {
+  const int[] a = int[](1, 2, 3, 4, 5);
+  a = int[](6, 7, 8, 9, 10);
+  return a;
+}`)
+    ).to.throw("constant");
+  });
+
+  it("assigns to element in non-constant array", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  int[] arr = int[](1, 2, 3, 4, 5);
+  arr[0] = 99;
+  return arr[0];
+}`)
+    ).to.not.throw();
+  });
+
+  it("tries to assign to element of const array, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  const int[] arr = int[](1, 2, 3, 4, 5);
+  arr[0] = 99;
+  return arr[0];
+}`)
+    ).to.throw("constant");
+  });
+
+  it("assigns to component in vec with dot notation", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  ivec3 v = ivec3(1, 2, 3);
+  v.x = 4;
+  return v.x;
+}`)
+    ).to.not.throw();
+  });
+
+  const subscriptSource = (constant: boolean, index: string) => `int foo () {
+  ${constant ? "const " : ""}ivec3 v = ivec3(1, 2, 3);
+  v${index} = 4;
+  return v${index};
+}`;
+
+  it("assigns to component in vec with square bracket", () => {
+    expect(() => parseAndCheck(subscriptSource(false, "[0]"))).to.not.throw();
+  });
+
+  it("assigns to component in vec with dot notation", () => {
+    expect(() => parseAndCheck(subscriptSource(false, ".x"))).to.not.throw();
+  });
+
+  it("assigns to component in const vec with square bracket, throws", () => {
+    expect(() => parseAndCheck(subscriptSource(true, "[0]"))).to.throw(
+      "constant"
+    );
+  });
+
+  it("assigns to component in const vec with dot notation, throws", () => {
+    expect(() => parseAndCheck(subscriptSource(true, ".x"))).to.throw(
+      "constant"
+    );
+  });
+
+  it("throws when trying to assign to def", () => {
+    expect(() =>
+      parseAndCheck(`
+def a 1
+
+int foo () {
+  a = 2;
+  return a;
+}`)
+    ).to.throw("l-value");
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
-// reorder them when compiling
+// reorder them when compiling (might not matter because assignments not
+// allowed and no side effects)
+
+// TODO accessing components of a matrix?
