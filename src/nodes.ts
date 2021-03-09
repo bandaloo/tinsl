@@ -706,14 +706,14 @@ export class SubscriptExpr extends Expr {
 // TODO would be easier if this were an expression
 export class VarDecl extends Stmt {
   constant: boolean;
-  typ: TypeName;
+  typ: TypeName | null;
   id: Token;
   expr: Expr;
   assign: Token;
 
   constructor(
     constant: boolean,
-    typ: TypeName,
+    typ: TypeName | null,
     id: Token,
     expr: Expr,
     assign: Token
@@ -733,16 +733,20 @@ export class VarDecl extends Stmt {
   toJson(): object {
     return {
       name: "var_decl",
-      typ: this.typ.toJson(),
+      typ: this.typ === null ? null : this.typ.toJson(),
       id: this.id.text,
       expr: this.expr.toJson(),
     };
   }
 
   translate(): string {
+    throw new Error("Method not implemented");
+
+    /*
     return `${this.constant ? "const " : ""}${this.typ.translate()}${
       this.id.text
     }=${this.expr.translate}`;
+    */
   }
 
   getToken(): Token {
@@ -757,6 +761,7 @@ export class VarDecl extends Stmt {
           "right side of assignment is not a constant expression"
         );
       }
+      if (this.typ === null) return;
       if (!this.typ.equals(this.expr.getType(scope))) {
         throw new TinslError(
           `left side type, ${typeToString(
@@ -868,6 +873,7 @@ export class TypeName extends Node {
     return { typ: simple, size: this.size };
   }
 
+  // TODO might not need this
   equals(typ: SpecType): boolean {
     if (typeof typ === "string") {
       if (this.size !== null) return false;

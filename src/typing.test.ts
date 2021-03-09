@@ -1105,6 +1105,41 @@ int foo () {
   });
 });
 
+describe("parses and type decl type inference", () => {
+  it("declares and uses variable with :=", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  a := 1;
+  a = 2;
+  return a;
+}`)
+    ).to.not.throw();
+  });
+
+  it("declares variable with := and assigns to wrong type, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  a := 1;
+  a = 2.;
+  return a;
+}`)
+    ).to.throw("assignment was int");
+  });
+
+  it("declares const variable with := and tries to assign, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  const a := 1;
+  a = 2;
+  return a;
+}`)
+    ).to.throw("constant");
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not
 // allowed and no side effects)

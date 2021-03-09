@@ -256,6 +256,7 @@ export const lexer = moo.compile({
   div: "/",
   modulo: "%",
   question_mark: "?",
+  decl: ":=",
   colon: ":",
   semicolon: ";", // TODO remove this
   period: ".",

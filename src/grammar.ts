@@ -18,6 +18,7 @@ declare var kw_return: any;
 declare var kw_refresh: any;
 declare var kw_const: any;
 declare var assignment: any;
+declare var decl: any;
 declare var kw_def: any;
 declare var kw_for: any;
 declare var kw_if: any;
@@ -275,6 +276,11 @@ const grammar: Grammar = {
     {"name": "Decl$subexpression$1", "symbols": ["TypeName", "_"]},
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
     {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new VarDecl(d[0] !== null, d[1][0], d[2][0], d[5], d[3])},
+    {"name": "Decl$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
+    {"name": "Decl$ebnf$2", "symbols": ["Decl$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "Decl$ebnf$2", "symbols": [], "postprocess": () => null},
+    {"name": "Decl$subexpression$3", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
+    {"name": "Decl", "symbols": ["Decl$ebnf$2", "Decl$subexpression$3", (nearleyLexer.has("decl") ? {type: "decl"} : decl), "_", "Expr"], "postprocess": d => new VarDecl(d[0] !== null, null, d[1][0], d[4], d[2])},
     {"name": "TopDef", "symbols": [(nearleyLexer.has("kw_def") ? {type: "kw_def"} : kw_def), "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "__", "Expr"], "postprocess": d => new TopDef(d[2], d[4])},
     {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[4])},
     {"name": "ForInit", "symbols": ["Decl"], "postprocess": id},

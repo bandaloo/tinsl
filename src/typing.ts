@@ -781,12 +781,11 @@ export function vectorAccessTyping(
       "cannot access properties of an array with . operator (use [])"
     );
 
-  if (comps.length > 4) {
+  if (comps.length > 4)
     throw new TinslError(
       "too many components; " +
         "cannot access greater than 4 components on a vector"
     );
-  }
 
   if (isScalar(vec))
     throw new TinslError(
