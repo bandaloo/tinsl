@@ -657,22 +657,26 @@ export class SubscriptExpr extends Expr {
   toJson(): object {
     return {
       name: "subscript_expr",
-      call: this.call.toJson,
+      call: this.call.toJson(),
       index: this.index,
     };
   }
 
   getType(scope?: LexicalScope): SpecType {
-    const typ = this.call.getType(scope);
-    if (typeof typ === "string") {
-      if (isVec(typ)) {
-        return matchingVecScalar(typ);
+    const callType = this.call.getType(scope);
+    if (typeof callType === "string") {
+      if (isVec(callType)) {
+        return matchingVecScalar(callType);
       }
       throw new TinslError(
         "can only index arrays and vectors with square brackets"
       );
     }
-    return typ.typ;
+    const indexType = this.index.getType(scope);
+    if (!(indexType === "int" || indexType === "uint")) {
+      throw new TinslError("index must be an integer");
+    }
+    return callType.typ;
   }
 }
 
