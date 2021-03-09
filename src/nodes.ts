@@ -1,5 +1,4 @@
 import type { Token } from "moo";
-import { type } from "os";
 import { TinslError, wrapErrorHelper } from "./err";
 import {
   binaryTyping,
@@ -7,8 +6,10 @@ import {
   callReturnType,
   compareTypes,
   constructors,
+  isMat,
   isVec,
   matchingVecScalar,
+  matrixAccessTyping,
   SpecType,
   SpecTypeSimple,
   ternaryTyping,
@@ -685,6 +686,9 @@ export class SubscriptExpr extends Expr {
     if (typeof callType === "string") {
       if (isVec(callType)) {
         return matchingVecScalar(callType);
+      }
+      if (isMat(callType)) {
+        return matrixAccessTyping(callType);
       }
       throw new TinslError(
         "can only index arrays and vectors with square brackets"

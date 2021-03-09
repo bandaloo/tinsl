@@ -765,6 +765,11 @@ must have the same type`);
   return ifType;
 }
 
+export function matrixAccessTyping(mat: SpecTypeSimple) {
+  const [_, n] = extractMatrixDimensions(mat);
+  return ("vec" + n) as SpecTypeSimple;
+}
+
 export function vectorAccessTyping(
   comps: string,
   vec: SpecType,

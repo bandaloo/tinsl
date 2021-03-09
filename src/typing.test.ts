@@ -555,7 +555,7 @@ describe("typing a binary expression", () => {
   });
 });
 
-describe("array subscripting type check", () => {
+describe("subscripting type check", () => {
   it("subscripts an int array with int", () => {
     expect(extractExpr("int[](1, 2, 3)[0]", true).getType(els())).to.equal(
       "int"
@@ -591,6 +591,18 @@ describe("array subscripting type check", () => {
 
   it("tries to subscript non-array, throws", () => {
     expect(() => extractExpr("1[0]", true).getType(els())).to.throw("index");
+  });
+
+  it("subscripts an mxn mat to get of length n", () => {
+    expect(
+      extractExpr("mat2x3(1., 2., 3., 4., 5., 6.)[0]", true).getType(els())
+    ).to.equal("vec3");
+  });
+
+  it("subscripts a matrix twice to get a scalar float", () => {
+    expect(
+      extractExpr("mat2x3(1., 2., 3., 4., 5., 6.)[0][0]", true).getType(els())
+    ).to.equal("float");
   });
 });
 
