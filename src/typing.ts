@@ -301,6 +301,7 @@ function constructorInfo(typ: SpecTypeSimple): TypeInfo[] {
     const scalar = matchingVecScalar(typ);
     return [
       { params: rep(num, scalar), ret: typ },
+      { params: rep(1, scalar), ret: typ },
       ...(num > 2
         ? [{ params: [base + (num - 1), scalar] as SpecType[], ret: typ }]
         : []),

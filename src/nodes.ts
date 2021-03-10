@@ -48,10 +48,18 @@ export function compileTimeParam(expr: Expr, scope: LexicalScope) {
   return null;
 }
 
-function typeCheckExprStmts(arr: ExSt[], scope: LexicalScope) {
+function typeCheckExprStmts(
+  arr: ExSt[],
+  scope: LexicalScope,
+  inRenderBlock = false
+) {
   for (const e of arr) {
     if (e instanceof Expr) {
-      e.getType(scope);
+      const typ = e.getType(scope);
+      if (inRenderBlock && typ !== "vec4")
+        throw new TinslError(
+          "expressions must be of type vec4 in render block"
+        );
     } else {
       e.typeCheck(scope);
     }
@@ -300,7 +308,7 @@ is not a compile time atomic int, ${atomicIntHint}`);
     this.loopNum = checkNum(this.loopNum, "loop");
 
     const innerScope = new LexicalScope(scope);
-    typeCheckExprStmts(this.body, innerScope);
+    typeCheckExprStmts(this.body, innerScope, true);
   }
 }
 
@@ -582,7 +590,13 @@ export class CallExpr extends Expr {
 
         if (int !== null) {
           const num = compileTimeInt(int, scope);
-          if (num === null)
+          if (
+            num === null &&
+            !(
+              int instanceof IdentExpr &&
+              scope.resolve(int.getToken().text) instanceof Param
+            )
+          )
             throw new TinslError(
               "sampler number for frag has to be a compile time atomic int, " +
                 atomicIntHint
