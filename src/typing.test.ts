@@ -1,5 +1,13 @@
 import { expect } from "chai";
-import { VarDecl, IntExpr, LexicalScope, TypeName } from "./nodes";
+import {
+  VarDecl,
+  IntExpr,
+  LexicalScope,
+  TypeName,
+  Frag,
+  CallExpr,
+  UnaryExpr,
+} from "./nodes";
 import { extractExpr, parseAndCheck, tok } from "./testhelpers";
 import {
   dimensions,
@@ -1223,6 +1231,21 @@ describe("frag typing tests", () => {
       "no arguments"
     );
   });
+
+  it("calls frag with negative sampler", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo () { return frag(-1); } ")
+    ).to.not.throw();
+  });
+
+  it("parses a frag expression with sampler number, no coords", () => {
+    const f = new Frag(tok("frag"));
+    const c = new CallExpr(tok("("), f, [
+      new UnaryExpr(tok("-"), new IntExpr(tok("1"))),
+    ]);
+    c.getType(els());
+    expect(f.sampler).to.equal(-1);
+  });
 });
 
 describe("typing for built in values", () => {
@@ -1266,7 +1289,9 @@ fn blur5(vec2 direction, int channel) {
 pr two_pass_blur(float size, int channel, int reps) {
   loop reps {
     blur5(vec2(size, 0.), channel);
+    refresh;
     blur5(vec2(0., size), channel);
+    refresh;
   }
 }
 

@@ -29,6 +29,12 @@ const atomicIntHint =
 
 export function compileTimeInt(expr: Expr, scope: LexicalScope) {
   if (expr instanceof IntExpr) return parseInt(expr.getToken().text);
+  if (
+    expr instanceof UnaryExpr &&
+    expr.argument instanceof IntExpr &&
+    ["+", "-"].includes(expr.operator.text)
+  )
+    return parseInt(expr.operator.text + expr.argument.getToken());
   if (expr instanceof IdentExpr) {
     const res = scope.resolve(expr.getToken().text);
     if (res instanceof TopDef && res.expr instanceof IntExpr) {
