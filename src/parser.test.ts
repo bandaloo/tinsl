@@ -1057,11 +1057,21 @@ describe("function calls and subscripting", () => {
 
 describe("frag", () => {
   it("parses a frag expression with no sampler number", () => {
-    checkExpr("frag", new Frag(tok("frag")));
+    const f = new Frag(tok("frag"));
+    expect(f.sampler).to.equal(null);
+    checkExpr("frag", f);
   });
 
   it("parses a frag expression with sampler number, no coords", () => {
-    checkExpr("frag0", new Frag(tok("frag0")));
+    const f = new Frag(tok("frag0"));
+    expect(f.sampler).to.equal(0);
+    checkExpr("frag0", f);
+  });
+
+  it("parses a frag expression with multi-digit sampler number", () => {
+    const f = new Frag(tok("frag10"));
+    expect(f.sampler).to.equal(10);
+    checkExpr("frag10", new Frag(tok("frag10")));
   });
 });
 

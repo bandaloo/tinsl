@@ -924,7 +924,7 @@ float foo () {
 });
 
 describe("render block in procedure", () => {
-  it("simple render block no params", () => {
+  it("parses and checks simple render block no params", () => {
     expect(() =>
       parseAndCheck(`
 pr foo () {
@@ -1181,10 +1181,31 @@ int[2] foo () {
 });
 
 describe("frag typing tests", () => {
-  it("frag with both pos and sampler num", () => {
+  it("calls frag with both pos and sampler num", () => {
     expect(() =>
       parseAndCheck("vec4 foo () { return frag(0, vec2(.5, 5.)); } ")
     ).to.not.throw();
+  });
+
+  it("calls frag with just sampler num", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo () { return frag(0); } ")
+    ).to.not.throw();
+  });
+
+  it("calls frag with just pos", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo () { return frag(vec2(.5, .5)); } ")
+    ).to.not.throw();
+  });
+
+  it("calls frag with incorrect args", () => {
+    expect(() => parseAndCheck("vec4 foo () { return frag(1, 1); } ")).to.throw(
+      "one int"
+    );
+    expect(() =>
+      parseAndCheck("vec4 foo () { v := vec2(.5, 5.); return frag(v, v); } ")
+    ).to.throw("one vec2");
   });
 
   it("passes non compile time atomic into into sampler and throws", () => {
@@ -1192,7 +1213,28 @@ describe("frag typing tests", () => {
       parseAndCheck("vec4 foo () { return frag(0 + 0); } ")
     ).to.throw("compile time");
   });
+
+  it("tries to call frag with no arguments, throws", () => {
+    expect(() => parseAndCheck("vec4 foo () { return frag(); } ")).to.throw(
+      "no arguments"
+    );
+  });
 });
+
+describe("typing for built in values", () => {
+  it("types pos", () => {
+    expect(extractExpr("pos", true).getType(els())).to.equal("vec2");
+  });
+
+  it("types res", () => {
+    expect(extractExpr("res", true).getType(els())).to.equal("vec2");
+  });
+
+  it("types time", () => {
+    expect(extractExpr("time", true).getType(els())).to.equal("float");
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not
 // allowed and no side effects)

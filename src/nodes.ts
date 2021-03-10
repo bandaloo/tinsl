@@ -195,7 +195,7 @@ function branchContainsReturn(exSts: ExSt[]) {
   );
 }
 
-// TODO don't need this
+// TODO is this really a statement?
 export class TinslProgram extends Stmt {
   topScope: LexicalScope = new LexicalScope();
   body: ExSt[];
@@ -214,7 +214,7 @@ export class TinslProgram extends Stmt {
   }
 
   toJson(): object {
-    throw new Error("Method not implemented.");
+    return { name: "program", body: this.body.map((e) => e.toJson()) };
   }
 
   translate(): string {
@@ -540,6 +540,7 @@ export class CallExpr extends Expr {
   }
 
   translate(): string {
+    // TODO translate this differently if frag
     return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
   }
 
@@ -554,8 +555,13 @@ export class CallExpr extends Expr {
   getType(scope?: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
       if (this.call instanceof Frag) {
-        const frag = this.call;
+        if (this.args.length === 0)
+          throw new TinslError(
+            "can not call frag with no arguments. " +
+              "just use `frag` on its own"
+          );
 
+        const frag = this.call;
         const helper = (typ: SpecTypeSimple) => {
           const list = this.args.filter((x) => x.getType(scope) === typ);
           if (list.length > 1)
@@ -573,17 +579,18 @@ export class CallExpr extends Expr {
               "cannot also be passed in as an argument. sampler: " +
               frag.sampler
           );
+
         if (int !== null) {
           const num = compileTimeInt(int, scope);
           if (num === null)
             throw new TinslError(
-              "sampler number for frag has to be a compile time atomic int. " +
+              "sampler number for frag has to be a compile time atomic int, " +
                 atomicIntHint
             );
           frag.sampler = num;
         }
-        const vec2 = helper("vec2");
 
+        const vec2 = helper("vec2");
         frag.pos = vec2;
 
         // TODO might have to change if we support different texture types
@@ -1225,7 +1232,7 @@ export class If extends Stmt {
   }
 
   getToken(): Token {
-    throw new Error("Method not implemented.");
+    return this.token;
   }
 
   typeCheck(scope: LexicalScope): void {
@@ -1432,6 +1439,52 @@ export class TopDef extends Stmt {
   }
 }
 
+abstract class Basic extends Expr {
+  token: Token;
+  abstract typ: SpecTypeSimple;
+  abstract name: string;
+
+  constructor(token: Token) {
+    super();
+    this.token = token;
+  }
+
+  getType(scope?: LexicalScope): SpecType {
+    return this.typ;
+  }
+
+  getSubExpressions(): Expr[] {
+    return [];
+  }
+
+  toJson(): object {
+    return { name: this.name };
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.token;
+  }
+}
+
+export class Pos extends Basic {
+  typ: SpecTypeSimple = "vec2";
+  name: string = "coord";
+}
+
+export class Res extends Basic {
+  typ: SpecTypeSimple = "vec2";
+  name: string = "res";
+}
+
+export class Time extends Basic {
+  typ: SpecTypeSimple = "float";
+  name: string = "time";
+}
+
 export class Refresh extends Stmt {
   id: Token;
 
@@ -1445,6 +1498,7 @@ export class Refresh extends Stmt {
   }
 
   translate(): string {
+    // TODO this won't actually translate; just indicate a shader break
     throw new Error("Method not implemented.");
   }
 

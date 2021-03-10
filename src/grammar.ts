@@ -96,6 +96,9 @@ declare var float: any;
 declare var uint: any;
 declare var kw_true: any;
 declare var kw_false: any;
+declare var kw_time: any;
+declare var kw_pos: any;
+declare var kw_res: any;
 declare var frag: any;
 declare var assign_add: any;
 declare var assign_sub: any;
@@ -138,7 +141,10 @@ import {
   Refresh,
   Frag,
   UIntExpr,
-  ProcCall
+  ProcCall,
+  Time,
+  Pos,
+  Res
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -448,6 +454,9 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident)], "postprocess": d => new IdentExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_true") ? {type: "kw_true"} : kw_true)], "postprocess": d => new BoolExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_false") ? {type: "kw_false"} : kw_false)], "postprocess": d => new BoolExpr(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_time") ? {type: "kw_time"} : kw_time)], "postprocess": d => new Time(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_pos") ? {type: "kw_pos"} : kw_pos)], "postprocess": d => new Pos(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_res") ? {type: "kw_res"} : kw_res)], "postprocess": d => new Res(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("frag") ? {type: "frag"} : frag)], "postprocess": d => new Frag(d[0])},
     {"name": "Atom$ebnf$1", "symbols": ["Args"], "postprocess": id},
     {"name": "Atom$ebnf$1", "symbols": [], "postprocess": () => null},

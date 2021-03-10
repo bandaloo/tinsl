@@ -28,7 +28,10 @@ import {
   Refresh,
   Frag,
   UIntExpr,
-  ProcCall
+  ProcCall,
+  Time,
+  Pos,
+  Res
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -321,6 +324,9 @@ Atom ->
   | %ident    {% d => new IdentExpr(d[0]) %}
   | %kw_true  {% d => new BoolExpr(d[0]) %}
   | %kw_false {% d => new BoolExpr(d[0]) %}
+  | %kw_time  {% d => new Time(d[0]) %}
+  | %kw_pos   {% d => new Pos(d[0]) %}
+  | %kw_res   {% d => new Res(d[0]) %}
   | %frag     {% d => new Frag(d[0]) %}
   | TypeName _ %lparen _ Args:? _ %rparen
       {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}

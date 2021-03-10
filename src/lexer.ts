@@ -186,7 +186,11 @@ export const keywords = [
   "once",
   "loop",
   "refresh",
+  "res",
+  "pos",
+  "time",
   // types added for generics
+  // TODO get rid of these
   "genType",
   "genBType",
   "genIType",
