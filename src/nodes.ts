@@ -143,14 +143,10 @@ export abstract class Expr extends Node {
     callback: (scope: LexicalScope) => SpecType,
     scope: LexicalScope | undefined
   ): SpecType {
-    if (scope === undefined) {
-      if (this.cachedType === undefined)
-        throw new Error(
-          "cached type and lexical scope were somehow both undefined"
-        );
-      return this.cachedType;
-    }
-    return wrapErrorHelper(callback, this, scope);
+    if (this.cachedType !== undefined) return this.cachedType;
+    if (scope === undefined) throw new Error("TODO make this impossible");
+    this.cachedType = wrapErrorHelper(callback, this, scope);
+    return this.cachedType;
   }
 }
 
@@ -557,9 +553,47 @@ export class CallExpr extends Expr {
 
   getType(scope?: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
+      if (this.call instanceof Frag) {
+        const frag = this.call;
+
+        const helper = (typ: SpecTypeSimple) => {
+          const list = this.args.filter((x) => x.getType(scope) === typ);
+          if (list.length > 1)
+            throw new TinslError(
+              `cannot have more than one ${typ} as an argument to "frag"`
+            );
+          return list.length === 1 ? list[0] : null;
+        };
+
+        const int = helper("int");
+
+        if (frag.sampler !== null && int !== null)
+          throw new TinslError(
+            "sampler number already defined in the identifier name; " +
+              "cannot also be passed in as an argument. sampler: " +
+              frag.sampler
+          );
+        if (int !== null) {
+          const num = compileTimeInt(int, scope);
+          if (num === null)
+            throw new TinslError(
+              "sampler number for frag has to be a compile time atomic int. " +
+                atomicIntHint
+            );
+          frag.sampler = num;
+        }
+        const vec2 = helper("vec2");
+
+        frag.pos = vec2;
+
+        // TODO might have to change if we support different texture types
+        return "vec4";
+      }
+
       if (!(this.call instanceof IdentExpr)) {
         throw new TinslError("invalid function call");
       }
+
       const name = this.call.getToken().text;
       const info = builtIns[name];
       if (info !== undefined) {
@@ -980,12 +1014,15 @@ contain a return statement in all conditional branches`
         }
       }
 
-      // add all the params to the scope
       scope.addToScope(this.getToken().text, this);
       const innerScope = new LexicalScope(
         scope,
         this.typ !== null ? this.typ.toSpecType() : undefined
       );
+
+      innerScope.returnType =
+        this.typ === null ? undefined : this.typ.toSpecType();
+      // add all the params to the scope
       for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
       typeCheckExprStmts(this.body, innerScope);
       this.inferredType = innerScope.returnType;
@@ -1038,9 +1075,7 @@ export class Return extends Stmt {
     throw new TinslError(
       `function return type does not match. \
 return expression was of type ${typeToString(exprType)} \
-but function definition is supposed to return ${typeToString(
-        scope.returnType
-      )} `
+but the function should return ${typeToString(scope.returnType)}`
     );
   }
 }
@@ -1428,6 +1463,7 @@ export class Refresh extends Stmt {
 
 export class Frag extends Expr {
   sampler: number | null;
+  pos: Expr | null = null;
   tokn: Token;
 
   constructor(tokn: Token) {

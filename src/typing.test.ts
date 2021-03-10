@@ -1160,8 +1160,39 @@ fn bar () {
 { bar(); } -> output_num`)
     ).to.not.throw();
   });
+
+  it("uses function with inferred return type", () => {
+    expect(() =>
+      parseAndCheck(`
+fn returns1 () {
+  return int[](1);
+}
+
+fn returns2 () {
+  return int[2](returns1()[0], 2);
+}
+
+int[2] foo () {
+  a := returns2();
+  return a;
+}`)
+    ).to.not.throw();
+  });
 });
 
+describe("frag typing tests", () => {
+  it("frag with both pos and sampler num", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo () { return frag(0, vec2(.5, 5.)); } ")
+    ).to.not.throw();
+  });
+
+  it("passes non compile time atomic into into sampler and throws", () => {
+    expect(() =>
+      parseAndCheck("vec4 foo () { return frag(0 + 0); } ")
+    ).to.throw("compile time");
+  });
+});
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not
 // allowed and no side effects)
