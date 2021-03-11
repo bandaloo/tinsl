@@ -41,6 +41,8 @@ const bin = (d: any) => new BinaryExpr(d[0], d[2], d[4]);
 const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
+
+const constFinal = (d: any, s: string) => d[0] !== null && d[0][0].text === s;
 %}
 
 @lexer nearleyLexer
@@ -123,11 +125,27 @@ Return ->
 Refresh ->
     %kw_refresh {% d => new Refresh(d[0]) %}
 
+Access ->
+    %kw_const {% id %}
+  | %kw_final {% id %}
+
 Decl ->
-    (%kw_const _):? (TypeName _) (%ident _) %assignment _ Expr
-      {% d => new VarDecl(d[0] !== null, d[1][0], d[2][0], d[5], d[3]) %}
-  | (%kw_const _):? (%ident _) %decl _ Expr
-      {% d => new VarDecl(d[0] !== null, null, d[1][0], d[4], d[2]) %}
+    (Access _):? (TypeName _) (%ident _) %assignment _ Expr
+      {% d =>
+        new VarDecl(
+           constFinal(d, "const"),
+           constFinal(d, "final"),
+           d[1][0], d[2][0], d[5], d[3]
+        )
+      %}
+  | (Access _):? (%ident _) %decl _ Expr
+      {% d =>
+        new VarDecl(
+          constFinal(d, "const"),
+          constFinal(d, "final"),
+          null, d[1][0], d[4], d[2]
+        )
+      %}
 
 TopDef ->
     %kw_def _ %ident __ Expr {% d => new TopDef(d[2], d[4]) %}

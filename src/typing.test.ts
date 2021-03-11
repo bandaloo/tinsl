@@ -644,6 +644,7 @@ describe("lexical scope", () => {
   const decl = (name: string, int: number) =>
     new VarDecl(
       false,
+      false,
       new TypeName(tok("int"), null),
       tok(name),
       new IntExpr(tok("" + int)),

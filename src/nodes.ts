@@ -833,6 +833,7 @@ export class SubscriptExpr extends Expr {
 // TODO would be easier if this were an expression
 export class VarDecl extends Stmt {
   constant: boolean;
+  final: boolean;
   typ: TypeName | null;
   id: Token;
   expr: Expr;
@@ -840,6 +841,7 @@ export class VarDecl extends Stmt {
 
   constructor(
     constant: boolean,
+    final: boolean,
     typ: TypeName | null,
     id: Token,
     expr: Expr,
@@ -847,6 +849,7 @@ export class VarDecl extends Stmt {
   ) {
     super();
     this.constant = constant;
+    this.final = final;
     this.typ = typ;
     this.id = id;
     this.expr = expr;

@@ -18,6 +18,7 @@ declare var kw_uniform: any;
 declare var kw_return: any;
 declare var kw_refresh: any;
 declare var kw_const: any;
+declare var kw_final: any;
 declare var assignment: any;
 declare var decl: any;
 declare var kw_def: any;
@@ -155,6 +156,8 @@ const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
+const constFinal = (d: any, s: string) => d[0] !== null && d[0][0].text === s;
+
 interface NearleyToken {  value: any;
   [key: string]: any;
 };
@@ -279,17 +282,31 @@ const grammar: Grammar = {
     {"name": "RenderLine", "symbols": ["RenderBlock", "_"], "postprocess": d => d[0]},
     {"name": "Return", "symbols": [(nearleyLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "Expr"], "postprocess": d => new Return(d[2], d[0])},
     {"name": "Refresh", "symbols": [(nearleyLexer.has("kw_refresh") ? {type: "kw_refresh"} : kw_refresh)], "postprocess": d => new Refresh(d[0])},
-    {"name": "Decl$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
+    {"name": "Access", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const)], "postprocess": id},
+    {"name": "Access", "symbols": [(nearleyLexer.has("kw_final") ? {type: "kw_final"} : kw_final)], "postprocess": id},
+    {"name": "Decl$ebnf$1$subexpression$1", "symbols": ["Access", "_"]},
     {"name": "Decl$ebnf$1", "symbols": ["Decl$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Decl$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "Decl$subexpression$1", "symbols": ["TypeName", "_"]},
     {"name": "Decl$subexpression$2", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
-    {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess": d => new VarDecl(d[0] !== null, d[1][0], d[2][0], d[5], d[3])},
-    {"name": "Decl$ebnf$2$subexpression$1", "symbols": [(nearleyLexer.has("kw_const") ? {type: "kw_const"} : kw_const), "_"]},
+    {"name": "Decl", "symbols": ["Decl$ebnf$1", "Decl$subexpression$1", "Decl$subexpression$2", (nearleyLexer.has("assignment") ? {type: "assignment"} : assignment), "_", "Expr"], "postprocess":  d =>
+        new VarDecl(
+           constFinal(d, "const"),
+           constFinal(d, "final"),
+           d[1][0], d[2][0], d[5], d[3]
+        )
+              },
+    {"name": "Decl$ebnf$2$subexpression$1", "symbols": ["Access", "_"]},
     {"name": "Decl$ebnf$2", "symbols": ["Decl$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "Decl$ebnf$2", "symbols": [], "postprocess": () => null},
     {"name": "Decl$subexpression$3", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_"]},
-    {"name": "Decl", "symbols": ["Decl$ebnf$2", "Decl$subexpression$3", (nearleyLexer.has("decl") ? {type: "decl"} : decl), "_", "Expr"], "postprocess": d => new VarDecl(d[0] !== null, null, d[1][0], d[4], d[2])},
+    {"name": "Decl", "symbols": ["Decl$ebnf$2", "Decl$subexpression$3", (nearleyLexer.has("decl") ? {type: "decl"} : decl), "_", "Expr"], "postprocess":  d =>
+        new VarDecl(
+          constFinal(d, "const"),
+          constFinal(d, "final"),
+          null, d[1][0], d[4], d[2]
+        )
+              },
     {"name": "TopDef", "symbols": [(nearleyLexer.has("kw_def") ? {type: "kw_def"} : kw_def), "_", (nearleyLexer.has("ident") ? {type: "ident"} : ident), "__", "Expr"], "postprocess": d => new TopDef(d[2], d[4])},
     {"name": "Assign", "symbols": ["Expr", "_", "AssignSymbol", "_", "Expr"], "postprocess": d => new Assign(d[0], d[2], d[4])},
     {"name": "ForInit", "symbols": ["Decl"], "postprocess": id},
