@@ -1117,6 +1117,30 @@ int foo () {
   });
 });
 
+describe("tests final", () => {
+  it("throws when trying to assign to var declared with :=", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  a := 1;
+  a = 2;
+  return a;
+}`)
+    ).to.throw("final");
+  });
+
+  it("throws when final variable declared the normal way", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  final int a = 1;
+  a = 2;
+  return a;
+}`)
+    ).to.throw("final");
+  });
+});
+
 describe("parses and type decl type inference", () => {
   it("declares and uses variable with :=", () => {
     expect(() =>
@@ -1173,7 +1197,7 @@ fn bar () {
     ).to.not.throw();
   });
 
-  it("uses function with inferred return type", () => {
+  it("checks chain of function call return types with arrays", () => {
     expect(() =>
       parseAndCheck(`
 fn returns1 () {
