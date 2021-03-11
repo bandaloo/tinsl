@@ -185,26 +185,30 @@ abstract class DefLike extends Stmt {
   }
 
   argsValid(args: Expr[], scope: LexicalScope): void {
-    const paramTypes = this.params.map((p) => p.getRightType());
-    const argTypes = args.map((a) => a.getType(scope));
+    const kind = this instanceof ProcDef ? "procedure" : "function";
+    const name = this.getToken().text;
 
     // TODO could move this up
-    if (paramTypes.length !== argTypes.length)
-      throw new TinslError("arguments length does not match parameter length");
+    if (this.params.length !== args.length)
+      throw new TinslError(
+        `arguments for ${kind} call ${
+          this.getToken().text
+        } length does not match parameter length`
+      );
+
+    const paramTypes = this.params.map((p) => p.getRightType());
+    const argTypes = args.map((a) => a.getType(scope));
 
     for (let i = 0; i < paramTypes.length; i++) {
       if (paramTypes[i] !== argTypes[i])
         throw new TinslError(
-          `argument ${i} has wrong type. is ${argTypes[i]} but needs to be ${
-            paramTypes[i]
-          } for ${this instanceof ProcDef ? "procedure" : "function"} call "${
-            this.getToken().text
-          }"`
+          `argument ${i} has wrong type. is ${argTypes[i]} \
+but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
 
       if (this.params[i].pureInt && compileTimeInt(args[i], scope) === null) {
         throw new TinslError(
-          `argument for parameter "${
+          `in function "${this.getToken().text}", argument for parameter "${
             this.params[i].getToken().text
           }" is not a compile time atomic int, ${atomicIntHint}`
         );
@@ -666,10 +670,10 @@ export class CallExpr extends Expr {
 
       const info = builtIns[name];
       if (info !== undefined) {
-        // TODO better error message
         return callReturnType(
           this.args.map((a) => a.getType(scope)),
-          info
+          info,
+          name
         );
       }
       // not a built-in, so try to resolve identifier name
@@ -761,8 +765,9 @@ ${arrType}[${this.args.length}]`);
         return { typ: arrType, size: this.args.length };
       }
       const info = constructors[this.typ.getToken().text];
+      if (info === undefined) throw new Error("constructor not found");
       const argTypes = this.args.map((a) => a.getType(scope));
-      return callReturnType(argTypes, info);
+      return callReturnType(argTypes, info, this.typ.getToken().text);
     }, scope);
   }
 }

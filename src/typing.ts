@@ -86,7 +86,7 @@ interface TypeInfo {
 }
 
 interface PrototypeDictionary {
-  [key: string]: TypeInfo | TypeInfo[];
+  [key: string]: TypeInfo | TypeInfo[] | undefined;
 }
 
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf
@@ -430,8 +430,10 @@ const parseArrayType = <T extends string>(
 
 export function callReturnType(
   args: SpecType[],
-  typeInfo: TypeInfo | TypeInfo[]
+  typeInfo: TypeInfo | TypeInfo[] | undefined,
+  funcName: string = "__foo"
 ): SpecType {
+  if (typeInfo === undefined) throw new Error("type info was undefined");
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
 
   for (const info of infoArr) {
@@ -448,18 +450,18 @@ export function callReturnType(
       // if return type is generic and there is no match, invalid function
       if (retGenMapping === null) {
         throw new TinslError(
-          "function has a generic return type that was never matched in the arguments"
+          `function "${funcName}" has a generic return type that was never matched in the arguments`
         );
       }
       return retSize === null
         ? retGenMapping
         : { typ: retGenMapping, size: retSize };
     }
+
+    // return type is already specific type
     return info.ret as SpecType;
   }
-  throw new TinslError("no matching overload for function");
-
-  // return type is already specific type
+  throw new TinslError(`no matching overload for function "${funcName}"`);
 }
 
 type GenMap = Map<GenTypeSimple, SpecTypeSimple | null>;
