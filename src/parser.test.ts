@@ -321,8 +321,7 @@ describe("call expressions", () => {
 
 describe("variable declarations", () => {
   const vec2Decl = new VarDecl(
-    true,
-    false,
+    "const",
     new TypeName(tok("vec2")),
     tok("bar"),
     vec(1, 2),
@@ -336,8 +335,7 @@ describe("variable declarations", () => {
   ];
 
   const intArrayDecl = new VarDecl(
-    false,
-    false,
+    "mut",
     new TypeName(tok("int"), 0),
     tok("arr"),
     new ConstructorExpr(tok("("), new TypeName(tok("int"), 0), arr),
@@ -348,8 +346,7 @@ describe("variable declarations", () => {
     checkExpr(
       "float foo = 1.",
       new VarDecl(
-        false,
-        false,
+        "mut",
         new TypeName(tok("float")),
         tok("foo"),
         new FloatExpr(tok("1.")),
@@ -740,8 +737,7 @@ describe("for loops", () => {
   const forLoop = (body: ExSt[]) =>
     new ForLoop(
       new VarDecl(
-        false,
-        false,
+        "mut",
         new TypeName(tok("int")),
         tok("i"),
         new IntExpr(tok("0")),
@@ -815,8 +811,7 @@ for
 
   const declHelper = (str: string) =>
     new VarDecl(
-      false,
-      false,
+      "mut",
       new TypeName(tok("int")),
       tok(str),
       new IntExpr(tok("0")),

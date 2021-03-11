@@ -42,7 +42,7 @@ const pre = (d: any) => new UnaryExpr(d[0], d[2]);
 const post = (d: any) => new UnaryExpr(d[2], d[0], true);
 const sep = (d: any) => [d[0], ...d[1].map((e: any) => e[2])];
 
-const constFinal = (d: any, s: string) => d[0] !== null && d[0][0].text === s;
+const access = (d: any, alt: string) => d[0] !== null ? d[0][0].text : alt;
 %}
 
 @lexer nearleyLexer
@@ -125,24 +125,26 @@ Return ->
 Refresh ->
     %kw_refresh {% d => new Refresh(d[0]) %}
 
-Access ->
+NormalAccess ->
     %kw_const {% id %}
   | %kw_final {% id %}
 
+DeclAccess ->
+    %kw_const {% id %}
+  | %kw_mut   {% id %}
+
 Decl ->
-    (Access _):? (TypeName _) (%ident _) %assignment _ Expr
+    (NormalAccess _):? (TypeName _) (%ident _) %assignment _ Expr
       {% d =>
         new VarDecl(
-           constFinal(d, "const"),
-           constFinal(d, "final"),
+           access(d, "mut"),
            d[1][0], d[2][0], d[5], d[3]
         )
       %}
-  | (Access _):? (%ident _) %decl _ Expr
+  | (DeclAccess _):? (%ident _) %decl _ Expr
       {% d =>
         new VarDecl(
-          constFinal(d, "const"),
-          constFinal(d, "final"),
+          access(d, "final"),
           null, d[1][0], d[4], d[2]
         )
       %}

@@ -183,6 +183,7 @@ export const keywords = [
   "pr",
   "let", // TODO not used
   "final",
+  "mut",
   "def",
   "once",
   "loop",

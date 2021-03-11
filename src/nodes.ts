@@ -155,7 +155,7 @@ export abstract class Stmt extends Node {
 export abstract class Expr extends Node {
   cachedType?: SpecType;
 
-  validLVal: "valid" | "const" | "invalid" = "invalid";
+  validLVal: "valid" | "const" | "final" | "invalid" = "invalid";
 
   abstract getType(scope?: LexicalScope): SpecType;
   abstract getSubExpressions(): Expr[];
@@ -405,7 +405,10 @@ export class BinaryExpr extends Expr {
         );
 
         // valid l-value when accessing a not constant-declared
-        this.validLVal = this.left.validLVal !== "const" ? "valid" : "const";
+        this.validLVal =
+          this.left.validLVal !== "const" && this.left.validLVal !== "final"
+            ? "valid"
+            : this.left.validLVal;
 
         return ret;
       }
@@ -545,7 +548,7 @@ export class IdentExpr extends AtomExpr {
       if (res instanceof FuncDef) throw helper("function");
       if (res instanceof ProcDef) throw helper("procedure");
       if (res instanceof VarDecl) {
-        this.validLVal = res.constant ? "const" : "valid";
+        this.validLVal = res.access === "mut" ? "valid" : res.access;
       }
       return res.getRightType(scope);
     }, scope);
@@ -555,7 +558,7 @@ export class IdentExpr extends AtomExpr {
     const name = this.getToken().text;
     const res = scope.resolve(name);
     return (
-      (res instanceof VarDecl && res.constant) ||
+      (res instanceof VarDecl && res.access === "const") ||
       (res instanceof TopDef && res.expr.isConst(scope))
     );
   }
@@ -808,7 +811,11 @@ export class SubscriptExpr extends Expr {
     const callType = this.call.getType(scope);
 
     // valid l-value when accessing a not constant-declared
-    this.validLVal = this.call.validLVal !== "const" ? "valid" : "const";
+    // TODO update this for final
+    this.validLVal =
+      this.call.validLVal !== "const" && this.call.validLVal !== "final"
+        ? "valid"
+        : "const";
 
     if (typeof callType === "string") {
       if (isVec(callType)) {
@@ -830,26 +837,25 @@ export class SubscriptExpr extends Expr {
   }
 }
 
+type accessType = "mut" | "const" | "final";
+
 // TODO would be easier if this were an expression
 export class VarDecl extends Stmt {
-  constant: boolean;
-  final: boolean;
+  access: accessType;
   typ: TypeName | null;
   id: Token;
   expr: Expr;
   assign: Token;
 
   constructor(
-    constant: boolean,
-    final: boolean,
+    access: accessType,
     typ: TypeName | null,
     id: Token,
     expr: Expr,
     assign: Token
   ) {
     super();
-    this.constant = constant;
-    this.final = final;
+    this.access = access;
     this.typ = typ;
     this.id = id;
     this.expr = expr;
@@ -871,12 +877,6 @@ export class VarDecl extends Stmt {
 
   translate(): string {
     throw new Error("Method not implemented");
-
-    /*
-    return `${this.constant ? "const " : ""}${this.typ.translate()}${
-      this.id.text
-    }=${this.expr.translate}`;
-    */
   }
 
   getToken(): Token {
@@ -886,7 +886,7 @@ export class VarDecl extends Stmt {
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
       scope.addToScope(this.id.text, this);
-      if (this.constant && !this.expr.isConst(scope)) {
+      if (this.access === "const" && !this.expr.isConst(scope)) {
         throw new TinslError(
           "right side of assignment is not a constant expression"
         );
@@ -965,6 +965,11 @@ export class Assign extends Stmt {
         "invalid l-value in assignment" +
           (this.left.validLVal === "const"
             ? ". this is because it was declared as constant"
+            : this.left.validLVal === "final"
+            ? '. this is because the l-value was declared as "final". ' +
+              "variables declared with := are final by default. " +
+              'to declare a mutable variable this way, use "mut" before ' +
+              "the variable name, e.g. `mut foo := 42;`"
             : "")
       );
     }

@@ -643,8 +643,7 @@ describe("for loop type check", () => {
 describe("lexical scope", () => {
   const decl = (name: string, int: number) =>
     new VarDecl(
-      false,
-      false,
+      "mut",
       new TypeName(tok("int"), null),
       tok(name),
       new IntExpr(tok("" + int)),
@@ -1123,7 +1122,7 @@ describe("parses and type decl type inference", () => {
     expect(() =>
       parseAndCheck(`
 int foo () {
-  a := 1;
+  mut a := 1;
   a = 2;
   return a;
 }`)
@@ -1134,7 +1133,7 @@ int foo () {
     expect(() =>
       parseAndCheck(`
 int foo () {
-  a := 1;
+  mut a := 1;
   a = 2.;
   return a;
 }`)
@@ -1165,7 +1164,7 @@ fn foo (int num) {
 }
 
 fn bar () {
-  a := vec4(1., 2., 3., 4.);
+  mut a := vec4(1., 2., 3., 4.);
   a += foo(1);
   return a;
 }
@@ -1278,7 +1277,7 @@ fn blur5(vec2 direction, int channel) {
   uv := pos / res;
   off1 := vec2(1.3333333333333333) * direction;
 
-  color := vec4(0.);
+  mut color := vec4(0.);
 
   color += frag(uv, channel) * 0.29411764705882354;
   color += frag(uv + (off1 / res), channel) * 0.35294117647058826;
