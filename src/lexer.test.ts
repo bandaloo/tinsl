@@ -190,6 +190,24 @@ describe("comments", () => {
   });
 });
 
+describe("strings", () => {
+  it("lexes string single quote", () => {
+    expect(types(tokens(lexer, "'hello'"))).to.deep.equal(["string"]);
+  });
+
+  it("lexes string double quote", () => {
+    expect(types(tokens(lexer, '"hello"'))).to.deep.equal(["string"]);
+  });
+
+  it("lexes empty string single quote", () => {
+    expect(types(tokens(lexer, "''"))).to.deep.equal(["string"]);
+  });
+
+  it("lexes empty string double quote", () => {
+    expect(types(tokens(lexer, '""'))).to.deep.equal(["string"]);
+  });
+});
+
 describe("identifiers", () => {
   it("lexes an identifier", () => {
     expect(

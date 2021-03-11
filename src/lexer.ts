@@ -215,6 +215,7 @@ export const lexer = moo.compile({
   ws: { match: /[ \t\n]+/, lineBreaks: true },
   //lb: { match: /\n/, lineBreaks: true },
   comment: /\/\/.*?$/,
+  string: /(?:".*?"|'.*?')/,
   multiline_comment: /\/\*[^]*?\*\//,
   float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
   uint: /[0-9]+u/,

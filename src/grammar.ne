@@ -31,7 +31,8 @@ import {
   ProcCall,
   Time,
   Pos,
-  Res
+  Res,
+  ColorString,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -338,16 +339,17 @@ Param ->
       {% d => new Param(d[0], d[2], d[3] === null ? null : d[3][3]) %}
 
 Atom ->
-    %float    {% d => new FloatExpr(d[0]) %}
-  | %int      {% d => new IntExpr(d[0]) %}
-  | %uint     {% d => new UIntExpr(d[0]) %}
-  | %ident    {% d => new IdentExpr(d[0]) %}
-  | %kw_true  {% d => new BoolExpr(d[0]) %}
-  | %kw_false {% d => new BoolExpr(d[0]) %}
-  | %kw_time  {% d => new Time(d[0]) %}
-  | %kw_pos   {% d => new Pos(d[0]) %}
-  | %kw_res   {% d => new Res(d[0]) %}
-  | %frag     {% d => new Frag(d[0]) %}
+    %float           {% d => new FloatExpr(d[0]) %}
+  | %int             {% d => new IntExpr(d[0]) %}
+  | %uint            {% d => new UIntExpr(d[0]) %}
+  | %ident           {% d => new IdentExpr(d[0]) %}
+  | %kw_true         {% d => new BoolExpr(d[0]) %}
+  | %kw_false        {% d => new BoolExpr(d[0]) %}
+  | %kw_time         {% d => new Time(d[0]) %}
+  | %kw_pos          {% d => new Pos(d[0]) %}
+  | %kw_res          {% d => new Res(d[0]) %}
+  | %frag            {% d => new Frag(d[0]) %}
+  | %string (%int):? {% d => new ColorString(d[0], d[1] === null ? undefined : parseInt(d[1][0].text)) %}
   | TypeName _ %lparen _ Args:? _ %rparen
       {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
 

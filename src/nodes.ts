@@ -1640,3 +1640,36 @@ export class Frag extends Expr {
     return this.tokn;
   }
 }
+
+export class ColorString extends Expr {
+  str: string;
+  id: Token;
+  num: number;
+
+  constructor(id: Token, num?: number) {
+    super();
+    this.str = id.text.substr(1, id.text.length - 2);
+    this.id = id;
+    this.num = num ?? 3;
+  }
+
+  getType(scope?: LexicalScope): SpecType {
+    return "vec3";
+  }
+
+  getSubExpressions(): Expr[] {
+    return [];
+  }
+
+  toJson(): object {
+    return { name: "color_string", str: this.str };
+  }
+
+  translate(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  getToken(): Token {
+    return this.id;
+  }
+}

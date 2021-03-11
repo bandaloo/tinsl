@@ -102,6 +102,7 @@ declare var kw_time: any;
 declare var kw_pos: any;
 declare var kw_res: any;
 declare var frag: any;
+declare var string: any;
 declare var assign_add: any;
 declare var assign_sub: any;
 declare var assign_mult: any;
@@ -146,7 +147,8 @@ import {
   ProcCall,
   Time,
   Pos,
-  Res
+  Res,
+  ColorString,
 } from "./nodes";
 import { lexer } from "./lexer";
 
@@ -476,9 +478,13 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_pos") ? {type: "kw_pos"} : kw_pos)], "postprocess": d => new Pos(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_res") ? {type: "kw_res"} : kw_res)], "postprocess": d => new Res(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("frag") ? {type: "frag"} : frag)], "postprocess": d => new Frag(d[0])},
-    {"name": "Atom$ebnf$1", "symbols": ["Args"], "postprocess": id},
+    {"name": "Atom$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)]},
+    {"name": "Atom$ebnf$1", "symbols": ["Atom$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Atom$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "Atom", "symbols": ["TypeName", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Atom$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : [])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("string") ? {type: "string"} : string), "Atom$ebnf$1"], "postprocess": d => new ColorString(d[0], d[1] === null ? undefined : parseInt(d[1][0].text))},
+    {"name": "Atom$ebnf$2", "symbols": ["Args"], "postprocess": id},
+    {"name": "Atom$ebnf$2", "symbols": [], "postprocess": () => null},
+    {"name": "Atom", "symbols": ["TypeName", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Atom$ebnf$2", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : [])},
     {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assignment") ? {type: "assignment"} : assignment)], "postprocess": id},
     {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_add") ? {type: "assign_add"} : assign_add)], "postprocess": id},
     {"name": "AssignSymbol", "symbols": [(nearleyLexer.has("assign_sub") ? {type: "assign_sub"} : assign_sub)], "postprocess": id},
