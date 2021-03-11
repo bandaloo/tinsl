@@ -100,9 +100,14 @@ export class LexicalScope {
   private upperScope?: LexicalScope;
   private idents: IdentDictionary = {};
   private _returnType?: SpecType;
+  private _funcName?: string;
 
   get returnType(): SpecType | undefined {
     return this._returnType;
+  }
+
+  get funcName(): string | undefined {
+    return this._funcName;
   }
 
   set returnType(typ: SpecType | undefined) {
@@ -111,9 +116,14 @@ export class LexicalScope {
     this.upperScope.returnType = typ;
   }
 
-  constructor(upperScope?: LexicalScope, returnType?: SpecType) {
+  constructor(
+    upperScope?: LexicalScope,
+    returnType?: SpecType,
+    funcName?: string
+  ) {
     this.upperScope = upperScope;
     this._returnType = returnType ?? upperScope?._returnType;
+    this._funcName = funcName ?? upperScope?._funcName;
   }
 
   addToScope(name: string, result: IdentResult) {
@@ -322,7 +332,8 @@ export class BinaryExpr extends Expr {
   left: Expr;
   operator: Token;
   right: Expr;
-  isLeftHand = false; // TODO update this in validator
+  isLeftHand = false; // TODO do we need this?
+  isLengthAccess = false;
 
   constructor(left: Expr, operator: Token, right: Expr) {
     super();
@@ -361,9 +372,22 @@ export class BinaryExpr extends Expr {
 
       // dots can only act on vecs for now (no structs)
       if (this.operator.text === ".") {
+        // is .length accessing an array
+        if (
+          this.right instanceof IdentExpr &&
+          this.right.getToken().text === "length"
+        ) {
+          if (typeof lType !== "object") {
+            throw new TinslError("can only do .length on an array");
+          }
+          this.isLengthAccess = true;
+          return "int";
+        }
+
         if (typeof lType === "string" && !isVec(lType)) {
           throw new TinslError(`left side of ${op} op must be a vector`);
         }
+
         if (!(this.right instanceof IdentExpr)) {
           throw new TinslError(
             `right side of ${op} op must be components to access`
@@ -568,6 +592,20 @@ export class CallExpr extends Expr {
 
   getType(scope?: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
+      if (this.call instanceof BinaryExpr) {
+        this.call.getType(scope);
+        if (!this.call.isLengthAccess) {
+          throw new TinslError("invalid function call on a binary expression");
+        }
+        if (this.args.length > 0) {
+          throw new TinslError(
+            ".length() takes no arguments " +
+              "(you could also leave off the parentheses entirely, " +
+              "using it like a property, e.g. just `some_array.length`)"
+          );
+        }
+        return "int";
+      }
       if (this.call instanceof Frag) {
         if (this.args.length === 0)
           throw new TinslError(
@@ -622,6 +660,10 @@ export class CallExpr extends Expr {
       }
 
       const name = this.call.getToken().text;
+
+      if (name === scope.funcName)
+        throw new TinslError(`recursive call to "${name}" is not allowed`);
+
       const info = builtIns[name];
       if (info !== undefined) {
         // TODO better error message
@@ -651,6 +693,19 @@ export class CallExpr extends Expr {
     return (
       builtIns[this.call.getToken().text] !== undefined && super.isConst(scope)
     );
+  }
+
+  isLengthCall() {
+    if (
+      this.call instanceof IdentExpr &&
+      this.call.getToken().text === "length"
+    ) {
+      if (this.args.length !== 0) {
+        throw new TinslError(".length() on an array can not have arguments");
+      }
+      return true;
+    }
+    return false;
   }
 }
 
@@ -682,7 +737,7 @@ export class ConstructorExpr extends Expr {
     return {
       name: "constructor_expr",
       typ: this.typ.toJson(),
-      args: this.args,
+      args: this.args.map((e) => e.toJson()),
     };
   }
 
@@ -1035,8 +1090,8 @@ a defined size in the return type specifier`);
           throw new TinslError(
             `function "${
               this.getToken().text
-            }" does not definitely return a value. this may be because it does not \
-contain a return statement in all conditional branches`
+            }" does not definitely return a value. this may be because it does \
+not contain a return statement in all conditional branches`
           );
         }
       }
@@ -1044,7 +1099,8 @@ contain a return statement in all conditional branches`
       scope.addToScope(this.getToken().text, this);
       const innerScope = new LexicalScope(
         scope,
-        this.typ !== null ? this.typ.toSpecType() : undefined
+        this.typ !== null ? this.typ.toSpecType() : undefined,
+        this.getToken().text
       );
 
       innerScope.returnType =

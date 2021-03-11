@@ -1304,6 +1304,43 @@ pr two_pass_blur(float size, int channel, int reps) {
   });
 });
 
+describe("detect recursive calls", () => {
+  it("function calls itself recursively, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  return foo();
+}`)
+    ).to.throw("recursive");
+  });
+});
+
+describe("length of arrays", () => {
+  it("accesses the length of an array like a property", () => {
+    expect(
+      extractExpr("int[4](1, 2, 3, 4).length", true).getType(els())
+    ).to.equal("int");
+  });
+
+  it("accesses the length of an array like a function", () => {
+    expect(
+      extractExpr("int[4](1, 2, 3, 4).length()", true).getType(els())
+    ).to.equal("int");
+  });
+
+  it("throws when trying to pass in arg to length", () => {
+    expect(() =>
+      extractExpr("int[4](1, 2, 3, 4).length(3)", true).getType(els())
+    ).to.throw("no arguments");
+  });
+
+  it("throws when calling on an invalid binary", () => {
+    expect(() => extractExpr("vec2(1., 2.).x()", true).getType(els())).to.throw(
+      "binary expression"
+    );
+  });
+});
+
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not
 // allowed and no side effects)
