@@ -931,6 +931,12 @@ float foo () {
   });
 });
 
+const constFinalSource = (access: string, index: string) => `int foo () {
+  ${access} ivec3 v = ivec3(1, 2, 3);
+  v${index} = 4;
+  return v${index};
+}`;
+
 describe("render block in procedure", () => {
   it("parses and checks simple render block no params", () => {
     expect(() =>
@@ -1034,7 +1040,7 @@ int foo () {
     ).to.not.throw();
   });
 
-  it("tries to assign entire const array", () => {
+  it("tries to assign entire const array, throws", () => {
     expect(() =>
       parseAndCheck(`
 int[5] foo () {
@@ -1078,28 +1084,22 @@ int foo () {
     ).to.not.throw();
   });
 
-  const subscriptSource = (constant: boolean, index: string) => `int foo () {
-  ${constant ? "const " : ""}ivec3 v = ivec3(1, 2, 3);
-  v${index} = 4;
-  return v${index};
-}`;
-
   it("assigns to component in vec with square bracket", () => {
-    expect(() => parseAndCheck(subscriptSource(false, "[0]"))).to.not.throw();
+    expect(() => parseAndCheck(constFinalSource("", "[0]"))).to.not.throw();
   });
 
   it("assigns to component in vec with dot notation", () => {
-    expect(() => parseAndCheck(subscriptSource(false, ".x"))).to.not.throw();
+    expect(() => parseAndCheck(constFinalSource("", ".x"))).to.not.throw();
   });
 
   it("assigns to component in const vec with square bracket, throws", () => {
-    expect(() => parseAndCheck(subscriptSource(true, "[0]"))).to.throw(
+    expect(() => parseAndCheck(constFinalSource("const", "[0]"))).to.throw(
       "constant"
     );
   });
 
   it("assigns to component in const vec with dot notation, throws", () => {
-    expect(() => parseAndCheck(subscriptSource(true, ".x"))).to.throw(
+    expect(() => parseAndCheck(constFinalSource("const", ".x"))).to.throw(
       "constant"
     );
   });
@@ -1138,6 +1138,49 @@ fn foo () {
   return a;
 }`)
     ).to.throw("final");
+  });
+
+  it("assigns to component in final vec with square bracket, throws", () => {
+    expect(() => parseAndCheck(constFinalSource("final", "[0]"))).to.throw(
+      "final"
+    );
+  });
+
+  it("assigns to component in final vec with dot notation, throws", () => {
+    expect(() => parseAndCheck(constFinalSource("final", ".x"))).to.throw(
+      "final"
+    );
+  });
+
+  const impliedFinalVecSource = (index: string) => `fn foo () {
+  v := ivec3(1, 2, 3);
+  v${index} = 4;
+  return v${index};
+}`;
+
+  it("assigns to component in implied final vec with square bracket, throws", () => {
+    expect(() => parseAndCheck(impliedFinalVecSource("[0]"))).to.throw("final");
+  });
+
+  it("assigns to component in implied final vec with dot notation, throws", () => {
+    expect(() => parseAndCheck(impliedFinalVecSource(".x"))).to.throw("final");
+  });
+
+  const finalArraySource = (implied: boolean) => `
+int[5] foo () {
+  ${!implied ? "final int[] " : ""}a ${
+    implied ? ":" : ""
+  }= int[](1, 2, 3, 4, 5);
+  a[0] = 6;
+  return a;
+}`;
+
+  it("tries to assign to element of final array, throws", () => {
+    expect(() => parseAndCheck(finalArraySource(false))).to.throw("final");
+  });
+
+  it("tries to assign to element of implied final array, throws", () => {
+    expect(() => parseAndCheck(finalArraySource(true))).to.throw("final");
   });
 });
 

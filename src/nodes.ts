@@ -815,7 +815,7 @@ export class SubscriptExpr extends Expr {
     this.validLVal =
       this.call.validLVal !== "const" && this.call.validLVal !== "final"
         ? "valid"
-        : "const";
+        : this.call.validLVal;
 
     if (typeof callType === "string") {
       if (isVec(callType)) {
@@ -891,8 +891,9 @@ export class VarDecl extends Stmt {
           "right side of assignment is not a constant expression"
         );
       }
+      const typ = this.expr.getType(scope); // just to set up attributes in expr
       if (this.typ === null) return;
-      if (!this.typ.equals(this.expr.getType(scope))) {
+      if (!this.typ.equals(typ)) {
         throw new TinslError(
           `left side type, ${typeToString(
             this.typ.toSpecType()
