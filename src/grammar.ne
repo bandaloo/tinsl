@@ -349,7 +349,7 @@ Atom ->
   | %kw_pos          {% d => new Pos(d[0]) %}
   | %kw_res          {% d => new Res(d[0]) %}
   | %frag            {% d => new Frag(d[0]) %}
-  | %string (%int):? {% d => new ColorString(d[0], d[1] === null ? undefined : parseInt(d[1][0].text)) %}
+  | %string (%int):? {% d => new ColorString(d[0], d[1] === null ? null : parseInt(d[1][0].text)) %}
   | TypeName _ %lparen _ Args:? _ %rparen
       {% (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
 

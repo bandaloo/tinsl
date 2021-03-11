@@ -481,7 +481,7 @@ const grammar: Grammar = {
     {"name": "Atom$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)]},
     {"name": "Atom$ebnf$1", "symbols": ["Atom$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Atom$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "Atom", "symbols": [(nearleyLexer.has("string") ? {type: "string"} : string), "Atom$ebnf$1"], "postprocess": d => new ColorString(d[0], d[1] === null ? undefined : parseInt(d[1][0].text))},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("string") ? {type: "string"} : string), "Atom$ebnf$1"], "postprocess": d => new ColorString(d[0], d[1] === null ? null : parseInt(d[1][0].text))},
     {"name": "Atom$ebnf$2", "symbols": ["Args"], "postprocess": id},
     {"name": "Atom$ebnf$2", "symbols": [], "postprocess": () => null},
     {"name": "Atom", "symbols": ["TypeName", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Atom$ebnf$2", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new ConstructorExpr(d[2], d[0], d[4] !== null ? d[4] : [])},

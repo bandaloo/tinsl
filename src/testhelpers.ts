@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { Token } from "moo";
 import nearley from "nearley";
 import util from "util";
-import { TinslLineError } from "./err";
 import grammar from "./grammar";
 import { ExSt, TinslProgram } from "./nodes";
 import { tinslNearleyError } from "./util";

@@ -1329,48 +1329,6 @@ describe("typing for built in values", () => {
   });
 });
 
-// TODO move this to another test file
-describe("complex program tests", () => {
-  it("parses a bloom effect program", () => {
-    expect(() =>
-      parseAndCheck(`
-def threshold 0.9
-
-fn luma(vec4 color) {
-  return dot(color.rgb, vec3(0.299, 0.587, 0.114));
-}
-
-fn blur5(vec2 direction, int channel) {
-  uv := pos / res;
-  off1 := vec2(1.3333333333333333) * direction;
-
-  mut color := vec4(0.);
-
-  color += frag(uv, channel) * 0.29411764705882354;
-  color += frag(uv + (off1 / res), channel) * 0.35294117647058826;
-  color += frag(uv - (off1 / res), channel) * 0.35294117647058826;
-
-  return color;
-}
-
-pr two_pass_blur(float size, int channel, int reps) {
-  loop reps {
-    blur5(vec2(size, 0.), channel);
-    refresh;
-    blur5(vec2(0., size), channel);
-    refresh;
-  }
-}
-
-{ frag0 * step(luma(frag0), threshold); } -> 1
-
-{ @two_pass_blur(1., 1, 3); } -> 1
-
-{ frag0 + frag1; } -> 0`)
-    ).to.not.throw();
-  });
-});
-
 describe("detect recursive calls", () => {
   it("function calls itself recursively, throws", () => {
     expect(() =>
@@ -1407,6 +1365,56 @@ describe("length of arrays", () => {
     );
   });
 });
+
+describe("color strings", () => {
+  it("parse color with no number suffix as vec3", () => {
+    expect(extractExpr("'red'", true).getType(els())).to.equal("vec3");
+  });
+
+  it("parse color with 4 suffix as vec4", () => {
+    expect(extractExpr("'red'4", true).getType(els())).to.equal("vec4");
+  });
+
+  it("parse color with 3 suffix as vec4", () => {
+    expect(extractExpr("'red'3", true).getType(els())).to.equal("vec3");
+  });
+
+  it("parses hex number with alpha as vec4", () => {
+    expect(extractExpr("'#DEADC0DE'", true).getType(els())).to.equal("vec4");
+  });
+
+  it("parses hex number with alpha with 3 suffix as vec3", () => {
+    expect(extractExpr("'#DEADC0DE'3", true).getType(els())).to.equal("vec3");
+  });
+
+  it("parses hex number with no alpha as vec3", () => {
+    expect(extractExpr("'#C0FFEE'", true).getType(els())).to.equal("vec3");
+  });
+
+  it("parses hex number with no alpha with 4 suffix as vec4", () => {
+    expect(extractExpr("'#C0FFEE'4", true).getType(els())).to.equal("vec4");
+  });
+
+  it("invalid number suffix", () => {
+    expect(() => extractExpr("'red'40", true).getType(els())).to.throw(
+      "suffix"
+    );
+  });
+
+  it("invalid color", () => {
+    expect(() => extractExpr("'octarine'", true).getType(els())).to.throw(
+      "supported colors"
+    );
+  });
+
+  it("invalid color with casing or spaces", () => {
+    expect(() => extractExpr("'Bright Ulfire'", true).getType(els())).to.throw(
+      "brightulfire"
+    );
+  });
+});
+
+//parseAndCheck("'red'5");
 
 // TODO should params be in the same scope as one another? defaults might
 // reorder them when compiling (might not matter because assignments not

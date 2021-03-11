@@ -1,4 +1,5 @@
 import type { Token } from "moo";
+import { colors } from "./colors";
 import { TinslError, wrapErrorHelper } from "./err";
 import {
   binaryTyping,
@@ -17,6 +18,7 @@ import {
   unaryTyping,
   vectorAccessTyping,
 } from "./typing";
+import { toColorKey } from "./util";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
@@ -1644,17 +1646,43 @@ export class Frag extends Expr {
 export class ColorString extends Expr {
   str: string;
   id: Token;
-  num: number;
+  num: number | null;
 
-  constructor(id: Token, num?: number) {
+  constructor(id: Token, num: number | null = null) {
     super();
     this.str = id.text.substr(1, id.text.length - 2);
     this.id = id;
-    this.num = num ?? 3;
+    this.num = num;
   }
 
   getType(scope?: LexicalScope): SpecType {
-    return "vec3";
+    return this.wrapError((scope: LexicalScope) => {
+      if (this.num !== null && this.num !== 3 && this.num !== 4)
+        throw new TinslError(
+          "can only specify suffix number of 3 or 4 for color strings"
+        );
+
+      const numType = (def: number) =>
+        ("vec" + (this.num ?? def)) as SpecTypeSimple;
+
+      if (/^#[0-9|a-f|A-F]{6}$/.test(this.str)) return numType(3);
+      else if (/^#[0-9|a-f|A-F]{8}$/.test(this.str)) return numType(4);
+
+      if (this.str[0] === "#")
+        throw new TinslError(`invalid hex color "${this.str}"`);
+      if (colors[toColorKey(this.str)] === undefined)
+        throw new TinslError(
+          `color string "${this.str}" did not match any colors. supported colors \
+are the HTML named color values, which can be seen here: \
+https://www.w3schools.com/colors/colors_hex.asp` +
+            (toColorKey(this.str) !== this.str
+              ? ` (color strings are insensitive to \
+capitalization and whitespace, so "${this.str}" \
+is the same as "${toColorKey(this.str)}")`
+              : "")
+        );
+      return numType(3);
+    }, scope);
   }
 
   getSubExpressions(): Expr[] {
@@ -1671,5 +1699,9 @@ export class ColorString extends Expr {
 
   getToken(): Token {
     return this.id;
+  }
+
+  isConst(): boolean {
+    return true;
   }
 }

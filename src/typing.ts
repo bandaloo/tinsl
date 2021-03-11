@@ -1,4 +1,5 @@
-import { TinslError, TinslLineError } from "./err";
+import { TinslError } from "./err";
+import chaiExclude from "chai-exclude";
 import { containsRepeats } from "./util";
 
 export type GenTypeSimple =

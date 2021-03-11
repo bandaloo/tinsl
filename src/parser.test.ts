@@ -30,9 +30,17 @@ import {
   UIntExpr,
   UnaryExpr,
   Uniform,
+  ColorString,
 } from "./nodes";
-import { checkExpr, checkProgram, parse, tok } from "./testhelpers";
+import {
+  checkExpr,
+  checkProgram,
+  parse,
+  parseAndCheck,
+  tok,
+} from "./testhelpers";
 
+// TODO put this in another file and run before all tests
 chai.use(chaiExclude);
 
 const oneTwoThreeForward = (op1: string, op2: string) =>
@@ -1085,5 +1093,25 @@ describe("proc call", () => {
       new RenderBlock(false, [proc], null, null, null, tok("{")),
     ]);
   });
+  // TODO more proc call tests
 });
+
+describe("color strings", () => {
+  it("parses a color string single quotes no number", () => {
+    checkExpr("'red'", new ColorString(tok("'red'")));
+  });
+
+  it("parses a color string double quotes with number", () => {
+    checkExpr('"red"', new ColorString(tok('"red"')));
+  });
+
+  it("parses a color string single quotes no number", () => {
+    checkExpr("'red'3", new ColorString(tok("'red'"), 3));
+  });
+
+  it("parses a color string double quotes with number", () => {
+    checkExpr("'red'3", new ColorString(tok("'red'"), 3));
+  });
+});
+
 // TODO parsing empty program
