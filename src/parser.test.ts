@@ -1188,4 +1188,24 @@ fn bar() { return foo(b\t: 0, a\n: 1, c    : 2); }`)
   });
 });
 
+describe("default parameter validation", () => {
+  it("throws when default parameters are not trailing", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b = 2, int c, int d = 2) {
+  return a + b + c + d;
+}`)
+    ).to.throw("trailing");
+  });
+
+  it("throws when default parameters are the wrong types", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b = 2.) {
+  return a + b;
+}`)
+    ).to.throw("type");
+  });
+});
+
 // TODO parsing empty program

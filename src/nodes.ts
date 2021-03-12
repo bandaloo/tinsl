@@ -41,7 +41,7 @@ function namedArgsToJson(args: (NamedArg | Expr)[]) {
 
 function namedArgsToTypes(args: (NamedArg | Expr)[], scope: LexicalScope) {
   return args.map((a) =>
-    a instanceof Expr ? a.getType(scope) : a.expr.getType()
+    a instanceof Expr ? a.getType(scope) : a.expr.getType(scope)
   );
 }
 
@@ -278,6 +278,28 @@ abstract class DefLike extends Stmt {
     }
 
     throw new TinslError("call contained a mix of named and unnamed arguments");
+  }
+
+  validateDefaultParams(scope: LexicalScope) {
+    let trailBegun = false;
+    const defaults = []; // TODO cache this for the translator?
+    for (const p of this.params) {
+      if (p.def !== null) {
+        trailBegun = true;
+        defaults.push(p);
+      } else if (trailBegun) {
+        throw new TinslError("default arguments must be trailing");
+      }
+    }
+    for (const d of defaults) {
+      if (d.def === null) throw new Error("default param def somehow null");
+      const defType = d.def.getType(scope);
+      const paramType = d.typ;
+      if (!compareTypes(paramType.toSpecType(), defType))
+        throw new TinslError(`type of default parameter "${d.def.getToken()}" is \
+of type ${typeToString(paramType.toSpecType())}, but expression for default is
+of type ${typeToString(defType)}`);
+    }
   }
 
   argsValid(args: (Expr | NamedArg)[], scope: LexicalScope): void {
@@ -1133,10 +1155,10 @@ export class TypeName extends Node {
 export class Param extends Node {
   typ: TypeName;
   id: Token;
-  def: ExSt | null;
+  def: Expr | null;
   pureInt = false;
 
-  constructor(typ: TypeName, id: Token, def: ExSt | null = null) {
+  constructor(typ: TypeName, id: Token, def: Expr | null = null) {
     super();
     this.typ = typ;
     this.id = id;
@@ -1230,6 +1252,7 @@ not contain a return statement in all conditional branches`
       // add all the params to the scope
       for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
       typeCheckExprStmts(this.body, innerScope);
+      this.validateDefaultParams(scope);
       this.inferredType = innerScope.returnType;
     }, scope);
   }
@@ -1547,6 +1570,7 @@ export class ProcDef extends DefLike {
     scope.addToScope(this.getToken().text, this);
     const innerScope = new LexicalScope(scope);
     for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
+    this.validateDefaultParams(scope);
     typeCheckExprStmts(this.body, innerScope);
   }
 }
@@ -1742,7 +1766,7 @@ export class Frag extends Expr {
     return [];
   }
 
-  getType(): SpecType {
+  getType(scope: LexicalScope): SpecType {
     // TODO this might change if we support different texture types
     return "vec4";
   }

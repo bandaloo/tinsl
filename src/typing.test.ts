@@ -1426,7 +1426,7 @@ describe("color strings", () => {
   });
 });
 
-describe("color strings", () => {
+describe("functions with default arguments", () => {
   it("calls function with defaults with one arg", () => {
     expect(() =>
       parseAndCheck(`
@@ -1439,7 +1439,7 @@ fn baz() { return foo(2); }`)
   it("calls function with required and default args", () => {
     expect(() =>
       parseAndCheck(`
-fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn foo(int a, int b = 42, float radians = 2. * 3.14) { return a; }
 fn bar() { return foo(0); }
 fn baz() { return foo(1, 2, 3.14); }`)
     ).to.not.throw();
@@ -1448,7 +1448,7 @@ fn baz() { return foo(1, 2, 3.14); }`)
   it("calls function with default args with too few args", () => {
     expect(() =>
       parseAndCheck(`
-fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn foo(int a, int b = 42, float radians = 2. * 3.14) { return a; }
 fn bar() { return foo(); }`)
     ).to.throw("too few");
   });
@@ -1456,7 +1456,7 @@ fn bar() { return foo(); }`)
   it("calls function with default args with too many args", () => {
     expect(() =>
       parseAndCheck(`
-fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn foo(int a, int b = 42, float radians = 2. * 3.14) { return a; }
 fn bar() { return foo(1, 2, 3.14, vec2(1., 2.)); }`)
     ).to.throw("too many");
   });
