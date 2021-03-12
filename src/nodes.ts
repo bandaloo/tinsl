@@ -82,6 +82,28 @@ function lineSeparatedNodes(exprs: Node[]) {
   return "\n" + exprs.map((s) => s.translate()).join(";\n");
 }
 
+interface RenderLevel {
+  cachedRefresh?: boolean;
+  containsRefresh(): boolean;
+}
+
+function containsRefreshHelper<T extends RenderLevel>(
+  procOrRender: T,
+  body: ExSt[]
+): boolean {
+  if (procOrRender.cachedRefresh !== undefined)
+    return procOrRender.cachedRefresh;
+  let refresh = false;
+  for (const e of body) {
+    refresh ||=
+      e instanceof Refresh ||
+      ((e instanceof RenderBlock || e instanceof ProcCall) &&
+        e.containsRefresh());
+  }
+  procOrRender.cachedRefresh = refresh;
+  return refresh;
+}
+
 abstract class Node {
   abstract toJson(): object;
   abstract translate(): string;
@@ -281,7 +303,7 @@ export class RenderBlock extends Stmt {
   body: ExSt[];
   open: Token;
 
-  private cachedRefresh?: boolean;
+  cachedRefresh?: boolean;
 
   constructor(
     once: boolean,
@@ -301,15 +323,7 @@ export class RenderBlock extends Stmt {
   }
 
   containsRefresh(): boolean {
-    if (this.cachedRefresh !== undefined) return this.cachedRefresh;
-    let refresh = false;
-    for (const e of this.body) {
-      refresh ||=
-        e instanceof Refresh ||
-        (e instanceof RenderBlock && e.containsRefresh());
-    }
-    this.cachedRefresh = refresh;
-    return refresh;
+    return containsRefreshHelper(this, this.body);
   }
 
   toJson(): object {
@@ -1476,16 +1490,27 @@ export class ProcDef extends DefLike {
   }
 }
 
-export class ProcCall extends Stmt {
+export class ProcCall extends Stmt implements RenderLevel {
   open: Token;
   call: IdentExpr;
   args: Expr[];
+  cachedRefresh?: boolean;
+  cachedProc?: ProcDef;
 
   constructor(open: Token, call: IdentExpr, args: Expr[]) {
     super();
     this.open = open;
     this.call = call;
     this.args = args;
+  }
+
+  containsRefresh(): boolean {
+    if (this.cachedProc === undefined)
+      throw new Error(
+        "cached procedure somehow undefined when checking for refresh"
+      );
+
+    return containsRefreshHelper(this, this.cachedProc.body);
   }
 
   getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
@@ -1500,7 +1525,7 @@ export class ProcCall extends Stmt {
         throw new TinslError(
           `identifier "${name}" does not refer to a procedure definition`
         );
-
+      this.cachedProc = res;
       res.argsValid(this.args, scope);
     }, scope);
   }

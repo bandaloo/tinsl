@@ -46,6 +46,7 @@ export function extractExpr(str: string, semicolon: boolean) {
 export function parseAndCheck(str: string) {
   const res = parse(str) as ExSt[];
   new TinslProgram(res).typeCheck();
+  return res;
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];
