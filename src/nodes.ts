@@ -186,22 +186,39 @@ abstract class DefLike extends Stmt {
     this.params = params;
   }
 
+  checkDefaultsTrailing(): void {
+    let trailStarted = false;
+    for (const p of this.params) {
+      if (p.def !== null && !trailStarted) {
+        trailStarted = true;
+        break;
+      }
+
+      if (p.def !== null && !trailStarted) {
+        trailStarted = true;
+        break;
+      }
+    }
+  }
+
   argsValid(args: Expr[], scope: LexicalScope): void {
     const kind = this instanceof ProcDef ? "procedure" : "function";
     const name = this.getToken().text;
+    const defaultsNum = this.params.filter((p) => p.def !== null).length;
 
-    // TODO could move this up
-    if (this.params.length !== args.length)
-      throw new TinslError(
-        `arguments for ${kind} call ${
-          this.getToken().text
-        } length does not match parameter length`
-      );
+    const err = (str: string) =>
+      new TinslError(`too ${str} arguments for ${kind} call ${name}`);
+
+    if (this.params.length - defaultsNum > args.length) throw err("few");
+    if (this.params.length < args.length) throw err("many");
 
     const paramTypes = this.params.map((p) => p.getRightType());
     const argTypes = args.map((a) => a.getType(scope));
 
-    for (let i = 0; i < paramTypes.length; i++) {
+    // TODO make sure default arguments in definition are all trailing
+
+    // number of arguments lte to number of params because of defaults
+    for (let i = 0; i < argTypes.length; i++) {
       if (paramTypes[i] !== argTypes[i])
         throw new TinslError(
           `argument ${i} has wrong type. is ${argTypes[i]} \
@@ -239,8 +256,8 @@ export class TinslProgram extends Stmt {
     return { outer: [], inner: this.body };
   }
 
-  typeCheck(scope: LexicalScope = new LexicalScope()): void {
-    typeCheckExprStmts(this.body, scope);
+  typeCheck(): void {
+    typeCheckExprStmts(this.body, this.topScope);
   }
 
   toJson(): object {
@@ -264,6 +281,8 @@ export class RenderBlock extends Stmt {
   body: ExSt[];
   open: Token;
 
+  private cachedRefresh?: boolean;
+
   constructor(
     once: boolean,
     body: ExSt[],
@@ -279,6 +298,18 @@ export class RenderBlock extends Stmt {
     this.outNum = outNum;
     this.loopNum = loopNum;
     this.open = open;
+  }
+
+  containsRefresh(): boolean {
+    if (this.cachedRefresh !== undefined) return this.cachedRefresh;
+    let refresh = false;
+    for (const e of this.body) {
+      refresh ||=
+        e instanceof Refresh ||
+        (e instanceof RenderBlock && e.containsRefresh());
+    }
+    this.cachedRefresh = refresh;
+    return refresh;
   }
 
   toJson(): object {

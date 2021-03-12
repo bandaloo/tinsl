@@ -1115,6 +1115,12 @@ int foo () {
 }`)
     ).to.throw("l-value");
   });
+
+  it("can assign a color string to a const", () => {
+    expect(() =>
+      parseAndCheck("vec3 foo () { const a := 'blue'; return a; }")
+    ).to.not.throw();
+  });
 });
 
 describe("tests final", () => {
@@ -1395,6 +1401,12 @@ describe("color strings", () => {
     expect(extractExpr("'#C0FFEE'4", true).getType(els())).to.equal("vec4");
   });
 
+  it("parses color name with capitalization and spaces", () => {
+    expect(
+      extractExpr("'Light Goldenrod Yellow'", true).getType(els())
+    ).to.equal("vec3");
+  });
+
   it("invalid number suffix", () => {
     expect(() => extractExpr("'red'40", true).getType(els())).to.throw(
       "suffix"
@@ -1414,6 +1426,41 @@ describe("color strings", () => {
   });
 });
 
+describe("color strings", () => {
+  it("calls function with defaults with one arg", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo(int a = 1) { return a; }
+fn bar() { return foo(); }
+fn baz() { return foo(2); }`)
+    ).to.not.throw();
+  });
+
+  it("calls function with required and default args", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn bar() { return foo(0); }
+fn baz() { return foo(1, 2, 3.14); }`)
+    ).to.not.throw();
+  });
+
+  it("calls function with default args with too few args", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn bar() { return foo(); }`)
+    ).to.throw("too few");
+  });
+
+  it("calls function with default args with too many args", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo(int a, int b = 42, float radians = 2 * 3.14) { return a; }
+fn bar() { return foo(1, 2, 3.14, vec2(1., 2.)); }`)
+    ).to.throw("too many");
+  });
+});
 //parseAndCheck("'red'5");
 
 // TODO should params be in the same scope as one another? defaults might
