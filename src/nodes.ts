@@ -18,16 +18,32 @@ import {
   unaryTyping,
   vectorAccessTyping,
 } from "./typing";
-import { toColorKey } from "./util";
+import { arrHasRepeats, toColorKey } from "./util";
 
 // TODO stricter types for operator string
 // TODO do we want a list of tokens for each node?
 
-// TODO check the json conversion functions for tokens
 const atomicIntHint =
   "e.g. `42` or `some_num` where `def some_num 42` is defined earlier. " +
   "these restrictions apply to expressions for source/target texture numbers " +
   "or loop numbers of render blocks";
+
+interface NamedArg {
+  id: Token;
+  expr: Expr;
+}
+
+function namedArgsToJson(args: (NamedArg | Expr)[]) {
+  return args.map((a) =>
+    a instanceof Expr ? a.toJson() : { name: a.id.text, expr: a.expr.toJson() }
+  );
+}
+
+function namedArgsToTypes(args: (NamedArg | Expr)[], scope: LexicalScope) {
+  return args.map((a) =>
+    a instanceof Expr ? a.getType(scope) : a.expr.getType()
+  );
+}
 
 export function compileTimeInt(expr: Expr, scope: LexicalScope) {
   if (expr instanceof IntExpr) return parseInt(expr.getToken().text);
@@ -200,6 +216,14 @@ export abstract class Expr extends Node {
 
 export type ExSt = Expr | Stmt;
 
+function isOnlyNamed(args: (NamedArg | Expr)[]): args is NamedArg[] {
+  return args.every((a) => !(a instanceof Expr));
+}
+
+function isOnlyExpr(args: any[]): args is Expr[] {
+  return args.every((a) => a instanceof Expr) && !args.includes(undefined);
+}
+
 abstract class DefLike extends Stmt {
   params: Param[];
 
@@ -223,7 +247,42 @@ abstract class DefLike extends Stmt {
     }
   }
 
-  argsValid(args: Expr[], scope: LexicalScope): void {
+  // TODO type check default arguments
+
+  fillInNamed(args: (NamedArg | Expr)[]): Expr[] {
+    if (isOnlyExpr(args)) {
+      return args;
+    }
+
+    if (isOnlyNamed(args)) {
+      if (arrHasRepeats(args.map((a) => a.id.text)))
+        throw new TinslError("repeated name in named argument call");
+
+      const paramNames = this.params.map((p) => p.getToken().text);
+      const filledArgs: (Expr | undefined)[] = [];
+      for (const arg of args) {
+        const name = arg.id.text;
+        const index = paramNames.indexOf(name);
+        // TODO name the function in the error message
+        if (index === -1)
+          throw new TinslError(`named argument "${name}" does not exist`);
+        filledArgs[index] = arg.expr;
+      }
+
+      console.log(filledArgs);
+      if (isOnlyExpr(filledArgs)) {
+        return filledArgs;
+      }
+
+      throw new TinslError("skipped naming a required argument");
+    }
+
+    throw new TinslError("call contained a mix of named and unnamed arguments");
+  }
+
+  argsValid(args: (Expr | NamedArg)[], scope: LexicalScope): void {
+    const exprArgs = this.fillInNamed(args);
+
     const kind = this instanceof ProcDef ? "procedure" : "function";
     const name = this.getToken().text;
     const defaultsNum = this.params.filter((p) => p.def !== null).length;
@@ -231,11 +290,11 @@ abstract class DefLike extends Stmt {
     const err = (str: string) =>
       new TinslError(`too ${str} arguments for ${kind} call ${name}`);
 
-    if (this.params.length - defaultsNum > args.length) throw err("few");
-    if (this.params.length < args.length) throw err("many");
+    if (this.params.length - defaultsNum > exprArgs.length) throw err("few");
+    if (this.params.length < exprArgs.length) throw err("many");
 
     const paramTypes = this.params.map((p) => p.getRightType());
-    const argTypes = args.map((a) => a.getType(scope));
+    const argTypes = exprArgs.map((a) => a.getType(scope));
 
     // TODO make sure default arguments in definition are all trailing
 
@@ -247,7 +306,10 @@ abstract class DefLike extends Stmt {
 but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
 
-      if (this.params[i].pureInt && compileTimeInt(args[i], scope) === null) {
+      if (
+        this.params[i].pureInt &&
+        compileTimeInt(exprArgs[i], scope) === null
+      ) {
         throw new TinslError(
           `in function "${this.getToken().text}", argument for parameter "${
             this.params[i].getToken().text
@@ -614,9 +676,9 @@ export class IdentExpr extends AtomExpr {
 export class CallExpr extends Expr {
   open: Token;
   call: Expr;
-  args: Expr[];
+  args: (Expr | NamedArg)[];
 
-  constructor(open: Token, call: Expr, args: Expr[]) {
+  constructor(open: Token, call: Expr, args: (Expr | NamedArg)[]) {
     super();
     this.open = open;
     this.call = call;
@@ -624,7 +686,7 @@ export class CallExpr extends Expr {
   }
 
   getSubExpressions(): Expr[] {
-    return this.args;
+    return this.args.map((e) => (e instanceof Expr ? e : e.expr));
   }
 
   getToken(): Token {
@@ -632,15 +694,16 @@ export class CallExpr extends Expr {
   }
 
   translate(): string {
+    throw new Error("not implemented");
     // TODO translate this differently if frag
-    return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
+    //return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
     return {
       name: "call_expr",
       call: this.call.toJson(),
-      args: this.args.map((e) => e.toJson()),
+      args: namedArgsToJson(this.args),
     };
   }
 
@@ -669,6 +732,8 @@ export class CallExpr extends Expr {
 
         const frag = this.call;
         const helper = (typ: SpecTypeSimple) => {
+          if (!isOnlyExpr(this.args))
+            throw new TinslError("frag call cannot contain named args");
           const list = this.args.filter((x) => x.getType(scope) === typ);
           if (list.length > 1)
             throw new TinslError(
@@ -720,11 +785,7 @@ export class CallExpr extends Expr {
 
       const info = builtIns[name];
       if (info !== undefined) {
-        return callReturnType(
-          this.args.map((a) => a.getType(scope)),
-          info,
-          name
-        );
+        return callReturnType(namedArgsToTypes(this.args, scope), info, name);
       }
       // not a built-in, so try to resolve identifier name
       const res = scope.resolve(name);
@@ -1493,11 +1554,11 @@ export class ProcDef extends DefLike {
 export class ProcCall extends Stmt implements RenderLevel {
   open: Token;
   call: IdentExpr;
-  args: Expr[];
+  args: (Expr | NamedArg)[];
   cachedRefresh?: boolean;
   cachedProc?: ProcDef;
 
-  constructor(open: Token, call: IdentExpr, args: Expr[]) {
+  constructor(open: Token, call: IdentExpr, args: (Expr | NamedArg)[]) {
     super();
     this.open = open;
     this.call = call;
@@ -1514,7 +1575,7 @@ export class ProcCall extends Stmt implements RenderLevel {
   }
 
   getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
-    return this.args;
+    return this.args.map((e) => (e instanceof Expr ? e : e.expr));
   }
 
   typeCheck(scope: LexicalScope): void {
@@ -1534,7 +1595,7 @@ export class ProcCall extends Stmt implements RenderLevel {
     return {
       name: "proc_call",
       call: this.call.toJson(),
-      args: this.args.map((e) => e.toJson()),
+      args: namedArgsToJson(this.args),
     };
   }
 

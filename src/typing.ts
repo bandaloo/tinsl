@@ -1,6 +1,6 @@
 import { TinslError } from "./err";
 import chaiExclude from "chai-exclude";
-import { containsRepeats } from "./util";
+import { strHasRepeats } from "./util";
 
 export type GenTypeSimple =
   | "genType"
@@ -797,7 +797,7 @@ export function vectorAccessTyping(
         "can only access components of vector"
     );
 
-  if (leftHand && containsRepeats(comps)) {
+  if (leftHand && strHasRepeats(comps)) {
     throw new TinslError(
       "components for the left hand of an assignment cannot contain repeats"
     );

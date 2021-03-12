@@ -57,7 +57,7 @@ TopLevel ->
   | DefBlock    {% id %}
   | Uniform     {% id %}
   | ProcBlock   {% id %}
-  | TopDef    {% id %}
+  | TopDef      {% id %}
 
 OptionalTypeName ->
     TypeName {% id %}
@@ -328,8 +328,12 @@ TypeWord ->
   | %kw_ivec     {% id %}
   | %kw_uvec     {% id %}
 
+Arg ->
+    (%ident _ %colon _):? Expr
+      {% d => d[0] === null ? d[1] : {id: d[0][0], expr: d[1]} %}
+
 Args ->
-    Expr (%comma _ Expr):* {% sep %}
+    Arg (%comma _ Arg):* {% sep %}
 
 Params ->
     Param (%comma _ Param):* {% sep %}

@@ -1,15 +1,12 @@
 import { expect } from "chai";
-import { parse, parseAndCheck } from "./testhelpers";
+import { extractTopLevel, parse, parseAndCheck } from "./testhelpers";
 import chaiExclude from "chai-exclude";
 import { RenderBlock } from "./nodes";
-
-const extractRenderBlock = (str: string, index = 0) =>
-  parseAndCheck(str)[index] as RenderBlock;
 
 describe("renderblock has refresh", () => {
   it("refresh at first level of render block", () => {
     expect(
-      extractRenderBlock(
+      extractTopLevel<RenderBlock>(
         "1 -> { 'red'4; frag / 2.; refresh; } -> 0"
       ).containsRefresh()
     ).to.be.true;
@@ -17,7 +14,7 @@ describe("renderblock has refresh", () => {
 
   it("refresh in nested render block", () => {
     expect(
-      extractRenderBlock(`
+      extractTopLevel<RenderBlock>(`
 1 -> {
   'red'4;
   frag / 2.;
@@ -29,7 +26,7 @@ describe("renderblock has refresh", () => {
 
   it("refresh in nested render block", () => {
     expect(
-      extractRenderBlock(
+      extractTopLevel<RenderBlock>(
         `
 pr foo () {
   frag / 2.;
@@ -49,7 +46,7 @@ pr foo () {
 
   it("no refresh at any level of render block", () => {
     expect(
-      extractRenderBlock(`
+      extractTopLevel<RenderBlock>(`
 1 -> {
   'red'4;
   frag / 2.;

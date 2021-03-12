@@ -3,7 +3,7 @@ import { Token } from "moo";
 import nearley from "nearley";
 import util from "util";
 import grammar from "./grammar";
-import { ExSt, TinslProgram } from "./nodes";
+import { ExSt, Stmt, TinslProgram } from "./nodes";
 import { tinslNearleyError } from "./util";
 
 export function tok(val: string): Token {
@@ -61,3 +61,6 @@ export function checkExpr(str: string, eql: object, semicolon = true) {
 export function checkProgram(str: string, eql: object) {
   expect(parse(str)).excludingEvery(excludes).to.deep.equal(eql);
 }
+
+export const extractTopLevel = <T extends Stmt>(str: string, index = 0) =>
+  parseAndCheck(str)[index] as T;

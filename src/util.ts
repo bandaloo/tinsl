@@ -1,7 +1,11 @@
 import { TinslError, TinslLineError } from "./err";
 
-export function containsRepeats(str: string) {
+export function strHasRepeats(str: string) {
   return /(.).*\1/.test(str);
+}
+
+export function arrHasRepeats<T>(arr: T[]) {
+  return new Set(arr).size !== arr.length;
 }
 
 function simplifyNearleyErrorMessage(msg: string) {

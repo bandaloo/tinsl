@@ -1114,4 +1114,78 @@ describe("color strings", () => {
   });
 });
 
+describe("calling with named arguments", () => {
+  it("calls a function with named argument", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a) { return a; }
+fn bar() { return foo(a: 2); }`)
+    ).to.not.throw();
+  });
+
+  it("calls a function with named argument leaving off default", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b = 2) { return a + b; }
+fn bar() { return foo(a: 2); }`)
+    ).to.not.throw();
+  });
+
+  it("throws when calling a named argument that does not exist", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b = 2) { return a + b; }
+fn bar() { return foo(c: 2); }`)
+    ).to.throw("does not exist");
+  });
+
+  it("passes in named arguments out of order", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b, int c, int d = 2) { return a + b; }
+fn bar() { return foo(b: 0, a: 1, c: 2); }`)
+    ).to.not.throw();
+  });
+
+  it("does not name all required arguments, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b, int c, int d = 2) { return a + b; }
+fn bar() { return foo(a: 0, c: 2); }`)
+    ).to.throw("skipped");
+  });
+
+  it("throws too few when missing arg is trailing", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b, int c, int d = 2) { return a + b; }
+fn bar() { return foo(a: 0, b: 2); }`)
+    ).to.throw("too few");
+  });
+
+  it("throws when named argument is declared twice", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a) { return a; }
+fn bar() { return foo(a: 3, a: 2); }`)
+    ).to.throw("repeat");
+  });
+
+  it("throws when named args and regular args are mixed", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b, int c, int d = 2) { return a + b; }
+fn bar() { return foo(0, b: 2, c: 3, a: 4); }`)
+    ).to.throw("mix");
+  });
+
+  it("whitespace after colon allowed for named arguments", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a, int b, int c, int d = 2) { return a + b; }
+fn bar() { return foo(b\t: 0, a\n: 1, c    : 2); }`)
+    ).to.not.throw();
+  });
+});
+
 // TODO parsing empty program
