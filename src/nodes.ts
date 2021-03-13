@@ -1,6 +1,11 @@
 import type { Token } from "moo";
 import { colors } from "./colors";
-import { TinslError, wrapErrorHelper } from "./err";
+import {
+  TinslAggregateError,
+  TinslError,
+  TinslLineError,
+  wrapErrorHelper,
+} from "./err";
 import {
   binaryTyping,
   builtIns,
@@ -51,8 +56,10 @@ export function compileTimeInt(expr: Expr, scope: LexicalScope) {
     expr instanceof UnaryExpr &&
     expr.argument instanceof IntExpr &&
     ["+", "-"].includes(expr.operator.text)
-  )
+  ) {
     return parseInt(expr.operator.text + expr.argument.getToken());
+  }
+
   if (expr instanceof IdentExpr) {
     const res = scope.resolve(expr.getToken().text);
     if (res instanceof TopDef && res.expr instanceof IntExpr) {
@@ -77,17 +84,33 @@ function typeCheckExprStmts(
   scope: LexicalScope,
   inRenderBlock = false
 ) {
+  const errors: TinslLineError[] = [];
   for (const e of arr) {
-    if (e instanceof Expr) {
-      const typ = e.getType(scope);
-      if (inRenderBlock && typ !== "vec4")
-        throw new TinslError(
-          "expressions must be of type vec4 in render block"
-        );
-    } else {
-      e.typeCheck(scope);
+    try {
+      if (e instanceof Expr) {
+        const typ = e.getType(scope);
+        if (inRenderBlock && typ !== "vec4") {
+          // TODO this is weird
+          const throwCallback = () => {
+            throw new TinslError(
+              "expressions must be of type vec4 in render block"
+            );
+          };
+          wrapErrorHelper(throwCallback, e, scope);
+        }
+      } else {
+        e.typeCheck(scope);
+      }
+    } catch (e) {
+      if (e instanceof TinslLineError) {
+        errors.push(e);
+      } else if (e instanceof TinslAggregateError) {
+        errors.push(...e.errors);
+      }
     }
   }
+
+  if (errors.length > 0) throw new TinslAggregateError(errors);
 }
 
 function commaSeparatedNodes(exprs: Node[]) {
@@ -438,28 +461,30 @@ export class RenderBlock extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    const checkNum = (num: number | Expr | null, str: string) => {
-      if (num === null || typeof num === "number") return num;
+    this.wrapError((scope: LexicalScope) => {
+      const checkNum = (num: number | Expr | null, str: string) => {
+        if (num === null || typeof num === "number") return num;
 
-      const int = compileTimeInt(num, scope);
-      if (int !== null) return int;
+        const int = compileTimeInt(num, scope);
+        if (int !== null) return int;
 
-      const param = compileTimeParam(num, scope);
-      if (param !== null && param.getRightType() === "int") {
-        param.pureInt = true;
-        return num;
-      }
+        const param = compileTimeParam(num, scope);
+        if (param !== null && param.getRightType() === "int") {
+          param.pureInt = true;
+          return num;
+        }
 
-      throw new TinslError(`expression for ${str} number in render block \
+        throw new TinslError(`expression for ${str} number in render block \
 is not a compile time atomic int, ${atomicIntHint}`);
-    };
+      };
 
-    this.inNum = checkNum(this.inNum, "source texture");
-    this.outNum = checkNum(this.outNum, "destination texture");
-    this.loopNum = checkNum(this.loopNum, "loop");
+      this.inNum = checkNum(this.inNum, "source texture");
+      this.outNum = checkNum(this.outNum, "destination texture");
+      this.loopNum = checkNum(this.loopNum, "loop");
 
-    const innerScope = new LexicalScope(scope);
-    typeCheckExprStmts(this.body, innerScope, true);
+      const innerScope = new LexicalScope(scope);
+      typeCheckExprStmts(this.body, innerScope, true);
+    }, scope);
   }
 }
 
@@ -678,8 +703,11 @@ export class IdentExpr extends AtomExpr {
       };
       if (res instanceof FuncDef) throw helper("function");
       if (res instanceof ProcDef) throw helper("procedure");
+
       if (res instanceof VarDecl) {
         this.validLVal = res.access === "mut" ? "valid" : res.access;
+      } else if (res instanceof Param) {
+        this.validLVal = "valid";
       }
       return res.getRightType(scope);
     }, scope);
@@ -1076,34 +1104,36 @@ export class Assign extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    if (!this.left.validLVal) {
-      throw new TinslError("left side of assignment is not valid");
-    }
+    this.wrapError((scope: LexicalScope) => {
+      if (!this.left.validLVal) {
+        throw new TinslError("left side of assignment is not valid");
+      }
 
-    const leftType = this.left.getType(scope);
-    const rightType = this.right.getType(scope);
+      const leftType = this.left.getType(scope);
+      const rightType = this.right.getType(scope);
 
-    if (!compareTypes(leftType, rightType)) {
-      throw new TinslError(
-        `left side of assignment was ${typeToString(
-          leftType
-        )} but right side expression was ${typeToString(rightType)}`
-      );
-    }
+      if (!compareTypes(leftType, rightType)) {
+        throw new TinslError(
+          `left side of assignment was ${typeToString(
+            leftType
+          )} but right side expression was ${typeToString(rightType)}`
+        );
+      }
 
-    if (this.left.validLVal !== "valid") {
-      throw new TinslError(
-        "invalid l-value in assignment" +
-          (this.left.validLVal === "const"
-            ? ". this is because it was declared as constant"
-            : this.left.validLVal === "final"
-            ? '. this is because the l-value was declared as "final". ' +
-              "variables declared with := are final by default. " +
-              'to declare a mutable variable this way, use "mut" before ' +
-              "the variable name, e.g. `mut foo := 42;`"
-            : "")
-      );
-    }
+      if (this.left.validLVal !== "valid") {
+        throw new TinslError(
+          "invalid l-value in assignment" +
+            (this.left.validLVal === "const"
+              ? ". this is because it was declared as constant"
+              : this.left.validLVal === "final"
+              ? '. this is because the l-value was declared as "final". ' +
+                "variables declared with := are final by default. " +
+                'to declare a mutable variable this way, use "mut" before ' +
+                "the variable name, e.g. `mut foo := 42;`"
+              : "")
+        );
+      }
+    }, scope);
   }
 }
 
@@ -1567,11 +1597,13 @@ export class ProcDef extends DefLike {
   }
 
   typeCheck(scope: LexicalScope): void {
-    scope.addToScope(this.getToken().text, this);
-    const innerScope = new LexicalScope(scope);
-    for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
-    this.validateDefaultParams(scope);
-    typeCheckExprStmts(this.body, innerScope);
+    this.wrapError((scope: LexicalScope) => {
+      scope.addToScope(this.getToken().text, this);
+      const innerScope = new LexicalScope(scope);
+      for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
+      this.validateDefaultParams(scope);
+      typeCheckExprStmts(this.body, innerScope);
+    }, scope);
   }
 }
 

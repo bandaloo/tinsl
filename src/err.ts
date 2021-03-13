@@ -10,8 +10,8 @@ export class TinslError extends Error {
 }
 
 export class TinslLineError extends Error {
-  line: number | undefined;
-  col: number | undefined;
+  line: number;
+  col: number;
 
   constructor(message: string, tokn: Token | { line: number; col: number }) {
     super(message);
@@ -19,6 +19,15 @@ export class TinslLineError extends Error {
     this.col = tokn.col;
     this.message = `at line ${tokn.line} column ${tokn.col}: ` + message;
     Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export class TinslAggregateError extends Error {
+  errors: TinslLineError[];
+
+  constructor(errors: TinslLineError[]) {
+    super(errors.map((e) => e.message).join("\n"));
+    this.errors = errors;
   }
 }
 
