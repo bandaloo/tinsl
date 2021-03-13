@@ -780,9 +780,25 @@ describe("checks for return statements in all branches", () => {
     );
   });
 
-  it("does not return in if, throws", () => {
+  it("no return statement at all, with empty body, throws", () => {
+    expect(() => parseAndCheck("vec4 foo () {}")).to.throw("definitely");
+  });
+
+  it("only returns in if, throws", () => {
     expect(() =>
-      parseAndCheck("int foo (bool b) { if (b) return 0; }")
+      parseAndCheck("fn foo (bool b) { if (b) return 0; }")
+    ).to.throw("definitely");
+  });
+
+  // TODO get rid of this
+  it("throws when not all branches return for inferred type", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) {
+    return 1;
+  }
+}`)
     ).to.throw("definitely");
   });
 

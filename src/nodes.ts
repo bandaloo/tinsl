@@ -326,6 +326,7 @@ abstract class DefLike extends Stmt {
   }
 
   validateDefaultParams(scope: LexicalScope) {
+    // TODO aggregate
     let trailBegun = false;
     const defaults = []; // TODO cache this for the translator?
     for (const p of this.params) {
@@ -341,7 +342,7 @@ abstract class DefLike extends Stmt {
       const defType = d.def.getType(scope);
       const paramType = d.typ;
       if (!compareTypes(paramType.toSpecType(), defType))
-        throw new TinslError(`type of default parameter "${d.def.getToken()}" is \
+        throw new TinslError(`type of default value "${d.getToken()}" is \
 of type ${typeToString(paramType.toSpecType())}, but expression for default is
 of type ${typeToString(defType)}`);
     }
@@ -1284,31 +1285,25 @@ export class FuncDef extends DefLike {
     const innerScope = new LexicalScope(scope);
     this.wrapError(
       (scope: LexicalScope) => {
+        // null means 'fn'
         if (this.typ !== null) {
           const ret = this.typ.toSpecType();
           if (typeof ret === "object" && ret.size === 0) {
             throw new TinslError(`functions that return an array must have \
 a defined size in the return type specifier`);
           }
-          if (!branchContainsReturn(this.body)) {
-            throw new TinslError(
-              `function "${
-                this.getToken().text
-              }" does not definitely return a value. this may be because it does \
+        }
+
+        if (!branchContainsReturn(this.body)) {
+          throw new TinslError(
+            `function "${
+              this.getToken().text
+            }" does not definitely return a value. this may be because it does \
 not contain a return statement in all conditional branches`
-            );
-          }
+          );
         }
 
         scope.addToScope(this.getToken().text, this);
-
-        /*
-      const innerScope = new LexicalScope(
-        scope,
-        this.typ !== null ? this.typ.toSpecType() : undefined,
-        this.getToken().text
-      );
-      */
 
         const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
         const funcName = this.getToken().text;
@@ -1318,10 +1313,11 @@ not contain a return statement in all conditional branches`
 
         innerScope.returnType =
           this.typ === null ? undefined : this.typ.toSpecType();
+
         // add all the params to the scope
         for (const p of this.params)
           innerScope.addToScope(p.getToken().text, p);
-        //typeCheckExprStmts(this.body, innerScope);
+
         this.validateDefaultParams(scope);
         this.inferredType = innerScope.returnType;
       },
@@ -1532,12 +1528,18 @@ export class If extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      if (this.cond.getType(scope) !== "bool")
-        throw new TinslError("if condition must be a boolean expression");
-      const innerScope = new LexicalScope(scope);
-      typeCheckExprStmts(this.body, innerScope);
-    }, scope);
+    const innerScope = new LexicalScope(scope);
+    this.wrapError(
+      (scope: LexicalScope) => {
+        if (this.cond.getType(scope) !== "bool")
+          throw new TinslError("if condition must be a boolean expression");
+        typeCheckExprStmts(this.body, innerScope);
+      },
+      scope,
+      false,
+      this.body,
+      innerScope
+    );
   }
 
   returnsInBoth(): boolean {

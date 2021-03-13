@@ -78,8 +78,20 @@ describe("aggregate error tests", () => {
 fn multiple_errors () {
   int a = 1.;
   float b = 2;
+  return 1;
 }`)
     ).to.throw("2 errors");
+  });
+
+  it("reports multiple errors in function params and body", () => {
+    expect(() =>
+      parseAndCheck(`
+fn multiple_errors (int c = 1.) {
+  int a = 1.;
+  float b = 2;
+  return 1;
+}`)
+    ).to.throw("3 errors");
   });
 
   it("reports multiple errors in procedure body alone", () => {
@@ -107,4 +119,35 @@ pr multiple_errors () {
 }`)
     ).to.throw("3 errors");
   });
+
+  it("reports multiple errors in condition and body of if", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  mut a := 1;
+  if (1 + 2) {
+    a += "purple";
+  }
+  return a;
+}`)
+    ).to.throw("2 errors");
+  });
+
+  /*
+  it("throws one error for broken function and not another for use", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) {
+    return 1;
+  }
+}
+
+{ foo(); }`)
+    ).to.throw("asdf");
+  });
+  */
 });
+
+// TODO what about continued error reporting for functions where return type
+// cannot be determined?
