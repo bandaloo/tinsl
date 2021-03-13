@@ -168,14 +168,18 @@ export class LexicalScope {
     return this._returnType;
   }
 
-  get funcName(): string | undefined {
-    return this._funcName;
-  }
-
   set returnType(typ: SpecType | undefined) {
     this._returnType = typ;
     if (this.upperScope === undefined) return;
     this.upperScope.returnType = typ;
+  }
+
+  get funcName(): string | undefined {
+    return this._funcName;
+  }
+
+  set funcName(str: string | undefined) {
+    this._funcName = str;
   }
 
   constructor(
@@ -208,9 +212,19 @@ export abstract class Stmt extends Node {
 
   wrapError(
     callback: (scope: LexicalScope) => void,
-    scope: LexicalScope
+    scope: LexicalScope,
+    renderLevel = false,
+    extraExSts: ExSt[] = [],
+    innerScope = scope
   ): void {
-    return wrapErrorHelper(callback, this, scope);
+    return wrapErrorHelper(
+      callback,
+      this,
+      scope,
+      renderLevel,
+      extraExSts,
+      innerScope
+    );
   }
 }
 
@@ -227,11 +241,21 @@ export abstract class Expr extends Node {
 
   wrapError(
     callback: (scope: LexicalScope) => SpecType,
-    scope: LexicalScope | undefined
+    scope: LexicalScope | undefined,
+    renderLevel = false,
+    extraExSts: ExSt[] = [],
+    innerScope = scope
   ): SpecType {
     if (this.cachedType !== undefined) return this.cachedType;
     if (scope === undefined) throw new Error("TODO make this impossible");
-    this.cachedType = wrapErrorHelper(callback, this, scope);
+    this.cachedType = wrapErrorHelper(
+      callback,
+      this,
+      scope,
+      renderLevel,
+      extraExSts,
+      innerScope
+    );
     return this.cachedType;
   }
 }
@@ -459,30 +483,37 @@ export class RenderBlock extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      const checkNum = (num: number | Expr | null, str: string) => {
-        if (num === null || typeof num === "number") return num;
+    const innerScope = new LexicalScope(scope);
 
-        const int = compileTimeInt(num, scope);
-        if (int !== null) return int;
+    this.wrapError(
+      (scope: LexicalScope) => {
+        const checkNum = (num: number | Expr | null, str: string) => {
+          if (num === null || typeof num === "number") return num;
 
-        const param = compileTimeParam(num, scope);
-        if (param !== null && param.getRightType() === "int") {
-          param.pureInt = true;
-          return num;
-        }
+          const int = compileTimeInt(num, scope);
+          if (int !== null) return int;
 
-        throw new TinslError(`expression for ${str} number in render block \
+          const param = compileTimeParam(num, scope);
+          if (param !== null && param.getRightType() === "int") {
+            param.pureInt = true;
+            return num;
+          }
+
+          throw new TinslError(`expression for ${str} number in render block \
 is not a compile time atomic int, ${atomicIntHint}`);
-      };
+        };
 
-      this.inNum = checkNum(this.inNum, "source texture");
-      this.outNum = checkNum(this.outNum, "destination texture");
-      this.loopNum = checkNum(this.loopNum, "loop");
-
-      const innerScope = new LexicalScope(scope);
-      typeCheckExprStmts(this.body, innerScope, true);
-    }, scope);
+        // TODO aggregate these errors
+        this.inNum = checkNum(this.inNum, "source texture");
+        this.outNum = checkNum(this.outNum, "destination texture");
+        this.loopNum = checkNum(this.loopNum, "loop");
+        //typeCheckExprStmts(this.body, innerScope, true);
+      },
+      scope,
+      true,
+      this.body,
+      innerScope
+    );
   }
 }
 
@@ -1250,38 +1281,55 @@ export class FuncDef extends DefLike {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      if (this.typ !== null) {
-        const ret = this.typ.toSpecType();
-        if (typeof ret === "object" && ret.size === 0) {
-          throw new TinslError(`functions that return an array must have \
+    const innerScope = new LexicalScope(scope);
+    this.wrapError(
+      (scope: LexicalScope) => {
+        if (this.typ !== null) {
+          const ret = this.typ.toSpecType();
+          if (typeof ret === "object" && ret.size === 0) {
+            throw new TinslError(`functions that return an array must have \
 a defined size in the return type specifier`);
-        }
-        if (!branchContainsReturn(this.body)) {
-          throw new TinslError(
-            `function "${
-              this.getToken().text
-            }" does not definitely return a value. this may be because it does \
+          }
+          if (!branchContainsReturn(this.body)) {
+            throw new TinslError(
+              `function "${
+                this.getToken().text
+              }" does not definitely return a value. this may be because it does \
 not contain a return statement in all conditional branches`
-          );
+            );
+          }
         }
-      }
 
-      scope.addToScope(this.getToken().text, this);
+        scope.addToScope(this.getToken().text, this);
+
+        /*
       const innerScope = new LexicalScope(
         scope,
         this.typ !== null ? this.typ.toSpecType() : undefined,
         this.getToken().text
       );
+      */
 
-      innerScope.returnType =
-        this.typ === null ? undefined : this.typ.toSpecType();
-      // add all the params to the scope
-      for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
-      typeCheckExprStmts(this.body, innerScope);
-      this.validateDefaultParams(scope);
-      this.inferredType = innerScope.returnType;
-    }, scope);
+        const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
+        const funcName = this.getToken().text;
+
+        innerScope.funcName = funcName;
+        innerScope.returnType = retType;
+
+        innerScope.returnType =
+          this.typ === null ? undefined : this.typ.toSpecType();
+        // add all the params to the scope
+        for (const p of this.params)
+          innerScope.addToScope(p.getToken().text, p);
+        //typeCheckExprStmts(this.body, innerScope);
+        this.validateDefaultParams(scope);
+        this.inferredType = innerScope.returnType;
+      },
+      scope,
+      false,
+      this.body,
+      innerScope
+    );
   }
 
   getReturnType(): SpecType {
@@ -1594,13 +1642,21 @@ export class ProcDef extends DefLike {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      scope.addToScope(this.getToken().text, this);
-      const innerScope = new LexicalScope(scope);
-      for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
-      this.validateDefaultParams(scope);
-      typeCheckExprStmts(this.body, innerScope, true);
-    }, scope);
+    const innerScope = new LexicalScope(scope);
+
+    this.wrapError(
+      (scope: LexicalScope) => {
+        scope.addToScope(this.getToken().text, this);
+        for (const p of this.params)
+          innerScope.addToScope(p.getToken().text, p);
+        this.validateDefaultParams(scope);
+        //typeCheckExprStmts(this.body, innerScope, true);
+      },
+      scope,
+      true,
+      this.body,
+      innerScope
+    );
   }
 }
 

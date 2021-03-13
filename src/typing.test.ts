@@ -723,7 +723,7 @@ pr foo () {
     ).to.not.throw();
   });
 
-  it("calls a user defined function with wrong args, throws", () => {
+  it("calls a user defined procedure with wrong args, throws", () => {
     expect(() =>
       parseAndCheck(`
 pr foo (float a, float b) {

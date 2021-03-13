@@ -39,23 +39,24 @@ export function wrapErrorHelper<T>(
   exSt: ExSt,
   scope: LexicalScope,
   renderLevel = false,
-  extraExSts: ExSt[] = []
+  extraExSts: ExSt[] = [],
+  innerScope = scope
 ): T {
+  let lineErr: TinslLineError | undefined = undefined;
+  let ret: T | null = null;
+  try {
+    ret = callback(scope);
+  } catch (err) {
+    if (!(err instanceof TinslError)) throw err;
+    lineErr = new TinslLineError(err.message, exSt.getToken());
+  }
+
   let aggregateErr: TinslAggregateError | undefined = undefined;
   try {
-    typeCheckExprStmts(extraExSts, scope, renderLevel);
+    typeCheckExprStmts(extraExSts, innerScope, renderLevel);
   } catch (err) {
-    if (!(err instanceof TinslAggregateError)) {
-      throw err;
-    }
+    if (!(err instanceof TinslAggregateError)) throw err;
     aggregateErr = err;
-  }
-  let lineErr: TinslLineError | undefined = undefined;
-  try {
-    return callback(scope);
-  } catch (e) {
-    if (!(e instanceof TinslError)) throw e;
-    lineErr = new TinslLineError(e.message, exSt.getToken());
   }
 
   const totalErrors = [
@@ -63,5 +64,10 @@ export function wrapErrorHelper<T>(
     ...(aggregateErr !== undefined ? aggregateErr.errors : []),
   ];
 
-  throw new TinslAggregateError(totalErrors);
+  if (totalErrors.length > 0) throw new TinslAggregateError(totalErrors);
+
+  if (ret === null)
+    throw new Error("ret was null and no throw happened before");
+
+  return ret;
 }
