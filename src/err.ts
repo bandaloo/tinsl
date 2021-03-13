@@ -1,5 +1,6 @@
 import { Token } from "moo";
-import { ExSt, LexicalScope } from "./nodes";
+import { ExSt, LexicalScope, typeCheckExprStmts } from "./nodes";
+import { callTypeCheck } from "./typing";
 
 export class TinslError extends Error {
   constructor(message: string) {
@@ -36,13 +37,31 @@ export class TinslAggregateError extends Error {
 export function wrapErrorHelper<T>(
   callback: (scope: LexicalScope) => T,
   exSt: ExSt,
-  scope: LexicalScope
+  scope: LexicalScope,
+  renderLevel = false,
+  extraExSts: ExSt[] = []
 ): T {
+  let aggregateErr: TinslAggregateError | undefined = undefined;
+  try {
+    typeCheckExprStmts(extraExSts, scope, renderLevel);
+  } catch (err) {
+    if (!(err instanceof TinslAggregateError)) {
+      throw err;
+    }
+    aggregateErr = err;
+  }
+  let lineErr: TinslLineError | undefined = undefined;
   try {
     return callback(scope);
-  } catch (e: unknown) {
-    if (e instanceof TinslError)
-      throw new TinslLineError(e.message, exSt.getToken());
-    throw e;
+  } catch (e) {
+    if (!(e instanceof TinslError)) throw e;
+    lineErr = new TinslLineError(e.message, exSt.getToken());
   }
+
+  const totalErrors = [
+    ...(lineErr !== undefined ? [lineErr] : []),
+    ...(aggregateErr !== undefined ? aggregateErr.errors : []),
+  ];
+
+  throw new TinslAggregateError(totalErrors);
 }

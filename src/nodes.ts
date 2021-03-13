@@ -78,11 +78,11 @@ export function compileTimeParam(expr: Expr, scope: LexicalScope) {
   return null;
 }
 
-function typeCheckExprStmts(
+export function typeCheckExprStmts(
   arr: ExSt[],
   scope: LexicalScope,
   atRenderLevel = false
-) {
+): void {
   const errors: TinslLineError[] = [];
   for (const e of arr) {
     try {
