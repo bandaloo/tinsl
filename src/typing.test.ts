@@ -1,25 +1,24 @@
 import { expect } from "chai";
 import {
-  VarDecl,
+  CallExpr,
+  Frag,
   IntExpr,
   LexicalScope,
   TypeName,
-  Frag,
-  CallExpr,
   UnaryExpr,
+  VarDecl,
 } from "./nodes";
 import { extractExpr, parseAndCheck, tok } from "./testhelpers";
+import { ArrayType, SpecType } from "./typeinfo";
 import {
-  dimensions,
   binaryTyping,
-  unaryTyping,
-  ternaryTyping,
-  callReturnType,
   builtIns,
+  callReturnType,
   constructors,
+  dimensions,
+  ternaryTyping,
+  unaryTyping,
   vectorAccessTyping,
-  ArrayType,
-  SpecType,
 } from "./typing";
 
 const els = () => new LexicalScope();

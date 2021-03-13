@@ -4,7 +4,7 @@
   "description": "language for multipass texture-to-texture effects",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha -r ts-node/register src/**/*.test.ts",
+    "test": "npx mocha -r ts-node/register src/testsetup.ts src/**/*.test.ts",
     "grammar": "npx nearleyc src/grammar.ne -o src/grammar.ts"
   },
   "keywords": [

@@ -1,6 +1,5 @@
 import { Token } from "moo";
-import { Expr, ExSt, LexicalScope, Stmt } from "./nodes";
-import { SpecType } from "./typing";
+import { ExSt, LexicalScope } from "./nodes";
 
 export class TinslError extends Error {
   constructor(message: string) {
@@ -26,7 +25,10 @@ export class TinslAggregateError extends Error {
   errors: TinslLineError[];
 
   constructor(errors: TinslLineError[]) {
-    super(errors.map((e) => e.message).join("\n"));
+    super(
+      `tinsl: ${errors.length} error${errors.length > 1 ? "s" : ""} found:\n` +
+        errors.map((e) => e.message).join("\n")
+    );
     this.errors = errors;
   }
 }

@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import chaiExclude from "chai-exclude";
 import { parseAndCheck } from "./testhelpers";
 
 describe("complex program tests", () => {
@@ -39,11 +38,10 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 { frag0 + frag1; } -> 0`)
     ).to.not.throw();
   });
-});
 
-it("parses godrays effect", () => {
-  expect(() =>
-    parseAndCheck(`
+  it("parses godrays effect", () => {
+    expect(() =>
+      parseAndCheck(`
 fn godrays (
   vec4 col = frag,
   float exposure = 1.,
@@ -59,7 +57,7 @@ fn godrays (
 
   mut illumination_decay := 1.;
 
-  for (mut i := 0; i < num_samples; i++) {
+  for (int i = 0; i < num_samples; i++) {
     uv -= delta_uv;
     tex_sample := frag(channel, uv) * illumination_decay * weight;
     col += tex_sample;
@@ -68,5 +66,45 @@ fn godrays (
 
   return col * exposure;
 }`)
-  ).to.not.throw();
+    ).to.not.throw();
+  });
+});
+
+// TODO move to their own test file
+describe("aggregate error tests", () => {
+  it("reports multiple errors in function body alone", () => {
+    expect(() =>
+      parseAndCheck(`
+fn multiple_errors () {
+  int a = 1.;
+  float b = 2;
+}`)
+    ).to.throw("2 errors");
+  });
+
+  it("reports multiple errors in procedure body alone", () => {
+    expect(() =>
+      parseAndCheck(`
+pr multiple_errors () {
+  vec2(1., 1.);
+  vec3(1., 1., 3.);
+}`)
+    ).to.throw("2 errors");
+  });
+
+  it("doesn't use plural 'error' when reporting a single error", () => {
+    expect(() =>
+      parseAndCheck("pr multiple_errors () { vec2(1., 1.); }")
+    ).to.throw("1 error ");
+  });
+
+  it("reports multiple errors in procedure definition", () => {
+    expect(() =>
+      parseAndCheck(`
+pr multiple_errors () {
+  "green"3;
+  { "blue"3; "red"3; } -> 1
+}`)
+    ).to.throw("3 errors");
+  });
 });

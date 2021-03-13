@@ -6,6 +6,7 @@ import {
   TinslLineError,
   wrapErrorHelper,
 } from "./err";
+import { SpecType, SpecTypeSimple } from "./typeinfo";
 import {
   binaryTyping,
   builtIns,
@@ -16,8 +17,6 @@ import {
   isVec,
   matchingVecScalar,
   matrixAccessTyping,
-  SpecType,
-  SpecTypeSimple,
   ternaryTyping,
   typeToString,
   unaryTyping,
@@ -82,18 +81,18 @@ export function compileTimeParam(expr: Expr, scope: LexicalScope) {
 function typeCheckExprStmts(
   arr: ExSt[],
   scope: LexicalScope,
-  inRenderBlock = false
+  atRenderLevel = false
 ) {
   const errors: TinslLineError[] = [];
   for (const e of arr) {
     try {
       if (e instanceof Expr) {
         const typ = e.getType(scope);
-        if (inRenderBlock && typ !== "vec4") {
+        if (atRenderLevel && typ !== "vec4") {
           // TODO this is weird
           const throwCallback = () => {
             throw new TinslError(
-              "expressions must be of type vec4 in render block"
+              "expressions must be of type vec4 in render blocks and procedures"
             );
           };
           wrapErrorHelper(throwCallback, e, scope);
@@ -292,7 +291,6 @@ abstract class DefLike extends Stmt {
         filledArgs[index] = arg.expr;
       }
 
-      console.log(filledArgs);
       if (isOnlyExpr(filledArgs)) {
         return filledArgs;
       }
@@ -1252,7 +1250,6 @@ export class FuncDef extends DefLike {
   }
 
   typeCheck(scope: LexicalScope): void {
-    // TODO recursive functions are not allowed
     this.wrapError((scope: LexicalScope) => {
       if (this.typ !== null) {
         const ret = this.typ.toSpecType();
@@ -1602,7 +1599,7 @@ export class ProcDef extends DefLike {
       const innerScope = new LexicalScope(scope);
       for (const p of this.params) innerScope.addToScope(p.getToken().text, p);
       this.validateDefaultParams(scope);
-      typeCheckExprStmts(this.body, innerScope);
+      typeCheckExprStmts(this.body, innerScope, true);
     }, scope);
   }
 }

@@ -1,7 +1,6 @@
 import { expect } from "chai";
-import { extractTopLevel, parse, parseAndCheck } from "./testhelpers";
-import chaiExclude from "chai-exclude";
 import { RenderBlock } from "./nodes";
+import { extractTopLevel } from "./testhelpers";
 
 describe("renderblock has refresh", () => {
   it("refresh at first level of render block", () => {

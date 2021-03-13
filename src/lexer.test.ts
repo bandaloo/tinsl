@@ -1,7 +1,6 @@
 import { expect } from "chai";
+import { Lexer, Token } from "moo";
 import { keywords, lexer } from "./lexer";
-
-import { Token, Lexer } from "moo";
 
 /** returns types of all tokens */
 const types = (tokens: Token[]) => tokens.map((t) => t.type);

@@ -1,12 +1,11 @@
-import chai, { expect } from "chai";
-import chaiExclude from "chai-exclude";
+import { expect } from "chai";
 import {
   Assign,
   BinaryExpr,
   BoolExpr,
   CallExpr,
+  ColorString,
   ConstructorExpr,
-  VarDecl,
   Else,
   Expr,
   ExSt,
@@ -30,7 +29,7 @@ import {
   UIntExpr,
   UnaryExpr,
   Uniform,
-  ColorString,
+  VarDecl,
 } from "./nodes";
 import {
   checkExpr,
@@ -39,9 +38,6 @@ import {
   parseAndCheck,
   tok,
 } from "./testhelpers";
-
-// TODO put this in another file and run before all tests
-chai.use(chaiExclude);
 
 const oneTwoThreeForward = (op1: string, op2: string) =>
   new BinaryExpr(
