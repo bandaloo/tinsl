@@ -75,3 +75,14 @@ export const atomicIntHint =
   "e.g. `42` or `some_num` where `def some_num 42` is defined earlier. " +
   "these restrictions apply to expressions for source/target texture numbers " +
   "or loop numbers of render blocks";
+
+export const lValueHint = (valid: string) =>
+  "invalid l-value in assignment" +
+  (valid === "const"
+    ? ". this is because it was declared as constant"
+    : valid === "final"
+    ? '. this is because the l-value was declared as "final". ' +
+      "variables declared with := are final by default. " +
+      'to declare a mutable variable this way, use "mut" before ' +
+      "the variable name, e.g. `mut foo := 42;`"
+    : "");

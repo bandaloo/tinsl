@@ -664,15 +664,21 @@ describe("declaration type checks", () => {
 });
 
 describe("for loop type check", () => {
-  it("parses and checks for loop", () => {
+  it("parses and checks empty for loop", () => {
     expect(() =>
       extractExpr("for (;;) { }", false).typeCheck(els())
     ).to.not.throw();
   });
 
-  it("parses and checks for loop", () => {
+  it("parses and checks basic for loop with +=", () => {
     expect(() =>
-      extractExpr("for (int i = 1; i < 3; i++) { }", false).typeCheck(els())
+      extractExpr("for (int i = 0; i < 3; i += 1) { }", false).typeCheck(els())
+    ).to.not.throw();
+  });
+
+  it("parses and checks basic for loop with ++", () => {
+    expect(() =>
+      extractExpr("for (int i = 0; i < 3; i++) { }", false).typeCheck(els())
     ).to.not.throw();
   });
 });
@@ -1526,10 +1532,13 @@ fn bar() { return foo(1, 2, 3.14, vec2(1., 2.)); }`)
     ).to.throw("too many");
   });
 });
-//parseAndCheck("'red'5");
 
-// TODO should params be in the same scope as one another? defaults might
-// reorder them when compiling (might not matter because assignments not
-// allowed and no side effects)
+describe("modifying a const", () => {
+  it("modifying a non-identifier constant expression with assignment", () => {
+    expect(() =>
+      parseAndCheck("fn foo(float a = 1) { vec2(a).xy += 1.; return 1; }")
+    ).to.throw("const");
+  });
+});
 
-// TODO accessing components of a matrix?
+// TODO check += (etc) ops with the corresponding binary op

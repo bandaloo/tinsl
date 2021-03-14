@@ -2,6 +2,7 @@ import { Token } from "moo";
 import { colors } from "./colors";
 import {
   atomicIntHint,
+  lValueHint,
   TinslAggregateError,
   TinslError,
   TinslLineError,
@@ -80,7 +81,6 @@ export function typeCheckExprStmts(
         const typ = e.getType(scope);
 
         if (atRenderLevel && typ !== "vec4" && typ !== "__undecided") {
-          //if (atRenderLevel && typ !== "vec4") {
           // TODO this is weird
           const throwCallback = () => {
             throw new TinslError(
@@ -141,7 +141,7 @@ function containsRefreshHelper<T extends RenderLevel>(
 abstract class Node {
   abstract toJson(): object;
   abstract translate(): string;
-  abstract getToken(): Token; // TODO change this to tokens?
+  abstract getToken(): Token;
   toString() {
     return JSON.stringify(this.toJson());
   }
@@ -513,7 +513,6 @@ is not a compile time atomic int, ${atomicIntHint}`);
         this.inNum = checkNum(this.inNum, "source texture");
         this.outNum = checkNum(this.outNum, "destination texture");
         this.loopNum = checkNum(this.loopNum, "loop");
-        //typeCheckExprStmts(this.body, innerScope, true);
       },
       scope,
       true,
@@ -611,14 +610,14 @@ export class BinaryExpr extends Expr {
 
 export class UnaryExpr extends Expr {
   operator: Token;
-  argument: Expr;
+  argument: Expr; // TODO rename
   postfix: boolean;
 
   constructor(operator: Token, argument: Expr, postfix = false) {
     super();
     this.operator = operator;
     this.argument = argument;
-    this.postfix = false;
+    this.postfix = postfix;
   }
 
   getSubExpressions() {
@@ -643,10 +642,17 @@ export class UnaryExpr extends Expr {
   }
 
   getType(scope?: LexicalScope): SpecType {
-    return this.wrapError(
-      () => unaryTyping(this.operator.text, this.argument.getType(scope)),
-      scope
-    );
+    return this.wrapError(() => {
+      const argType = this.argument.getType(scope);
+      if (
+        ["++", "--"].includes(this.operator.text) &&
+        this.argument.validLVal !== "valid"
+      ) {
+        console.log("valid l val", this.argument.validLVal);
+        throw new TinslError(lValueHint(this.argument.validLVal));
+      }
+      return unaryTyping(this.operator.text, argType);
+    }, scope);
   }
 }
 
@@ -1007,7 +1013,6 @@ export class SubscriptExpr extends Expr {
     const callType = this.call.getType(scope);
 
     // valid l-value when accessing a not constant-declared
-    // TODO update this for final
     this.validLVal =
       this.call.validLVal !== "const" && this.call.validLVal !== "final"
         ? "valid"
@@ -1035,7 +1040,6 @@ export class SubscriptExpr extends Expr {
 
 type Access = "mut" | "const" | "final";
 
-// TODO would be easier if this were an expression
 export class VarDecl extends Stmt {
   access: Access;
   typ: TypeName | null;
@@ -1164,17 +1168,7 @@ export class Assign extends Stmt {
       }
 
       if (this.left.validLVal !== "valid") {
-        throw new TinslError(
-          "invalid l-value in assignment" +
-            (this.left.validLVal === "const"
-              ? ". this is because it was declared as constant"
-              : this.left.validLVal === "final"
-              ? '. this is because the l-value was declared as "final". ' +
-                "variables declared with := are final by default. " +
-                'to declare a mutable variable this way, use "mut" before ' +
-                "the variable name, e.g. `mut foo := 42;`"
-              : "")
-        );
+        throw new TinslError(lValueHint(this.left.validLVal));
       }
     }, scope);
   }
