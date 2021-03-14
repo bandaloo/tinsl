@@ -1,4 +1,4 @@
-import type { Token } from "moo";
+import { compile, Token } from "moo";
 import { colors } from "./colors";
 import {
   TinslAggregateError,
@@ -87,8 +87,6 @@ export function typeCheckExprStmts(
   for (const e of arr) {
     try {
       if (e instanceof Expr) {
-        if (e instanceof CallExpr) console.log("typing call expr type");
-
         const typ = e.getType(scope);
 
         if (atRenderLevel && typ !== "vec4" && typ !== "__undecided") {
@@ -369,7 +367,7 @@ is of type ${typeToString(defType)}`);
     const defaultsNum = this.params.filter((p) => p.def !== null).length;
 
     const err = (str: string) =>
-      new TinslError(`too ${str} arguments for ${kind} call ${name}`);
+      new TinslError(`too ${str} arguments for ${kind} call "${name}"`);
 
     if (this.params.length - defaultsNum > exprArgs.length) throw err("few");
     if (this.params.length < exprArgs.length) throw err("many");
@@ -388,6 +386,27 @@ is of type ${typeToString(defType)}`);
 but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
 
+      const param = compileTimeParam(exprArgs[i], scope);
+
+      if (this.params[i].pureInt) {
+        // input must be compile time
+        const intExpr = compileTimeInt(exprArgs[i], scope);
+        const paramExpr = compileTimeParam(exprArgs[i], scope);
+
+        // pure int status gets passed on to outer param
+        if (paramExpr !== null) paramExpr.pureInt;
+
+        // if it was neither a param or comp int then it's not comp time
+        if (!(intExpr !== null || paramExpr !== null)) {
+          throw new TinslError(
+            `in function "${this.getToken().text}", argument for parameter "${
+              this.params[i].getToken().text
+            }" is not a compile time atomic int, ${atomicIntHint}`
+          );
+        }
+      }
+
+      /*
       if (
         this.params[i].pureInt &&
         compileTimeInt(exprArgs[i], scope) === null
@@ -398,6 +417,7 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
           }" is not a compile time atomic int, ${atomicIntHint}`
         );
       }
+      */
     }
   }
 }
@@ -825,7 +845,8 @@ export class CallExpr extends Expr {
               "just use `frag` on its own"
           );
 
-        const frag = this.call;
+        const fragExpr = this.call;
+
         const helper = (typ: SpecTypeSimple) => {
           if (!isOnlyExpr(this.args))
             throw new TinslError("frag call cannot contain named args");
@@ -837,33 +858,47 @@ export class CallExpr extends Expr {
           return list.length === 1 ? list[0] : null;
         };
 
-        const int = helper("int");
+        const intExpr = helper("int");
 
-        if (frag.sampler !== null && int !== null)
+        if (fragExpr.sampler !== null && intExpr !== null)
           throw new TinslError(
             "sampler number already defined in the identifier name; " +
               "cannot also be passed in as an argument. sampler: " +
-              frag.sampler
+              fragExpr.sampler
           );
 
-        if (int !== null) {
-          const num = compileTimeInt(int, scope);
+        if (intExpr !== null) {
+          const int = compileTimeInt(intExpr, scope);
+          if (int === null) {
+            // wasn't a direct param
+            const param = compileTimeParam(intExpr, scope);
+            if (param === null) {
+              throw new TinslError(
+                "sampler number for frag has to be a compile time atomic int, " +
+                  atomicIntHint
+              );
+            }
+            param.pureInt = true;
+          } else {
+            /*
           if (
-            num === null &&
+            int === null &&
             !(
-              int instanceof IdentExpr &&
-              scope.resolve(int.getToken().text) instanceof Param
+              intExpr instanceof IdentExpr &&
+              scope.resolve(intExpr.getToken().text) instanceof Param
             )
           )
             throw new TinslError(
               "sampler number for frag has to be a compile time atomic int, " +
                 atomicIntHint
             );
-          frag.sampler = num;
+          */
+            fragExpr.sampler = int;
+          }
         }
 
         const vec2 = helper("vec2");
-        frag.pos = vec2;
+        fragExpr.pos = vec2;
 
         // TODO might have to change if we support different texture types
         return "vec4";
