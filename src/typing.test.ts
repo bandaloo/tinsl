@@ -9,12 +9,11 @@ import {
   VarDecl,
 } from "./nodes";
 import { extractExpr, parseAndCheck, tok } from "./testhelpers";
-import { ArrayType, SpecType } from "./typeinfo";
+import { builtIns, constructors } from "./typeinfo";
+import { ArrayType, SpecType } from "./typetypes";
 import {
   binaryTyping,
-  builtIns,
   callReturnType,
-  constructors,
   dimensions,
   ternaryTyping,
   unaryTyping,

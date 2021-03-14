@@ -6,22 +6,19 @@ import {
   TinslLineError,
   wrapErrorHelper,
 } from "./err";
-import { SpecType, SpecTypeSimple } from "./typeinfo";
+import { builtIns, constructors } from "./typeinfo";
+import { SpecType, SpecTypeSimple } from "./typetypes";
 import {
   binaryTyping,
-  builtIns,
   callReturnType,
   compareTypes,
-  constructors,
-  isMat,
-  isVec,
-  matchingVecScalar,
   matrixAccessTyping,
   ternaryTyping,
   typeToString,
   unaryTyping,
   vectorAccessTyping,
 } from "./typing";
+import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
 import { arrHasRepeats, toColorKey } from "./util";
 
 // TODO stricter types for operator string
@@ -880,19 +877,6 @@ export class CallExpr extends Expr {
             }
             param.pureInt = true;
           } else {
-            /*
-          if (
-            int === null &&
-            !(
-              intExpr instanceof IdentExpr &&
-              scope.resolve(intExpr.getToken().text) instanceof Param
-            )
-          )
-            throw new TinslError(
-              "sampler number for frag has to be a compile time atomic int, " +
-                atomicIntHint
-            );
-          */
             fragExpr.sampler = int;
           }
         }
