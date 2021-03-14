@@ -1,6 +1,5 @@
 import { Token } from "moo";
 import { ExSt, LexicalScope, typeCheckExprStmts } from "./nodes";
-import { callTypeCheck } from "./typing";
 
 export class TinslError extends Error {
   constructor(message: string) {
@@ -71,3 +70,8 @@ export function wrapErrorHelper<T>(
 
   return ret;
 }
+
+export const atomicIntHint =
+  "e.g. `42` or `some_num` where `def some_num 42` is defined earlier. " +
+  "these restrictions apply to expressions for source/target texture numbers " +
+  "or loop numbers of render blocks";

@@ -1,6 +1,7 @@
-import { compile, Token } from "moo";
+import { Token } from "moo";
 import { colors } from "./colors";
 import {
+  atomicIntHint,
   TinslAggregateError,
   TinslError,
   TinslLineError,
@@ -20,14 +21,6 @@ import {
 } from "./typing";
 import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
 import { arrHasRepeats, toColorKey } from "./util";
-
-// TODO stricter types for operator string
-// TODO do we want a list of tokens for each node?
-
-const atomicIntHint =
-  "e.g. `42` or `some_num` where `def some_num 42` is defined earlier. " +
-  "these restrictions apply to expressions for source/target texture numbers " +
-  "or loop numbers of render blocks";
 
 interface NamedArg {
   id: Token;
@@ -158,7 +151,6 @@ type IdentResult = TopDef | VarDecl | FuncDef | ProcDef | Param;
 
 interface IdentDictionary {
   [key: string]: IdentResult | undefined;
-  // TODO but TopDef and FuncDef can only be at top level
 }
 
 export class LexicalScope {
@@ -296,8 +288,6 @@ abstract class DefLike extends Stmt {
     }
   }
 
-  // TODO type check default arguments
-
   fillInNamed(args: (NamedArg | Expr)[]): Expr[] {
     if (isOnlyExpr(args)) {
       return args;
@@ -356,7 +346,6 @@ is of type ${typeToString(defType)}`);
   }
 
   argsValid(args: (Expr | NamedArg)[], scope: LexicalScope): void {
-    // TODO aggregate these errors
     const exprArgs = this.fillInNamed(args);
 
     const kind = this instanceof ProcDef ? "procedure" : "function";
@@ -372,9 +361,7 @@ is of type ${typeToString(defType)}`);
     const paramTypes = this.params.map((p) => p.getRightType());
     const argTypes = exprArgs.map((a) => a.getType(scope));
 
-    // TODO make sure default arguments in definition are all trailing
-
-    // number of arguments lte to number of params because of defaults
+    // number of arguments <= to number of params because of defaults
     for (let i = 0; i < argTypes.length; i++) {
       if (argTypes[i] === "__undecided") continue;
       if (paramTypes[i] !== argTypes[i])
@@ -402,19 +389,6 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
           );
         }
       }
-
-      /*
-      if (
-        this.params[i].pureInt &&
-        compileTimeInt(exprArgs[i], scope) === null
-      ) {
-        throw new TinslError(
-          `in function "${this.getToken().text}", argument for parameter "${
-            this.params[i].getToken().text
-          }" is not a compile time atomic int, ${atomicIntHint}`
-        );
-      }
-      */
     }
   }
 }
@@ -1059,18 +1033,18 @@ export class SubscriptExpr extends Expr {
   }
 }
 
-type accessType = "mut" | "const" | "final";
+type Access = "mut" | "const" | "final";
 
 // TODO would be easier if this were an expression
 export class VarDecl extends Stmt {
-  access: accessType;
+  access: Access;
   typ: TypeName | null;
   id: Token;
   expr: Expr;
   assign: Token;
 
   constructor(
-    access: accessType,
+    access: Access,
     typ: TypeName | null,
     id: Token,
     expr: Expr,
