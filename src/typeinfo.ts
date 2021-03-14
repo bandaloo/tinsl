@@ -50,7 +50,8 @@ export type SpecTypeSimple =
   | "mat3x4"
   | "mat4x2"
   | "mat4x3"
-  | "mat4x4";
+  | "mat4x4"
+  | "__undecided"; // TODO really think about this one
 
 export type SpecType = SpecTypeSimple | ArrayType<SpecTypeSimple>;
 

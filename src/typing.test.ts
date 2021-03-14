@@ -59,6 +59,14 @@ describe("same type operations", () => {
     expect(binaryTyping("*", "mat2", "mat2x2")).to.equal("mat2");
     expect(binaryTyping("*", "mat2x2", "mat2")).to.equal("mat2");
   });
+
+  it("binary with undecided is undecided", () => {
+    expect(binaryTyping("*", "__undecided", "float")).to.equal("__undecided");
+    expect(binaryTyping("/", "int", "__undecided")).to.equal("__undecided");
+    expect(binaryTyping(".", "__undecided", "__undecided")).to.equal(
+      "__undecided"
+    );
+  });
 });
 
 describe("bitwise binary operations", () => {
@@ -305,6 +313,18 @@ describe("ternary operator", () => {
     expect(
       extractExpr("1 < 2 ? ivec2(1, 2) : ivec2(3, 4)", true).getType(els())
     ).to.equal("ivec2");
+  });
+
+  it("undecided in ternary results in undecided", () => {
+    expect(ternaryTyping("__undecided", "mat2x2", "mat2")).to.equal(
+      "__undecided"
+    );
+    expect(ternaryTyping("bool", "__undecided", "mat2x2")).to.equal(
+      "__undecided"
+    );
+    expect(ternaryTyping("bool", "mat2x2", "__undecided")).to.equal(
+      "__undecided"
+    );
   });
 });
 
@@ -1259,6 +1279,18 @@ fn bar () {
 
 { bar(); } -> output_num`)
     ).to.not.throw();
+  });
+
+  it("function return type in all branches does not match, throws", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) {
+    return 1;
+  }
+  return 2.;
+}`)
+    ).to.throw("return type");
   });
 
   it("checks chain of function call return types with arrays", () => {

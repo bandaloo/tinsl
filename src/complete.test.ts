@@ -133,21 +133,75 @@ fn foo () {
     ).to.throw("2 errors");
   });
 
-  /*
   it("throws one error for broken function and not another for use", () => {
     expect(() =>
       parseAndCheck(`
 fn foo () {
-  if (false) {
-    return 1;
-  }
+  if (false) { return 1u; }
+  return 2;
+}
+{ foo(); }
+`)
+    ).to.throw("1 error");
+  });
+
+  it("throws only one error when performing binary op on undecided", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) { return 1u; }
+  return 2;
+}
+{ foo() / 2.; }
+`)
+    ).to.throw("1 error");
+  });
+
+  it("throws only one error when chained nested undecided functions", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) { return 1u; }
+  return 2;
+}
+fn bar () { return foo(); }
+{ bar(); }
+`)
+    ).to.throw("1 error");
+  });
+
+  it("undecided type params don't throw an extra error", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) { return 1u; }
+  return 2;
+}
+fn bar (int a) { return "blue"4; }
+
+{ bar(foo()); }
+`)
+    ).to.throw("1 error");
+  });
+
+  it("undecided default values don't throw an extra error", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  if (false) { return 1u; }
+  return 2;
 }
 
-{ foo(); }`)
-    ).to.throw("asdf");
+fn bar (int a = foo()) { return "blue"4; }
+
+{ bar(); }
+`)
+    ).to.throw("1 error");
   });
-  */
 });
 
 // TODO what about continued error reporting for functions where return type
 // cannot be determined?
+
+// TODO undecided tests for top def
+// TODO undecided tests for var decls

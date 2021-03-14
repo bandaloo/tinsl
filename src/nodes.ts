@@ -87,12 +87,18 @@ export function typeCheckExprStmts(
   for (const e of arr) {
     try {
       if (e instanceof Expr) {
+        if (e instanceof CallExpr) console.log("typing call expr type");
+
         const typ = e.getType(scope);
-        if (atRenderLevel && typ !== "vec4") {
+
+        if (atRenderLevel && typ !== "vec4" && typ !== "__undecided") {
+          //if (atRenderLevel && typ !== "vec4") {
           // TODO this is weird
           const throwCallback = () => {
             throw new TinslError(
-              "expressions must be of type vec4 in render blocks and procedures"
+              "expressions must be of type vec4 in render blocks and procedures. " +
+                "type of expression was " +
+                typeToString(typ)
             );
           };
           wrapErrorHelper(throwCallback, e, scope);
@@ -105,6 +111,8 @@ export function typeCheckExprStmts(
         errors.push(e);
       } else if (e instanceof TinslAggregateError) {
         errors.push(...e.errors);
+      } else {
+        throw e;
       }
     }
   }
@@ -334,21 +342,26 @@ abstract class DefLike extends Stmt {
         trailBegun = true;
         defaults.push(p);
       } else if (trailBegun) {
-        throw new TinslError("default arguments must be trailing");
+        throw new TinslError("default params must be trailing");
       }
     }
     for (const d of defaults) {
       if (d.def === null) throw new Error("default param def somehow null");
       const defType = d.def.getType(scope);
       const paramType = d.typ;
+
+      // ignore undecided default values
+      if (defType === "__undecided") continue;
+
       if (!compareTypes(paramType.toSpecType(), defType))
         throw new TinslError(`type of default value "${d.getToken()}" is \
-of type ${typeToString(paramType.toSpecType())}, but expression for default is
-of type ${typeToString(defType)}`);
+of type ${typeToString(paramType.toSpecType())}, but expression for default \
+is of type ${typeToString(defType)}`);
     }
   }
 
   argsValid(args: (Expr | NamedArg)[], scope: LexicalScope): void {
+    // TODO aggregate these errors
     const exprArgs = this.fillInNamed(args);
 
     const kind = this instanceof ProcDef ? "procedure" : "function";
@@ -368,6 +381,7 @@ of type ${typeToString(defType)}`);
 
     // number of arguments lte to number of params because of defaults
     for (let i = 0; i < argTypes.length; i++) {
+      if (argTypes[i] === "__undecided") continue;
       if (paramTypes[i] !== argTypes[i])
         throw new TinslError(
           `argument ${i} has wrong type. is ${argTypes[i]} \
@@ -803,6 +817,7 @@ export class CallExpr extends Expr {
         }
         return "int";
       }
+
       if (this.call instanceof Frag) {
         if (this.args.length === 0)
           throw new TinslError(
@@ -1094,7 +1109,12 @@ export class VarDecl extends Stmt {
   }
 
   getRightType(scope?: LexicalScope) {
-    return this.expr.getType(scope);
+    // TODO this is the same as top def
+    try {
+      return this.expr.getType(scope);
+    } catch {
+      return "__undecided";
+    }
   }
 }
 
@@ -1283,49 +1303,55 @@ export class FuncDef extends DefLike {
 
   typeCheck(scope: LexicalScope): void {
     const innerScope = new LexicalScope(scope);
-    this.wrapError(
-      (scope: LexicalScope) => {
-        // null means 'fn'
-        if (this.typ !== null) {
-          const ret = this.typ.toSpecType();
-          if (typeof ret === "object" && ret.size === 0) {
-            throw new TinslError(`functions that return an array must have \
+    const wrap = () =>
+      this.wrapError(
+        (scope: LexicalScope) => {
+          // add to scope even if type is possibly not able to be inferred
+          scope.addToScope(this.getToken().text, this);
+
+          // null means it is an 'fn' function
+          if (this.typ !== null) {
+            const ret = this.typ.toSpecType();
+            if (typeof ret === "object" && ret.size === 0) {
+              throw new TinslError(`functions that return an array must have \
 a defined size in the return type specifier`);
+            }
           }
-        }
 
-        if (!branchContainsReturn(this.body)) {
-          throw new TinslError(
-            `function "${
-              this.getToken().text
-            }" does not definitely return a value. this may be because it does \
+          if (!branchContainsReturn(this.body)) {
+            throw new TinslError(
+              `function "${
+                this.getToken().text
+              }" does not definitely return a value. this may be because it does \
 not contain a return statement in all conditional branches`
-          );
-        }
+            );
+          }
 
-        scope.addToScope(this.getToken().text, this);
+          const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
+          const funcName = this.getToken().text;
 
-        const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
-        const funcName = this.getToken().text;
+          innerScope.funcName = funcName;
+          innerScope.returnType = retType;
 
-        innerScope.funcName = funcName;
-        innerScope.returnType = retType;
+          // add all the params to the scope
+          for (const p of this.params)
+            innerScope.addToScope(p.getToken().text, p);
 
-        innerScope.returnType =
-          this.typ === null ? undefined : this.typ.toSpecType();
+          this.validateDefaultParams(scope);
+        },
+        scope,
+        false,
+        this.body,
+        innerScope
+      );
 
-        // add all the params to the scope
-        for (const p of this.params)
-          innerScope.addToScope(p.getToken().text, p);
-
-        this.validateDefaultParams(scope);
-        this.inferredType = innerScope.returnType;
-      },
-      scope,
-      false,
-      this.body,
-      innerScope
-    );
+    try {
+      wrap();
+    } catch (err) {
+      throw err;
+    } finally {
+      this.inferredType = innerScope.returnType ?? "__undecided";
+    }
   }
 
   getReturnType(): SpecType {
@@ -1363,19 +1389,23 @@ export class Return extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    const exprType = this.expr.getType(scope);
-    if (scope.returnType === undefined) {
-      scope.returnType = exprType;
-      return;
-    }
+    this.wrapError((scope: LexicalScope) => {
+      const exprType = this.expr.getType(scope);
+      if (scope.returnType === undefined) {
+        scope.returnType = exprType;
+        return;
+      }
 
-    if (compareTypes(this.expr.getType(scope), scope.returnType)) return;
-    // TODO better error message
-    throw new TinslError(
-      `function return type does not match. \
+      if (compareTypes(this.expr.getType(scope), scope.returnType)) return;
+      const oldRetType = scope.returnType;
+      scope.returnType = "__undecided";
+      // TODO better error message that includes name of function
+      throw new TinslError(
+        `function return type does not match. \
 return expression was of type ${typeToString(exprType)} \
-but the function should return ${typeToString(scope.returnType)}`
-    );
+but the function should return ${typeToString(oldRetType)}`
+      );
+    }, scope);
   }
 }
 
@@ -1755,7 +1785,12 @@ export class TopDef extends Stmt {
   }
 
   getRightType(scope?: LexicalScope) {
-    return this.expr.getType(scope);
+    // this is the same as in vardecl
+    try {
+      return this.expr.getType(scope);
+    } catch {
+      return "__undecided";
+    }
   }
 }
 

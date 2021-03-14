@@ -529,6 +529,7 @@ export function dimensions(typ: SpecTypeSimple, side?: "left" | "right") {
 }
 
 export function unaryTyping(op: string, typ: SpecType): SpecType {
+  if (typ === "__undecided") return "__undecided";
   if (typeof typ === "object")
     throw new TinslError("cannot perform unary operation on an array");
   typ = toSimpleMatrix(typ);
@@ -567,6 +568,8 @@ export function binaryTyping(
   left: SpecType,
   right: SpecType
 ): SpecType {
+  if (left === "__undecided" || right === "__undecided") return "__undecided";
+
   if (typeof left === "object" || typeof right === "object")
     throw new TinslError("cannot perform binary operation on array types");
   [left, right] = [left, right].map(toSimpleMatrix);
@@ -687,6 +690,9 @@ export function ternaryTyping(
   ifType: SpecType,
   elseType: SpecType
 ): SpecType {
+  if ([condType, ifType, elseType].includes("__undecided"))
+    return "__undecided";
+
   if (typeof condType === "object") {
     throw new TinslError(
       "cannot have array type as condition in ternary expression"
