@@ -439,11 +439,14 @@ export function vectorAccessTyping(
         "can only access components of vector"
     );
 
+  // TODO pull this out and do the check later
+  /*
   if (leftHand && strHasRepeats(comps)) {
     throw new TinslError(
       "components for the left hand of an assignment cannot contain repeats"
     );
   }
+  */
 
   const base = extractVecBase(vec);
   const len = parseInt(extractVecLength(vec));

@@ -548,9 +548,12 @@ describe("invalid vector access", () => {
     expect(() => vectorAccessTyping("ry", "vec2", false)).to.throw("mixed");
   });
 
+  // TODO test this elsewhere
+  /*
   it("left hand contains repeats", () => {
     expect(() => vectorAccessTyping("rrg", "vec2", true)).to.throw("left");
   });
+  */
 });
 
 describe("typing a binary expression", () => {
@@ -1534,11 +1537,27 @@ fn bar() { return foo(1, 2, 3.14, vec2(1., 2.)); }`)
 });
 
 describe("modifying a const", () => {
-  it("modifying a non-identifier constant expression with assignment", () => {
+  it("modifying components of invalid l value with +=", () => {
     expect(() =>
-      parseAndCheck("fn foo(float a = 1) { vec2(a).xy += 1.; return 1; }")
-    ).to.throw("const");
+      parseAndCheck(
+        "fn foo(float a = 1.) { vec2(a).xy += vec2(1., 1.); return 1; }"
+      )
+    ).to.throw("l-value");
+  });
+
+  it("modifying a non-identifier constant expression with += assignment", () => {
+    expect(() =>
+      parseAndCheck("fn foo(float a = 1.) { vec2(a) += vec2(a); return 1; }")
+    ).to.throw("l-value");
+  });
+
+  it("modifying a non-identifier constant expression with ++", () => {
+    expect(() =>
+      parseAndCheck("fn foo(float a = 1.) { sin(a)++; return 1; }")
+    ).to.throw("l-value");
   });
 });
 
 // TODO check += (etc) ops with the corresponding binary op
+
+// TODO swizzles with repeated fields are not l values!

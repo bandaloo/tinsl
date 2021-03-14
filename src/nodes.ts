@@ -21,7 +21,7 @@ import {
   vectorAccessTyping,
 } from "./typing";
 import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
-import { arrHasRepeats, toColorKey } from "./util";
+import { arrHasRepeats, strHasRepeats, toColorKey } from "./util";
 
 interface NamedArg {
   id: Token;
@@ -223,15 +223,19 @@ export abstract class Stmt extends Node {
   }
 }
 
+type Validity = "valid" | "const" | "final" | "invalid";
+
 export abstract class Expr extends Node {
   cachedType?: SpecType;
-
-  validLVal: "valid" | "const" | "final" | "invalid" = "invalid";
 
   abstract getType(scope?: LexicalScope): SpecType;
   abstract getSubExpressions(): Expr[];
   isConst(scope: LexicalScope): boolean {
     return this.getSubExpressions().every((e) => e.isConst(scope));
+  }
+
+  isLVal(): Validity {
+    return "invalid";
   }
 
   wrapError(
@@ -528,6 +532,7 @@ export class BinaryExpr extends Expr {
   right: Expr;
   isLeftHand = false; // TODO do we need this?
   isLengthAccess = false;
+  private validLVal?: Validity;
 
   constructor(left: Expr, operator: Token, right: Expr) {
     super();
@@ -591,20 +596,43 @@ export class BinaryExpr extends Expr {
         const ret = vectorAccessTyping(
           this.right.getToken().text,
           lType,
-          this.isLeftHand
+          this.isLeftHand // TODO get rid of this
         );
 
-        // valid l-value when accessing a not constant-declared
+        // can't be an l-value if the swizzle contains repeats
+        if (strHasRepeats(this.right.getToken().text)) {
+          this.validLVal = "invalid";
+        }
+
+        // if it is
+        if (this.validLVal !== "invalid") {
+          this.validLVal = this.left.isLVal();
+        }
+
+        /*
         this.validLVal =
           this.left.validLVal !== "const" && this.left.validLVal !== "final"
             ? "valid"
             : this.left.validLVal;
+        */
 
         return ret;
       }
 
+      this.validLVal = "invalid";
+
       return binaryTyping(op, lType, this.right.getType(scope));
     }, scope);
+  }
+
+  isLVal(): Validity {
+    if (this.validLVal === undefined) {
+      throw new Error(
+        "undefined is valid l-value for binary expression. called before getType()?"
+      );
+    }
+
+    return this.validLVal;
   }
 }
 
@@ -644,13 +672,15 @@ export class UnaryExpr extends Expr {
   getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
       const argType = this.argument.getType(scope);
+
+      // ++ and -- need to be treated like assignment, so l-value required
       if (
         ["++", "--"].includes(this.operator.text) &&
-        this.argument.validLVal !== "valid"
+        this.argument.isLVal() !== "valid"
       ) {
-        console.log("valid l val", this.argument.validLVal);
-        throw new TinslError(lValueHint(this.argument.validLVal));
+        throw new TinslError(lValueHint(this.argument.isLVal()));
       }
+
       return unaryTyping(this.operator.text, argType);
     }, scope);
   }
@@ -722,6 +752,8 @@ export class BoolExpr extends AtomExpr {
 }
 
 export class IdentExpr extends AtomExpr {
+  validLVal?: Validity;
+
   toJson() {
     return this.jsonHelper("ident_expr");
   }
@@ -748,8 +780,9 @@ export class IdentExpr extends AtomExpr {
       if (res instanceof VarDecl) {
         this.validLVal = res.access === "mut" ? "valid" : res.access;
       } else if (res instanceof Param) {
-        this.validLVal = "invalid";
+        this.validLVal = "invalid"; // parameters are immutable by default
       }
+
       return res.getRightType(scope);
     }, scope);
   }
@@ -761,6 +794,16 @@ export class IdentExpr extends AtomExpr {
       (res instanceof VarDecl && res.access === "const") ||
       (res instanceof TopDef && res.expr.isConst(scope))
     );
+  }
+
+  isLVal() {
+    if (this.validLVal === undefined) {
+      throw new Error(
+        "undefined is valid l-value for ident. called before getType()?"
+      );
+    }
+
+    return this.validLVal;
   }
 }
 
@@ -975,6 +1018,10 @@ ${arrType}[${this.args.length}]`);
       return callReturnType(argTypes, info, this.typ.getToken().text);
     }, scope);
   }
+
+  isLVal(): Validity {
+    return "invalid";
+  }
 }
 
 export class SubscriptExpr extends Expr {
@@ -1013,10 +1060,12 @@ export class SubscriptExpr extends Expr {
     const callType = this.call.getType(scope);
 
     // valid l-value when accessing a not constant-declared
+    /*
     this.validLVal =
       this.call.validLVal !== "const" && this.call.validLVal !== "final"
         ? "valid"
         : this.call.validLVal;
+    */
 
     if (typeof callType === "string") {
       if (isVec(callType)) {
@@ -1035,6 +1084,10 @@ export class SubscriptExpr extends Expr {
     }
 
     return callType.typ;
+  }
+
+  isLVal() {
+    return this.call.isLVal();
   }
 }
 
@@ -1152,12 +1205,12 @@ export class Assign extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
-      if (!this.left.validLVal) {
-        throw new TinslError("left side of assignment is not valid");
-      }
-
       const leftType = this.left.getType(scope);
       const rightType = this.right.getType(scope);
+
+      if (this.left.isLVal() !== "valid") {
+        throw new TinslError(lValueHint(this.left.isLVal()));
+      }
 
       if (!compareTypes(leftType, rightType)) {
         throw new TinslError(
@@ -1165,10 +1218,6 @@ export class Assign extends Stmt {
             leftType
           )} but right side expression was ${typeToString(rightType)}`
         );
-      }
-
-      if (this.left.validLVal !== "valid") {
-        throw new TinslError(lValueHint(this.left.validLVal));
       }
     }, scope);
   }
