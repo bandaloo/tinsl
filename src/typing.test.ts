@@ -1550,12 +1550,37 @@ describe("modifying a const", () => {
 
   it("invalid l-value when repeats in components", () => {
     expect(() =>
-      parseAndCheck(`fn foo() {
+      parseAndCheck(`
+fn foo() {
   mut v := vec4(1.);
   v.zz = vec2(2., 3.);
   return v;
 }`)
     ).to.throw("l-value");
+  });
+});
+
+describe("relative assignment operator tests", () => {
+  it("adds float to two components of vector at once with +=", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo() {
+  mut v := vec2(0.);
+  v.xy += 1.;
+  return v;
+}`)
+    ).to.not.throw();
+  });
+
+  it("throws when type error with +=", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo() {
+  mut v := vec2(0.);
+  v.xy += 1;
+  return v;
+}`)
+    ).to.throw("assignment op +=");
   });
 });
 

@@ -252,8 +252,6 @@ scalar booleans. for boolean vectors, use not(val)`);
   throw new Error(`"${op}" not a valid unary operator`);
 }
 
-// TODO consider what to do with mat2x2 being the same as mat2
-// TODO make op specific type?
 export function binaryTyping(
   op: string,
   left: SpecType,

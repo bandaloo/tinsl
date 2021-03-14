@@ -1208,6 +1208,22 @@ export class Assign extends Stmt {
         throw new TinslError(lValueHint(this.left.isLVal()));
       }
 
+      const assign = this.assign.text;
+
+      // should safely ignore <= and >= since they'll get parsed as binary
+      if (assign.length > 1) {
+        const op = assign.substr(0, assign.length - 1);
+        try {
+          binaryTyping(op, leftType, rightType);
+        } catch (err) {
+          if (err instanceof TinslError) {
+            throw new TinslError(`for assignment op ${assign}: ` + err.message);
+          }
+          throw err;
+        }
+        return;
+      }
+
       if (!compareTypes(leftType, rightType)) {
         throw new TinslError(
           `left side of assignment was ${typeToString(
