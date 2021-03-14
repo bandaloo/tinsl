@@ -751,7 +751,7 @@ export class IdentExpr extends AtomExpr {
       if (res instanceof VarDecl) {
         this.validLVal = res.access === "mut" ? "valid" : res.access;
       } else if (res instanceof Param) {
-        this.validLVal = "valid";
+        this.validLVal = "invalid";
       }
       return res.getRightType(scope);
     }, scope);

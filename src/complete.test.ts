@@ -57,14 +57,16 @@ fn godrays (
 
   mut illumination_decay := 1.;
 
+  mut color := col;
+
   for (int i = 0; i < num_samples; i++) {
     uv -= delta_uv;
     tex_sample := frag(channel, uv) * illumination_decay * weight;
-    col += tex_sample;
+    color += tex_sample;
     illumination_decay *= decay;
   }
 
-  return col * exposure;
+  return color * exposure;
 }`)
     ).to.not.throw();
   });
