@@ -259,6 +259,7 @@ function constructorInfo(typ: SpecTypeSimple): TypeInfo[] {
     const vec = "vec" + m;
     // note that it doesn't simplify matrix type name
     return [
+      { params: ["float"], ret: typ },
       { params: rep(m * n, "float"), ret: typ },
       { params: rep(n, vec) as SpecType[], ret: typ },
     ];
@@ -377,7 +378,7 @@ const parseArrayType = <T extends string>(
 export function callReturnType(
   args: SpecType[],
   typeInfo: TypeInfo | TypeInfo[] | undefined,
-  funcName: string = "__foo"
+  funcName: string = "__foo" // TODO make sure this is only defaulted in tests
 ): SpecType {
   if (typeInfo === undefined) throw new Error("type info was undefined");
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];

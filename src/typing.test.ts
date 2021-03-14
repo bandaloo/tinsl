@@ -407,6 +407,25 @@ describe("typing constructor calls", () => {
     expect(callReturnType(["int"], constructors["uint"])).to.equal("uint");
   });
 
+  it("checks constructors being passed single values vecs", () => {
+    expect(callReturnType(["float"], constructors["vec2"])).to.equal("vec2");
+    expect(callReturnType(["int"], constructors["ivec3"])).to.equal("ivec3");
+    expect(callReturnType(["uint"], constructors["uvec4"])).to.equal("uvec4");
+    expect(callReturnType(["bool"], constructors["bvec4"])).to.equal("bvec4");
+  });
+
+  it("checks constructors being passed single values mats", () => {
+    expect(callReturnType(["float"], constructors["mat2"])).to.equal("mat2");
+    expect(callReturnType(["float"], constructors["mat3x3"])).to.equal(
+      "mat3x3"
+    );
+    expect(callReturnType(["float"], constructors["mat2x4"])).to.equal(
+      "mat2x4"
+    );
+  });
+
+  it("checks constructors being passed single values mats", () => {});
+
   it("checks vector constructors scalars", () => {
     expect(callReturnType(["float", "float"], constructors["vec2"])).to.equal(
       "vec2"
