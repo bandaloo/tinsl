@@ -381,6 +381,12 @@ describe("typing overloaded generic function calls", () => {
     );
   });
 
+  it("checks that builtins propogate undecided type", () => {
+    expect(
+      callReturnType(["vec2", "__undecided", "bvec2"], builtIns["mix"])
+    ).to.equal("__undecided");
+  });
+
   it("array param type and return type", () => {
     expect(
       callReturnType([{ typ: "int", size: 8 }], {
@@ -483,6 +489,12 @@ describe("typing constructor calls", () => {
     expect(
       callReturnType(["vec3", "vec3", "vec3", "vec3"], constructors["mat3x4"])
     ).to.equal("mat3x4");
+  });
+
+  it("checks that undecided propagates in constructors", () => {
+    expect(
+      callReturnType(["vec2", "__undecided"], constructors["mat2"])
+    ).to.equal("__undecided");
   });
 });
 

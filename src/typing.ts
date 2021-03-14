@@ -92,6 +92,7 @@ export function callReturnType(
 ): SpecType {
   if (typeInfo === undefined) throw new Error("type info was undefined");
   const infoArr = Array.isArray(typeInfo) ? typeInfo : [typeInfo];
+  if (args.includes("__undecided")) return "__undecided";
 
   for (const info of infoArr) {
     const genMap = callTypeCheck(args, info.params);

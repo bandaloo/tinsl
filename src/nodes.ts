@@ -1136,6 +1136,7 @@ export class VarDecl extends Stmt {
     this.wrapError((scope: LexicalScope) => {
       scope.addToScope(this.id.text, this);
       if (this.access === "const" && !this.expr.isConst(scope)) {
+        // TODO throw the invalid l-value error helper instead
         throw new TinslError(
           "right side of assignment is not a constant expression"
         );
