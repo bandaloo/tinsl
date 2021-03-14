@@ -510,50 +510,41 @@ describe("array constructor", () => {
 
 describe("checks that vector access is correct", () => {
   it("access scalar with single component", () => {
-    expect(vectorAccessTyping("x", "vec2", false)).to.equal("float");
-    expect(vectorAccessTyping("r", "ivec2", false)).to.equal("int");
-    expect(vectorAccessTyping("s", "uvec2", false)).to.equal("uint");
-    expect(vectorAccessTyping("y", "bvec2", false)).to.equal("bool");
+    expect(vectorAccessTyping("x", "vec2")).to.equal("float");
+    expect(vectorAccessTyping("r", "ivec2")).to.equal("int");
+    expect(vectorAccessTyping("s", "uvec2")).to.equal("uint");
+    expect(vectorAccessTyping("y", "bvec2")).to.equal("bool");
   });
 
   it("vec access no repeat", () => {
-    expect(vectorAccessTyping("xy", "vec2", false)).to.equal("vec2");
-    expect(vectorAccessTyping("rg", "uvec2", false)).to.equal("uvec2");
-    expect(vectorAccessTyping("st", "bvec2", false)).to.equal("bvec2");
+    expect(vectorAccessTyping("xy", "vec2")).to.equal("vec2");
+    expect(vectorAccessTyping("rg", "uvec2")).to.equal("uvec2");
+    expect(vectorAccessTyping("st", "bvec2")).to.equal("bvec2");
   });
 
   it("vec access repeating", () => {
-    expect(vectorAccessTyping("xxyy", "ivec2", false)).to.equal("ivec4");
-    expect(vectorAccessTyping("rrgg", "bvec2", false)).to.equal("bvec4");
-    expect(vectorAccessTyping("sstt", "uvec2", false)).to.equal("uvec4");
+    expect(vectorAccessTyping("xxyy", "ivec2")).to.equal("ivec4");
+    expect(vectorAccessTyping("rrgg", "bvec2")).to.equal("bvec4");
+    expect(vectorAccessTyping("sstt", "uvec2")).to.equal("uvec4");
   });
 });
 
 describe("invalid vector access", () => {
   it("too many components", () => {
-    expect(() => vectorAccessTyping("xyzwx", "vec2", false)).to.throw(
-      "too many"
-    );
+    expect(() => vectorAccessTyping("xyzwx", "vec2")).to.throw("too many");
   });
 
   it("scalar access", () => {
-    expect(() => vectorAccessTyping("x", "float", false)).to.throw("scalar");
+    expect(() => vectorAccessTyping("x", "float")).to.throw("scalar");
   });
 
   it("out of bounds component access", () => {
-    expect(() => vectorAccessTyping("xyz", "vec2", false)).to.throw("length 2");
+    expect(() => vectorAccessTyping("xyz", "vec2")).to.throw("length 2");
   });
 
   it("mixed sets of components", () => {
-    expect(() => vectorAccessTyping("ry", "vec2", false)).to.throw("mixed");
+    expect(() => vectorAccessTyping("ry", "vec2")).to.throw("mixed");
   });
-
-  // TODO test this elsewhere
-  /*
-  it("left hand contains repeats", () => {
-    expect(() => vectorAccessTyping("rrg", "vec2", true)).to.throw("left");
-  });
-  */
 });
 
 describe("typing a binary expression", () => {
@@ -1556,8 +1547,20 @@ describe("modifying a const", () => {
       parseAndCheck("fn foo(float a = 1.) { sin(a)++; return 1; }")
     ).to.throw("l-value");
   });
+
+  it("invalid l-value when repeats in components", () => {
+    expect(() =>
+      parseAndCheck(`fn foo() {
+  mut v := vec4(1.);
+  v.zz = vec2(2., 3.);
+  return v;
+}`)
+    ).to.throw("l-value");
+  });
 });
 
 // TODO check += (etc) ops with the corresponding binary op
 
 // TODO swizzles with repeated fields are not l values!
+
+// TODO test that __undecided passed into builtins returns __undecided

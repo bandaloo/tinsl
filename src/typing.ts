@@ -416,11 +416,7 @@ export function matrixAccessTyping(mat: SpecTypeSimple) {
   return ("vec" + n) as SpecTypeSimple;
 }
 
-export function vectorAccessTyping(
-  comps: string,
-  vec: SpecType,
-  leftHand: boolean
-) {
+export function vectorAccessTyping(comps: string, vec: SpecType) {
   // TODO .length property of array
   if (typeof vec === "object")
     throw new TinslError(
@@ -438,15 +434,6 @@ export function vectorAccessTyping(
       "cannot access components of a scalar. " +
         "can only access components of vector"
     );
-
-  // TODO pull this out and do the check later
-  /*
-  if (leftHand && strHasRepeats(comps)) {
-    throw new TinslError(
-      "components for the left hand of an assignment cannot contain repeats"
-    );
-  }
-  */
 
   const base = extractVecBase(vec);
   const len = parseInt(extractVecLength(vec));

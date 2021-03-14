@@ -1,7 +1,6 @@
 import * as nearley from "nearley";
 import grammar from "./grammar";
 import util from "util";
-import { constructors } from "./typing";
 
 console.log("running");
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));

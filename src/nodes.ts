@@ -593,11 +593,7 @@ export class BinaryExpr extends Expr {
           );
         }
 
-        const ret = vectorAccessTyping(
-          this.right.getToken().text,
-          lType,
-          this.isLeftHand // TODO get rid of this
-        );
+        const ret = vectorAccessTyping(this.right.getToken().text, lType);
 
         // can't be an l-value if the swizzle contains repeats
         if (strHasRepeats(this.right.getToken().text)) {
