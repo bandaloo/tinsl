@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { fillInDefaults } from "./compiler";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
@@ -55,3 +56,47 @@ pr foo () {
     ).to.be.false;
   });
 });
+
+describe("fill in defaults of render block", () => {
+  it("defaults to 0 for undefined in/out nums", () => {
+    const defaultedBlock = fillInDefaults(
+      extractTopLevel<RenderBlock>("{ 'blue'4; }")
+    );
+
+    expect(defaultedBlock.inNum).to.equal(0);
+    expect(defaultedBlock.outNum).to.equal(0);
+  });
+
+  it("does not change defined in/out nums", () => {
+    const defaultedBlock = fillInDefaults(
+      extractTopLevel<RenderBlock>("2 -> { 'blue'4; } -> 3")
+    );
+
+    expect(defaultedBlock.inNum).to.equal(2);
+    expect(defaultedBlock.outNum).to.equal(3);
+  });
+
+  it("changes defaults for nested blocks", () => {
+    const defaultedBlock = fillInDefaults(
+      extractTopLevel<RenderBlock>("2 -> { { 'blue'4; } } -> 3")
+    );
+
+    const innerBlock = defaultedBlock.body[0] as RenderBlock;
+
+    expect(innerBlock.inNum).to.equal(2);
+    expect(innerBlock.outNum).to.equal(3);
+  });
+
+  it("defaults for inner block", () => {
+    const defaultedBlock = fillInDefaults(
+      extractTopLevel<RenderBlock>("{ { 'blue'4; } }")
+    );
+
+    const innerBlock = defaultedBlock.body[0] as RenderBlock;
+
+    expect(innerBlock.inNum).to.equal(0);
+    expect(innerBlock.outNum).to.equal(0);
+  });
+});
+
+// TODO don't let loop num be -1
