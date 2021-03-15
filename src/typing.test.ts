@@ -726,6 +726,25 @@ describe("for loop type check", () => {
       extractExpr("for (int i = 0; i < 3; i++) { }", false).typeCheck(els())
     ).to.not.throw();
   });
+
+  it("throw when conditional statement is not boolean", () => {
+    expect(() =>
+      extractExpr("for (int i = 0; i + 1; i++) { }", false).typeCheck(els())
+    ).to.throw("conditional");
+  });
+
+  it("identifier 'i' leaves scope outside of loop", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  mut a := 0;
+  for (int i = 0; i < 3; i++) { a := i; }
+  a *= i;
+  return a;
+}
+`)
+    ).to.throw('"i"');
+  });
 });
 
 describe("lexical scope", () => {

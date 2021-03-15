@@ -1581,7 +1581,7 @@ export class ForLoop extends Stmt {
     return {
       outer: [
         ...(this.init ? [this.init] : []),
-        ...(this.cond ? [this.cond] : []),
+        ...(this.cond ? [this.cond] : []), // this isn't really used
         ...(this.loop ? [this.loop] : []),
       ],
       inner: this.body,
@@ -1607,19 +1607,52 @@ export class ForLoop extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      const { inner, outer } = this.getExprStmts();
-      const innerScope = new LexicalScope(scope);
+    const innerScope = new LexicalScope(scope); // in for (...)
+    const errors: TinslAggregateError[] = [];
 
-      // TODO! move these out
-      typeCheckExprStmts(outer, scope);
-      typeCheckExprStmts(inner, innerScope);
+    // we have to catch errors in two phases because of how the scoping works
+    // for for loops, hence the two try blocks. this is a special case
 
-      // has to be after checking the other expressions or else unknown ident
-      if (this.cond !== null && this.cond.getType(scope) !== "bool") {
-        throw new TinslError("conditional in a for loop must be a boolean");
-      }
-    }, scope);
+    try {
+      this.wrapError(
+        () => {},
+        scope, // doesn't matter
+        false,
+        [...(this.init ? [this.init] : []), ...(this.loop ? [this.loop] : [])],
+        innerScope
+      );
+    } catch (err) {
+      if (err instanceof TinslAggregateError) errors.push(err);
+      else throw err;
+    }
+
+    const inMostScope = new LexicalScope(innerScope); // in body
+
+    try {
+      this.wrapError(
+        (scope: LexicalScope) => {
+          //typeCheckExprStmts(outer, scope);
+          //typeCheckExprStmts(inner, innerScope);
+
+          // has to be after checking the other expressions or else unknown
+          // identifier
+          if (this.cond !== null && this.cond.getType(scope) !== "bool") {
+            throw new TinslError("conditional in a for loop must be a boolean");
+          }
+        },
+        innerScope,
+        false,
+        this.getExprStmts().inner,
+        inMostScope
+      );
+    } catch (err) {
+      if (err instanceof TinslAggregateError) errors.push(err);
+      else throw err;
+    }
+
+    if (errors.length > 0) {
+      throw new TinslAggregateError(errors.map((e) => e.errors).flat());
+    }
   }
 }
 
