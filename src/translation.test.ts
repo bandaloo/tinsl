@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { fillInDefaults } from "./compiler";
+import { expandProcsInBlock, fillInDefaults } from "./compiler";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
@@ -96,6 +96,21 @@ describe("fill in defaults of render block", () => {
 
     expect(innerBlock.inNum).to.equal(0);
     expect(innerBlock.outNum).to.equal(0);
+  });
+});
+
+describe("expands procedures", () => {
+  it("expands a simple procedure", () => {
+    const expandedBlock = expandProcsInBlock(
+      extractTopLevel<RenderBlock>(
+        `
+pr foo () { 'red'4; }
+{ @foo(); }`,
+        1
+      )
+    );
+
+    console.log("expanded block", "" + expandedBlock);
   });
 });
 

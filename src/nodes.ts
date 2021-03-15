@@ -1,5 +1,6 @@
 import { Token } from "moo";
 import { colors } from "./colors";
+import { fillInDefaults } from "./compiler";
 import {
   atomicIntHint,
   lValueHint,
@@ -40,7 +41,10 @@ function namedArgsToTypes(args: (NamedArg | Expr)[], scope: LexicalScope) {
   );
 }
 
-export function compileTimeInt(expr: Expr, scope: LexicalScope) {
+export function compileTimeInt(
+  expr: Expr,
+  scope: LexicalScope | IdentResult | null
+) {
   if (expr instanceof IntExpr) return parseInt(expr.getToken().text);
   if (
     expr instanceof UnaryExpr &&
@@ -51,7 +55,15 @@ export function compileTimeInt(expr: Expr, scope: LexicalScope) {
   }
 
   if (expr instanceof IdentExpr) {
-    const res = scope.resolve(expr.getToken().text);
+    if (scope === null) {
+      throw new Error("scope result was null and expr was not an int or unary");
+    }
+
+    const res =
+      scope instanceof LexicalScope
+        ? scope.resolve(expr.getToken().text)
+        : scope;
+
     if (res instanceof TopDef && res.expr instanceof IntExpr) {
       return parseInt(res.expr.getToken().text);
     }
@@ -296,7 +308,7 @@ abstract class DefLike extends Stmt {
     }
   }
 
-  private addInDefaults(named: (NamedArg | Expr)[]) {
+  addInDefaults(named: (NamedArg | Expr)[]) {
     const defaultStartIndex = named.length;
     // fill in the missing arguments
     for (let i = defaultStartIndex; i < this.params.length; i++) {
@@ -778,6 +790,7 @@ export class BoolExpr extends AtomExpr {
 
 export class IdentExpr extends AtomExpr {
   validLVal?: Validity;
+  cachedResolve?: IdentResult;
 
   toJson() {
     return this.jsonHelper("ident_expr");
@@ -807,6 +820,8 @@ export class IdentExpr extends AtomExpr {
       } else if (res instanceof Param) {
         this.validLVal = "invalid"; // parameters are immutable by default
       }
+
+      this.cachedResolve = res;
 
       return res.getRightType(scope);
     }, scope);
@@ -925,6 +940,7 @@ export class CallExpr extends Expr {
               );
             }
             param.pureInt = true;
+            fragExpr.sampler = intExpr;
             console.log("pure int set in call expr");
           } else {
             fragExpr.sampler = int;
@@ -1827,6 +1843,15 @@ export class ProcCall extends Stmt implements RenderLevel {
   getToken(): Token {
     return this.open;
   }
+
+  getAllArgs(): Expr[] {
+    if (this.cachedProc === undefined) {
+      throw new Error("cached proc was undefined");
+    }
+    const filledArgs = this.cachedProc.fillInNamed(this.args);
+    this.cachedProc.addInDefaults(filledArgs);
+    return filledArgs;
+  }
 }
 
 export class TopDef extends Stmt {
@@ -1951,7 +1976,7 @@ export class Refresh extends Stmt {
 }
 
 export class Frag extends Expr {
-  sampler: number | null;
+  sampler: number | Expr | null;
   pos: Expr | null = null;
   tokn: Token;
 
