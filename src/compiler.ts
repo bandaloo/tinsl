@@ -113,10 +113,12 @@ function expandBody(
   const result: ExSt[] = [];
 
   for (const b of body) {
+    console.log("b in body: " + b);
     if (b instanceof RenderBlock) {
       b.inNum = fillAtomicNum(b.inNum);
       b.outNum = fillAtomicNum(b.outNum);
       b.loopNum = fillAtomicNum(b.loopNum);
+      b.body = expandBody(b.body, args, params);
       result.push(b);
     } else if (b instanceof ProcCall) {
       // fill in any arg that is an ident before passing on
@@ -157,9 +159,6 @@ function expandBody(
     } else if (b instanceof CallExpr && b.call instanceof Frag) {
       b.call.sampler = fillAtomicNum(b.call.sampler);
       console.log("expanding atomic num in frag");
-      result.push(b);
-    } else if (b instanceof RenderBlock) {
-      b.body = expandBody(b.body, args, params);
       result.push(b);
     }
   }

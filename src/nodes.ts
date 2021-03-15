@@ -515,10 +515,10 @@ export class RenderBlock extends Stmt {
   toJson(): object {
     return {
       name: "render_block",
-      in: this.inNum,
-      out: this.outNum,
+      in: this.inNum instanceof Expr ? this.inNum.toJson() : this.inNum,
+      out: this.outNum instanceof Expr ? this.outNum.toJson() : this.outNum,
       once: this.once,
-      loop: this.loopNum,
+      loop: this.loopNum instanceof Expr ? this.loopNum.toJson() : this.loopNum,
       body: this.body.map((e) => e.toJson()),
     };
   }
