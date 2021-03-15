@@ -47,18 +47,6 @@ function expandProc(call: ProcCall): ExSt[] {
       if (res === undefined) {
         throw new Error("cached param was somehow undefined");
       }
-      /*
-      if (res === undefined) {
-        throw new Error("cached resolve of ident was somehow undefined");
-      }
-
-      if (!(res instanceof Param)) {
-        throw new Error(
-          "result was not instance of param; " +
-            "this should not be possible if checker did its job"
-        );
-      }
-      */
 
       // after resolving the ident expression, it's actually the same reference
       // as what is stored in params, so we can use indexOf

@@ -200,9 +200,9 @@ export class LexicalScope {
     this._funcName = funcName ?? upperScope?._funcName;
   }
 
-  addToScope(name: string, result: IdentResult) {
+  addToScope(name: string, result: IdentResult, msg = "duplicate") {
     if (this.idents[name] !== undefined) {
-      throw new TinslError(`duplicate identifier "${name}"`);
+      throw new TinslError(`${msg} identifier "${name}"`);
     }
     this.idents[name] = result;
   }
@@ -364,7 +364,6 @@ abstract class DefLike extends Stmt {
     for (const p of this.params) {
       if (p.def !== null) {
         trailBegun = true;
-        if (p.pureInt) console.log("pure int default param");
         defaults.push(p);
       } else if (trailBegun) {
         throw new TinslError("default params must be trailing");
@@ -809,7 +808,7 @@ export class IdentExpr extends AtomExpr {
       const name = this.getToken().text;
       const res = scope.resolve(name);
       if (res === undefined)
-        throw new TinslError(`undefined identifier ${name}`);
+        throw new TinslError(`undefined identifier "${name}"`);
 
       const helper = (str: string) => {
         return new TinslError(
@@ -947,7 +946,6 @@ export class CallExpr extends Expr {
             }
             param.pureInt = true;
             fragExpr.sampler = intExpr;
-            console.log("pure int set in call expr");
           } else {
             fragExpr.sampler = int;
           }
@@ -1187,7 +1185,7 @@ export class VarDecl extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     this.wrapError((scope: LexicalScope) => {
-      scope.addToScope(this.id.text, this);
+      scope.addToScope(this.id.text, this, "redefinition of");
       if (this.access === "const" && !this.expr.isConst(scope)) {
         // TODO throw the invalid l-value error helper instead
         throw new TinslError(
@@ -1612,6 +1610,8 @@ export class ForLoop extends Stmt {
     this.wrapError((scope: LexicalScope) => {
       const { inner, outer } = this.getExprStmts();
       const innerScope = new LexicalScope(scope);
+
+      // TODO! move these out
       typeCheckExprStmts(outer, scope);
       typeCheckExprStmts(inner, innerScope);
 
@@ -1663,9 +1663,10 @@ export class If extends Stmt {
     const innerScope = new LexicalScope(scope);
     this.wrapError(
       (scope: LexicalScope) => {
-        if (this.cond.getType(scope) !== "bool")
+        if (this.cond.getType(scope) !== "bool") {
           throw new TinslError("if condition must be a boolean expression");
-        typeCheckExprStmts(this.body, innerScope);
+        }
+        //typeCheckExprStmts(this.body, innerScope);
       },
       scope,
       false,
@@ -1713,10 +1714,16 @@ export class Else extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      const innerScope = new LexicalScope(scope);
-      typeCheckExprStmts(this.body, innerScope);
-    }, scope);
+    const innerScope = new LexicalScope(scope);
+    this.wrapError(
+      (scope: LexicalScope) => {
+        //typeCheckExprStmts(this.body, innerScope);
+      },
+      scope,
+      false,
+      this.body,
+      innerScope
+    );
   }
 }
 
@@ -1781,8 +1788,9 @@ export class ProcDef extends DefLike {
     this.wrapError(
       (scope: LexicalScope) => {
         scope.addToScope(this.getToken().text, this);
-        for (const p of this.params)
+        for (const p of this.params) {
           innerScope.addToScope(p.getToken().text, p);
+        }
         this.validateDefaultParams(scope);
         //typeCheckExprStmts(this.body, innerScope, true);
       },
@@ -1891,6 +1899,7 @@ export class TopDef extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
+    // TODO wrap this in error
     scope.addToScope(this.getToken().text, this);
     this.getRightType(scope);
   }
@@ -2005,7 +2014,11 @@ export class Frag extends Expr {
   }
 
   toJson(): object {
-    return { name: "frag", sampler: this.sampler };
+    return {
+      name: "frag",
+      sampler:
+        this.sampler instanceof Expr ? this.sampler.toJson() : this.sampler,
+    };
   }
 
   translate(): string {

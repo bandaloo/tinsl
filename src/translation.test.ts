@@ -114,12 +114,26 @@ pr foo () { 'red'4; }
     // TODO do something with this test
   });
 
-  it("expands a procedure with in and out num params", () => {
+  it("expands a procedure with in and out num params and loop num", () => {
     const expandedBlock = expandProcsInBlock(
       extractTopLevel<RenderBlock>(
         `
-pr foo (int x, int y) { x -> {'red'4; } -> y }
-{ @foo(0, 1); }`,
+pr foo (int x, int y, int z) { x -> loop z {'red'4; } -> y }
+{ @foo(0, 1, 2); }`,
+        1
+      )
+    );
+
+    console.log("expanded block", "" + expandedBlock);
+    // TODO do something with this test
+  });
+
+  it("expands a procedure with in and out num params and loop num", () => {
+    const expandedBlock = expandProcsInBlock(
+      extractTopLevel<RenderBlock>(
+        `
+pr foo (int x, int y, int z, int w) { x -> loop z { frag(w); } -> y }
+{ @foo(0, 1, 2, 3); }`,
         1
       )
     );

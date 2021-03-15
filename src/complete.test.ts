@@ -244,7 +244,7 @@ describe("testing pure params", () => {
       parseAndCheck(`
 pr foo (int x) { x -> { "blue"4; } -> x }
 
-pr bar (int y) { y -> { @foo(y); } -> y }
+pr bar (int y) { @foo(y); }
 
 { @bar(0); }
 { @bar(1); }`)

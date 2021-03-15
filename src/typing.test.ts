@@ -669,6 +669,45 @@ describe("declaration type checks", () => {
   });
 });
 
+describe("variable scope and shadowing", () => {
+  it("tries to return out of scope declaration", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  x := 1;
+  if (true) {
+    b := 2;
+  }
+  return b;
+}`)
+    ).to.throw("undefined");
+  });
+
+  it("tries to redefine x in the same scope", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  x := 1;
+  x := 2;
+  return x;
+}`)
+    ).to.throw("redefinition");
+  });
+
+  it("shadows x by redeclaring it in an inner scope", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo () {
+  x := 1;
+  if (true) {
+    x := 2;
+  }
+  return x;
+}`)
+    ).to.not.throw();
+  });
+});
+
 describe("for loop type check", () => {
   it("parses and checks empty for loop", () => {
     expect(() =>
