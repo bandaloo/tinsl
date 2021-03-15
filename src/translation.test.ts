@@ -111,6 +111,21 @@ pr foo () { 'red'4; }
     );
 
     console.log("expanded block", "" + expandedBlock);
+    // TODO do something with this test
+  });
+
+  it("expands a procedure with in and out num params", () => {
+    const expandedBlock = expandProcsInBlock(
+      extractTopLevel<RenderBlock>(
+        `
+pr foo (int x, int y) { x -> {'red'4; } -> y }
+{ @foo(0, 1); }`,
+        1
+      )
+    );
+
+    console.log("expanded block", "" + expandedBlock);
+    // TODO do something with this test
   });
 });
 

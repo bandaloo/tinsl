@@ -75,6 +75,7 @@ export function compileTimeParam(expr: Expr, scope: LexicalScope) {
   if (expr instanceof IdentExpr) {
     const res = scope.resolve(expr.getToken().text);
     if (res instanceof Param) {
+      expr.cachedParam = res;
       return res;
     }
   }
@@ -790,6 +791,7 @@ export class BoolExpr extends AtomExpr {
 
 export class IdentExpr extends AtomExpr {
   validLVal?: Validity;
+  cachedParam?: Param;
   cachedResolve?: IdentResult;
 
   toJson() {
@@ -798,10 +800,12 @@ export class IdentExpr extends AtomExpr {
 
   getType(scope?: LexicalScope): SpecType {
     return this.wrapError(() => {
-      if (scope === undefined)
+      if (scope === undefined) {
         throw new Error(
           "scope was somehow undefined when trying to resolve identifier"
         );
+      }
+
       const name = this.getToken().text;
       const res = scope.resolve(name);
       if (res === undefined)
@@ -812,6 +816,7 @@ export class IdentExpr extends AtomExpr {
           `identifier ${name} is a ${str} definition, not an expression`
         );
       };
+
       if (res instanceof FuncDef) throw helper("function");
       if (res instanceof ProcDef) throw helper("procedure");
 
@@ -821,6 +826,7 @@ export class IdentExpr extends AtomExpr {
         this.validLVal = "invalid"; // parameters are immutable by default
       }
 
+      //console.log("caching resolve", res);
       this.cachedResolve = res;
 
       return res.getRightType(scope);

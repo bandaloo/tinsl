@@ -42,7 +42,12 @@ function expandProc(call: ProcCall): ExSt[] {
             "should have been caught by the checker"
         );
       }
-      const res = renderNum.cachedResolve;
+      const res = renderNum.cachedParam;
+
+      if (res === undefined) {
+        throw new Error("cached param was somehow undefined");
+      }
+      /*
       if (res === undefined) {
         throw new Error("cached resolve of ident was somehow undefined");
       }
@@ -53,6 +58,7 @@ function expandProc(call: ProcCall): ExSt[] {
             "this should not be possible if checker did its job"
         );
       }
+      */
 
       // after resolving the ident expression, it's actually the same reference
       // as what is stored in params, so we can use indexOf
