@@ -272,6 +272,10 @@ function isOnlyExpr(args: any[]): args is Expr[] {
 abstract class DefLike extends Stmt {
   params: Param[];
 
+  // TODO cache all the idents that refer to this when pureInt
+  // TODO this maybe belongs on param?
+  pureCache: Map<Param, Param | number> = new Map();
+
   constructor(params: Param[]) {
     super();
     this.params = params;
@@ -368,24 +372,23 @@ is of type ${typeToString(defType)}`);
     // number of arguments <= to number of params because of defaults
     for (let i = 0; i < argTypes.length; i++) {
       if (argTypes[i] === "__undecided") continue;
-      if (paramTypes[i] !== argTypes[i])
+      if (paramTypes[i] !== argTypes[i]) {
         throw new TinslError(
           `argument ${i} has wrong type. is ${argTypes[i]} \
 but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
-
-      const param = compileTimeParam(exprArgs[i], scope);
+      }
 
       if (this.params[i].pureInt) {
         // input must be compile time
         const intExpr = compileTimeInt(exprArgs[i], scope);
         const paramExpr = compileTimeParam(exprArgs[i], scope);
 
-        // pure int status gets passed on to outer param
-        if (paramExpr !== null) paramExpr.pureInt;
-
-        // if it was neither a param or comp int then it's not comp time
-        if (!(intExpr !== null || paramExpr !== null)) {
+        if (paramExpr !== null) {
+          // pure int status gets passed onto outer param
+          paramExpr.pureInt = true; // this param is from the arg
+        } else if (intExpr === null) {
+          // both were null so it's not compile time
           throw new TinslError(
             `in function "${this.getToken().text}", argument for parameter "${
               this.params[i].getToken().text
@@ -506,6 +509,7 @@ export class RenderBlock extends Stmt {
           const param = compileTimeParam(num, scope);
           if (param !== null && param.getRightType() === "int") {
             param.pureInt = true;
+            console.log("pure int set in render block");
             return num;
           }
 
@@ -876,12 +880,13 @@ export class CallExpr extends Expr {
 
         const intExpr = helper("int");
 
-        if (fragExpr.sampler !== null && intExpr !== null)
+        if (fragExpr.sampler !== null && intExpr !== null) {
           throw new TinslError(
             "sampler number already defined in the identifier name; " +
               "cannot also be passed in as an argument. sampler: " +
               fragExpr.sampler
           );
+        }
 
         if (intExpr !== null) {
           const int = compileTimeInt(intExpr, scope);
@@ -895,6 +900,7 @@ export class CallExpr extends Expr {
               );
             }
             param.pureInt = true;
+            console.log("pure int set in call expr");
           } else {
             fragExpr.sampler = int;
           }

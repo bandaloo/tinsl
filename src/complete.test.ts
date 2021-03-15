@@ -238,6 +238,43 @@ fn bar (int a = foo()) { return "blue"4; }
   });
 });
 
+describe("testing pure params", () => {
+  it("parses and checks two levels of pure params", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int x) { x -> { "blue"4; } -> x }
+
+pr bar (int y) { y -> { @foo(y); } -> y }
+
+{ @bar(0); }
+{ @bar(1); }`)
+    ).to.not.throw();
+  });
+
+  it("parses and checks two levels of pure rb params", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int x) { x -> { "blue"4; } -> x }
+
+pr bar (int y) { @foo(y); }
+
+{ @bar(0); }
+{ @bar(1 + 1); }`)
+    ).to.throw("atomic");
+  });
+
+  it("parses and checks two levels of pure frag params", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int x) { frag(x); }
+
+pr bar (int y) { @foo(y); }
+
+{ @bar(0); }
+{ @bar(1 + 1); }`)
+    ).to.throw("atomic");
+  });
+});
 // TODO what about continued error reporting for functions where return type
 // cannot be determined?
 
