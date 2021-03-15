@@ -514,6 +514,21 @@ export class RenderBlock extends Stmt {
     return containsRefreshHelper(this, this.body);
   }
 
+  partialCopy(body: ExSt[]): RenderBlock {
+    // it's okay for it to be a shallow copy
+    const rb = new RenderBlock(
+      this.once,
+      body,
+      this.inNum,
+      this.outNum,
+      this.loopNum,
+      this.open
+    );
+    rb.cachedRefresh = this.cachedRefresh;
+    rb.paramMappings = this.paramMappings;
+    return rb;
+  }
+
   toJson(): object {
     return {
       name: "render_block",
@@ -1857,6 +1872,7 @@ export class ProcCall extends Stmt implements RenderLevel {
     this.args = args;
   }
 
+  // TODO might not need this since we expand procs into render blocks first
   containsRefresh(): boolean {
     if (this.cachedProcDef === undefined)
       throw new Error(

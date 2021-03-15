@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { expandProcsInBlock, fillInDefaults } from "./gen";
+import { expandProcsInBlock, fillInDefaults, regroupByRefresh } from "./gen";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
@@ -154,6 +154,32 @@ pr bar (int y) { @foo(y); }
     );
 
     console.log("expanded block", "" + expandedBlock);
+    // TODO do something with this test
+  });
+});
+
+describe("fill in defaults of render block", () => {
+  it("defaults to 0 for undefined in/out nums", () => {
+    const expandedBlock = regroupByRefresh(
+      fillInDefaults(
+        expandProcsInBlock(
+          extractTopLevel<RenderBlock>(
+            `
+fn fake_blur(vec2 direction, int channel = -1) {
+  return "white"4;
+}
+
+loop 3 {
+  fake_blur(vec2(1., 0.)); refresh;
+  fake_blur(vec2(0., 1.)); refresh;
+}`,
+            1
+          )
+        )
+      )
+    );
+
+    console.log("regrouped block", "" + expandedBlock);
     // TODO do something with this test
   });
 });

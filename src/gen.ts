@@ -8,6 +8,7 @@ import {
   IntExpr,
   Param,
   ProcCall,
+  Refresh,
   RenderBlock,
   UnaryExpr,
 } from "./nodes";
@@ -153,11 +154,15 @@ function expandBody(
       }
       if (b.cachedProcDef === undefined) throw new Error("no cached proc def");
       const newBody = b.cachedProcDef.body;
+      // TODO might be more convenient to have these be the params/args that get
+      // set in the map
       const newParams = b.cachedProcDef.params;
       result.push(...expandBody(newBody, newArgs, newParams, outerBlock));
     } else if (b instanceof CallExpr && b.call instanceof Frag) {
       // TODO this should actually be a list of sampler
       b.call.sampler = fillAtomicNum(b.call.sampler);
+      result.push(b);
+    } else {
       result.push(b);
     }
   }
@@ -202,5 +207,27 @@ export function fillInDefaults(
     if (b instanceof RenderBlock) fillInDefaults(b, block);
   }
 
+  return block;
+}
+
+export function regroupByRefresh(block: RenderBlock): RenderBlock {
+  // will get replaced with new empty array once refresh
+  let previous: ExSt[] = [];
+
+  // new render block gets added to this on refresh
+  // rest of body gets tacked on when it hits the end
+  const regrouped: ExSt[] = [];
+
+  for (const b of block.body) {
+    if (b instanceof Refresh) {
+      regrouped.push(block.partialCopy(previous));
+      previous = [];
+    } else {
+      previous.push(b);
+    }
+  }
+
+  regrouped.push(...previous);
+  block.body = regrouped;
   return block;
 }
