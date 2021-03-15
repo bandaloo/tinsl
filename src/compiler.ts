@@ -1,4 +1,4 @@
-import { Expr, ProcCall, ProcDef, RenderBlock } from "./nodes";
+import { Expr, ExSt, ProcCall, ProcDef, RenderBlock } from "./nodes";
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
@@ -9,10 +9,20 @@ export function expandProcs(block: RenderBlock, outer?: RenderBlock) {
       if (b.cachedProc === undefined) {
         throw new Error("procedure in body didn't have cached definition");
       }
+
+      const procCall = b;
+      const procDef = b.cachedProc;
+
       // fill in the params passed into frag or in/out render blocks
     }
   }
 }
+
+/*
+function expandProc(call: ProcCall, def: ProcDef): ExSt[] {
+  const args = call.args;
+}
+*/
 
 export function fillInDefaults(
   block: RenderBlock,

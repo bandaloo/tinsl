@@ -274,6 +274,17 @@ pr bar (int y) { @foo(y); }
 { @bar(1 + 1); }`)
     ).to.throw("atomic");
   });
+
+  it("parses and checks two levels of pure rb params with default", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int x) { x -> { "blue"4; } -> x }
+
+pr bar (int y = 1 + 1) { @foo(y); }
+
+{ @bar(); }`)
+    ).to.throw("atomic");
+  });
 });
 // TODO what about continued error reporting for functions where return type
 // cannot be determined?

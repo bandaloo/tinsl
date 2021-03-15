@@ -274,7 +274,7 @@ abstract class DefLike extends Stmt {
 
   // TODO cache all the idents that refer to this when pureInt
   // TODO this maybe belongs on param?
-  pureCache: Map<Param, Param | number> = new Map();
+  //pureCache: Map<Param, Param | number> = new Map();
 
   constructor(params: Param[]) {
     super();
@@ -296,12 +296,27 @@ abstract class DefLike extends Stmt {
     }
   }
 
+  private addInDefaults(named: (NamedArg | Expr)[]) {
+    const defaultStartIndex = named.length;
+    // fill in the missing arguments
+    for (let i = defaultStartIndex; i < this.params.length; i++) {
+      const def = this.params[i].def;
+      if (def === null) {
+        throw Error("null default while trying to fill in defaults");
+      }
+      named.push(def);
+    }
+  }
+
+  // TODO function to get filled in names and defaults
+
   fillInNamed(args: (NamedArg | Expr)[]): Expr[] {
     if (isOnlyExpr(args)) {
       return args;
     }
 
     if (isOnlyNamed(args)) {
+      // TODO not necessary; caught by "duplicate identifier"
       if (arrHasRepeats(args.map((a) => a.id.text)))
         throw new TinslError("repeated name in named argument call");
 
@@ -327,29 +342,36 @@ abstract class DefLike extends Stmt {
   }
 
   validateDefaultParams(scope: LexicalScope) {
+    // note: doesn't evaluate compile time int
+
     // TODO aggregate
-    let trailBegun = false;
     const defaults = []; // TODO cache this for the translator?
+
+    let trailBegun = false;
     for (const p of this.params) {
       if (p.def !== null) {
         trailBegun = true;
+        if (p.pureInt) console.log("pure int default param");
         defaults.push(p);
       } else if (trailBegun) {
         throw new TinslError("default params must be trailing");
       }
     }
+
     for (const d of defaults) {
       if (d.def === null) throw new Error("default param def somehow null");
+
       const defType = d.def.getType(scope);
       const paramType = d.typ;
 
       // ignore undecided default values
       if (defType === "__undecided") continue;
 
-      if (!compareTypes(paramType.toSpecType(), defType))
+      if (!compareTypes(paramType.toSpecType(), defType)) {
         throw new TinslError(`type of default value "${d.getToken()}" is \
 of type ${typeToString(paramType.toSpecType())}, but expression for default \
 is of type ${typeToString(defType)}`);
+      }
     }
   }
 
@@ -365,6 +387,9 @@ is of type ${typeToString(defType)}`);
 
     if (this.params.length - defaultsNum > exprArgs.length) throw err("few");
     if (this.params.length < exprArgs.length) throw err("many");
+
+    // add the default args so they can be checked
+    this.addInDefaults(exprArgs);
 
     const paramTypes = this.params.map((p) => p.getRightType());
     const argTypes = exprArgs.map((a) => a.getType(scope));
