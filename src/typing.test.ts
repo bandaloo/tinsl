@@ -706,6 +706,19 @@ fn foo () {
 }`)
     ).to.not.throw();
   });
+
+  it("shadowing doesn't change the return type of function", () => {
+    expect(() =>
+      parseAndCheck(`
+int foo () {
+  x := 1;
+  if (true) {
+    x := 2.;
+  }
+  return x;
+}`)
+    ).to.not.throw();
+  });
 });
 
 describe("for loop type check", () => {
