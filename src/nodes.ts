@@ -1,6 +1,6 @@
 import { Token } from "moo";
 import { colors } from "./colors";
-import { fillInDefaults } from "./compiler";
+import { fillInDefaults } from "./gen";
 import {
   atomicIntHint,
   lValueHint,
@@ -491,6 +491,8 @@ export class RenderBlock extends Stmt {
 
   cachedRefresh?: boolean;
 
+  paramMappings: Map<Param, Expr> = new Map();
+
   constructor(
     once: boolean,
     body: ExSt[],
@@ -553,7 +555,6 @@ export class RenderBlock extends Stmt {
           const param = compileTimeParam(num, scope);
           if (param !== null && param.getRightType() === "int") {
             param.pureInt = true;
-            console.log("pure int set in render block");
             return num;
           }
 

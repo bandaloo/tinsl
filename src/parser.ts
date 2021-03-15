@@ -38,4 +38,3 @@ for (let i = 0; i < parser.results.length; i++) {
     )
   );
 }
-console.log("done " + parser.results.length);

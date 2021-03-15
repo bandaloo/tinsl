@@ -51,7 +51,7 @@ export function expandProcsInBody(
 
 // TODO move on because this finally works, but consider refactoring
 export function expandProcsInBlock(block: RenderBlock) {
-  block.body = expandBody(block.body, [], []);
+  block.body = expandBody(block.body, [], [], block);
   return block;
 }
 
@@ -59,7 +59,8 @@ function expandBody(
   //call: ProcCall,
   body: ExSt[],
   args: Expr[], //= call.getAllArgs(),
-  params: Param[]
+  params: Param[],
+  outerBlock: RenderBlock
 ): ExSt[] {
   //const def = call.cachedProcDef;
   //if (def === undefined) throw new Error("call didn't have cached proc");
@@ -113,12 +114,11 @@ function expandBody(
   const result: ExSt[] = [];
 
   for (const b of body) {
-    console.log("b in body: " + b);
     if (b instanceof RenderBlock) {
       b.inNum = fillAtomicNum(b.inNum);
       b.outNum = fillAtomicNum(b.outNum);
       b.loopNum = fillAtomicNum(b.loopNum);
-      b.body = expandBody(b.body, args, params);
+      b.body = expandBody(b.body, args, params, b);
       result.push(b);
     } else if (b instanceof ProcCall) {
       // fill in any arg that is an ident before passing on
@@ -154,13 +154,22 @@ function expandBody(
       if (b.cachedProcDef === undefined) throw new Error("no cached proc def");
       const newBody = b.cachedProcDef.body;
       const newParams = b.cachedProcDef.params;
-      console.log("new args", newArgs);
-      result.push(...expandBody(newBody, newArgs, newParams));
+      result.push(...expandBody(newBody, newArgs, newParams, outerBlock));
     } else if (b instanceof CallExpr && b.call instanceof Frag) {
+      // TODO this should actually be a list of sampler
       b.call.sampler = fillAtomicNum(b.call.sampler);
-      console.log("expanding atomic num in frag");
       result.push(b);
     }
+  }
+
+  // TODO we somehow need an attribute on proc the param so it can be translate
+  // maybe a mapping of params to args on each render block? now the above
+  // function will have to have a reference to the outer block
+
+  // TODO elements might be added redundantly but that's okay for now
+  // TODO create this map earlier? then won't have the need for indexOf
+  for (let i = 0; i < args.length; i++) {
+    outerBlock.paramMappings.set(params[i], args[i]);
   }
 
   return result;

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { expandProcsInBlock, fillInDefaults } from "./compiler";
+import { expandProcsInBlock, fillInDefaults } from "./gen";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
