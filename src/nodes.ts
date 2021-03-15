@@ -71,9 +71,16 @@ export function compileTimeInt(
   return null;
 }
 
-export function compileTimeParam(expr: Expr, scope: LexicalScope) {
+export function compileTimeParam(
+  expr: Expr,
+  scope: LexicalScope | IdentResult // TODO make this just leixcal scope
+) {
   if (expr instanceof IdentExpr) {
-    const res = scope.resolve(expr.getToken().text);
+    const res =
+      scope instanceof LexicalScope
+        ? scope.resolve(expr.getToken().text)
+        : scope;
+
     if (res instanceof Param) {
       expr.cachedParam = res;
       return res;
@@ -1840,7 +1847,7 @@ export class ProcCall extends Stmt implements RenderLevel {
   call: IdentExpr;
   args: (Expr | NamedArg)[];
   cachedRefresh?: boolean;
-  cachedProc?: ProcDef;
+  cachedProcDef?: ProcDef;
 
   constructor(open: Token, call: IdentExpr, args: (Expr | NamedArg)[]) {
     super();
@@ -1850,12 +1857,12 @@ export class ProcCall extends Stmt implements RenderLevel {
   }
 
   containsRefresh(): boolean {
-    if (this.cachedProc === undefined)
+    if (this.cachedProcDef === undefined)
       throw new Error(
         "cached procedure somehow undefined when checking for refresh"
       );
 
-    return containsRefreshHelper(this, this.cachedProc.body);
+    return containsRefreshHelper(this, this.cachedProcDef.body);
   }
 
   getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
@@ -1870,7 +1877,7 @@ export class ProcCall extends Stmt implements RenderLevel {
         throw new TinslError(
           `identifier "${name}" does not refer to a procedure definition`
         );
-      this.cachedProc = res;
+      this.cachedProcDef = res;
       res.argsValid(this.args, scope);
     }, scope);
   }
@@ -1892,11 +1899,11 @@ export class ProcCall extends Stmt implements RenderLevel {
   }
 
   getAllArgs(): Expr[] {
-    if (this.cachedProc === undefined) {
+    if (this.cachedProcDef === undefined) {
       throw new Error("cached proc was undefined");
     }
-    const filledArgs = this.cachedProc.fillInNamed(this.args);
-    this.cachedProc.addInDefaults(filledArgs);
+    const filledArgs = this.cachedProcDef.fillInNamed(this.args);
+    this.cachedProcDef.addInDefaults(filledArgs);
     return filledArgs;
   }
 }

@@ -5,35 +5,68 @@ import {
   ExSt,
   Frag,
   IdentExpr,
+  IntExpr,
   Param,
   ProcCall,
   RenderBlock,
+  UnaryExpr,
 } from "./nodes";
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
-export function expandProcsInBlock(block: RenderBlock) {
+/*
+export function expandProcsInBlock(
+  block: RenderBlock,
+  args: Expr[] = [],
+  params: Param[] = []
+) {
+  block.body = expandProcsInBody(block.body, args, params);
+  return block;
+}
+
+export function expandProcsInBody(
+  blockBody: ExSt[],
+  args: Expr[],
+  params: Param[]
+) {
   const newBody: ExSt[] = [];
 
-  for (const b of block.body) {
+  for (const b of blockBody) {
     if (b instanceof ProcCall) {
-      if (b.cachedProc === undefined) {
+      if (b.cachedProcDef === undefined) {
         throw new Error("procedure in body didn't have cached definition");
       }
-      newBody.push(...expandProc(b));
+      newBody.push(...expandProc(b, args, params));
     } else if (b instanceof RenderBlock) {
-      expandProcsInBlock(b);
+      expandProcsInBlock(b, args, params);
       newBody.push(b);
     } else {
       newBody.push(b);
     }
   }
 
-  block.body = newBody;
+  return newBody;
+}
+*/
+
+// TODO move on because this finally works, but consider refactoring
+export function expandProcsInBlock(block: RenderBlock) {
+  block.body = expandBody(block.body, [], []);
   return block;
 }
 
-function expandProc(call: ProcCall): ExSt[] {
+function expandBody(
+  //call: ProcCall,
+  body: ExSt[],
+  args: Expr[], //= call.getAllArgs(),
+  params: Param[]
+): ExSt[] {
+  //const def = call.cachedProcDef;
+  //if (def === undefined) throw new Error("call didn't have cached proc");
+
+  //const _args = args;
+  //const _params = params ?? def.params;
+
   const fillAtomicNum = (renderNum: null | Expr | number) => {
     if (renderNum instanceof Expr) {
       if (!(renderNum instanceof IdentExpr)) {
@@ -42,6 +75,7 @@ function expandProc(call: ProcCall): ExSt[] {
             "should have been caught by the checker"
         );
       }
+
       const res = renderNum.cachedParam;
 
       if (res === undefined) {
@@ -61,18 +95,13 @@ function expandProc(call: ProcCall): ExSt[] {
       // at this point, the arg can only be an ident -> top def or int directly
       const int = compileTimeInt(arg, argRes);
 
-      if (int === null) throw new Error("int resolved to null");
-
-      return int;
+      if (int !== null) return int;
+      throw new Error(
+        "int was null, arg could be resolved. arg: " + arg + " res: " + argRes
+      );
     }
     return renderNum;
   };
-
-  const def = call.cachedProc;
-  if (def === undefined) throw new Error("call didn't have cached proc");
-
-  const args = call.getAllArgs();
-  const params = def.params;
 
   // TODO this is probably overly-defensive
   if (args.length !== params.length) {
@@ -83,18 +112,54 @@ function expandProc(call: ProcCall): ExSt[] {
 
   const result: ExSt[] = [];
 
-  for (const b of def.body) {
+  for (const b of body) {
     if (b instanceof RenderBlock) {
       b.inNum = fillAtomicNum(b.inNum);
       b.outNum = fillAtomicNum(b.outNum);
       b.loopNum = fillAtomicNum(b.loopNum);
       result.push(b);
     } else if (b instanceof ProcCall) {
-      result.push(...expandProc(b));
+      // fill in any arg that is an ident before passing on
+      const newArgs: Expr[] = [];
+
+      for (const a of b.args) {
+        // TODO similar logic in the above function
+        if (a instanceof IntExpr || a instanceof UnaryExpr) {
+          newArgs.push(a);
+          continue;
+        }
+
+        if (!(a instanceof IdentExpr)) {
+          throw new Error("arg somehow not ident expr");
+        }
+
+        const res = a.cachedResolve;
+        if (res === undefined) {
+          throw new Error("arg didn't have a cached resolve");
+        }
+
+        if (res instanceof Param) {
+          const index = params.indexOf(res);
+          if (index === -1) throw new Error("could not find index of param");
+
+          const newArg = args[index];
+          newArgs.push(newArg);
+          continue;
+        }
+
+        throw new Error("arg somehow not param " + a);
+      }
+      if (b.cachedProcDef === undefined) throw new Error("no cached proc def");
+      const newBody = b.cachedProcDef.body;
+      const newParams = b.cachedProcDef.params;
+      console.log("new args", newArgs);
+      result.push(...expandBody(newBody, newArgs, newParams));
     } else if (b instanceof CallExpr && b.call instanceof Frag) {
       b.call.sampler = fillAtomicNum(b.call.sampler);
+      console.log("expanding atomic num in frag");
       result.push(b);
-    } else {
+    } else if (b instanceof RenderBlock) {
+      b.body = expandBody(b.body, args, params);
       result.push(b);
     }
   }
