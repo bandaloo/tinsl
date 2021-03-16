@@ -2,6 +2,7 @@ import { expect } from "chai";
 import {
   expandProcsInBlock,
   fillInDefaults,
+  exprsToSource,
   processBlocks,
   regroupByRefresh,
 } from "./gen";
@@ -260,6 +261,35 @@ fn foo () { return bar(); }
     const funcSet = getAllUsedFuncs(ir.exprs);
     expect(funcSet.size).to.equal(6);
   });
+
+  // TODO more tests
+  // TODO test default parameters in call expressions
 });
 
+describe("converting ir leaf to source", () => {
+  it("gets all the function definitions", () => {
+    const ir = processBlocks(
+      extractTopLevel<RenderBlock>(
+        `
+fn pippo (float d = 2.) { return "red"3 / d; }
+fn pluto (float d = 2.) { return "blue"3 / d; }
+fn paperino (float d = 2.) { return "green"3 / d; }
+
+fn baz () { return pippo() + pluto(d: 3.) + paperino(4.); }
+fn bar () { a := baz(); return a + baz(); }
+fn foo () { return bar(); }
+
+{ vec4(foo().rgb, 1.); }`,
+        6
+      )
+    );
+
+    // TODO more testing that the order is ok
+
+    if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
+
+    const source = exprsToSource(ir.exprs);
+    console.log(source);
+  });
+});
 // TODO don't let loop num be -1

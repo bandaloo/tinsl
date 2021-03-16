@@ -45,6 +45,7 @@ export class IRTree extends IRNode {
 
 export class IRLeaf extends IRNode {
   exprs: Expr[];
+  source = "";
 
   constructor(
     loopInfo: LoopInfo,

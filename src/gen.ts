@@ -1,4 +1,4 @@
-import { IRNode, renderBlockToIR } from "./ir";
+import { getAllUsedFuncs, IRLeaf, IRNode, renderBlockToIR } from "./ir";
 import {
   CallExpr,
   compileTimeInt,
@@ -255,4 +255,14 @@ export function processBlocks(block: RenderBlock): IRNode {
   return renderBlockToIR(
     regroupByRefresh(fillInDefaults(expandProcsInBlock(block)))
   );
+}
+
+export function exprsToSource(exprs: Expr[]) {
+  const funcs = getAllUsedFuncs(exprs);
+
+  // generate the code for the function calls
+  const funcsList = Array.from(funcs).reverse();
+
+  const funcDefsSource = funcsList.map((f) => f.translate()).join("\n");
+  return funcDefsSource;
 }

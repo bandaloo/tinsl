@@ -24,6 +24,8 @@ import {
 import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
 import { arrHasRepeats, strHasRepeats, toColorKey } from "./util";
 
+const stub = "__STUB";
+
 interface NamedArg {
   id: Token;
   expr: Expr;
@@ -543,7 +545,8 @@ export class RenderBlock extends Stmt {
   }
 
   translate(): string {
-    throw new Error("parse for render blocks not implemented yet");
+    // TODO reconsider whether rb is stmt
+    throw new Error("cannot call translate on rb directly (use ir)");
   }
 
   getExprStmts(): Expr[] {
@@ -637,6 +640,7 @@ export class BinaryExpr extends Expr {
 
       // dots can only act on vecs for now (no structs)
       if (this.operator.text === ".") {
+        if (lType === "__undecided") return "__undecided";
         // is .length accessing an array
         if (
           this.right instanceof IdentExpr &&
@@ -899,6 +903,17 @@ export class CallExpr extends Expr {
   }
 
   translate(): string {
+    let argString = "";
+    if (this.userDefinedFuncDef !== undefined) {
+      const name = this.userDefinedFuncDef.getToken().text;
+      const filledArgs = this.userDefinedFuncDef.fillInNamed(this.args);
+      this.userDefinedFuncDef.addInDefaults(filledArgs);
+      argString = commaSeparatedNodes(filledArgs);
+    } else {
+      argString = commaSeparatedNodes(this.getSubExpressions());
+    }
+
+    return `${this.call.translate()}(${argString})`;
     throw new Error("not implemented");
     // TODO translate this differently if frag
     //return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
@@ -1216,7 +1231,15 @@ export class VarDecl extends Stmt {
   }
 
   translate(): string {
-    throw new Error("Method not implemented");
+    return (
+      typeToString(this.getRightType()) +
+      " " +
+      this.id.text +
+      this.assign.text +
+      this.expr.translate()
+    );
+    //return "VAR_DECL" + stub;
+    //throw new Error("Method not implemented");
   }
 
   getToken(): Token {
@@ -1427,12 +1450,18 @@ export class FuncDef extends DefLike {
   }
 
   translate(): string {
-    /*
-    return `${this.typ.translate()} ${this.id.text}(${commaSeparatedNodes(
+    if (this.inferredType === undefined && this.typ === null) {
+      throw new Error("inferred type and explicit type were both not set");
+    }
+
+    const typeString =
+      this.inferredType !== undefined
+        ? typeToString(this.inferredType)
+        : this.typ?.toSpecType();
+
+    return `${typeString} ${this.id.text}(${commaSeparatedNodes(
       this.params
     )}){${lineSeparatedNodes(this.body)}}\n`;
-    */
-    throw new Error("not implemented");
   }
 
   getToken(): Token {
@@ -1531,7 +1560,7 @@ export class Return extends Stmt {
   }
 
   translate(): string {
-    return `return ${this.expr}`;
+    return `return ${this.expr.translate()};`;
   }
 
   getToken(): Token {
@@ -1653,6 +1682,7 @@ export class ForLoop extends Stmt {
   }
 
   translate(): string {
+    return "FOR" + stub;
     throw new Error("Method not implemented.");
   }
 
@@ -1739,6 +1769,7 @@ export class If extends Stmt {
   }
 
   translate(): string {
+    return "IF" + stub;
     throw new Error("Method not implemented.");
   }
 
@@ -1793,6 +1824,7 @@ export class Else extends Stmt {
   }
 
   translate(): string {
+    return "ELSE" + stub;
     throw new Error("Method not implemented.");
   }
 
@@ -1814,7 +1846,7 @@ export class Else extends Stmt {
   }
 }
 
-// TODO check to see that type of array uniform is specified
+// TODO check to see that length of array uniform is specified
 export class Uniform extends Node {
   typ: TypeName;
   ident: Token;
@@ -1830,6 +1862,7 @@ export class Uniform extends Node {
   }
 
   translate(): string {
+    return "UNIFORM" + stub;
     throw new Error("Method not implemented.");
   }
 
@@ -2170,7 +2203,7 @@ is the same as "${toColorKey(this.str)}")`
   }
 
   translate(): string {
-    throw new Error("Method not implemented.");
+    return "COLOR" + stub;
   }
 
   getToken(): Token {
