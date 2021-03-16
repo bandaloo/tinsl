@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { expandProcsInBlock, fillInDefaults, regroupByRefresh } from "./gen";
+import { renderBlockToIR } from "./ir";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
@@ -165,21 +166,37 @@ describe("fill in defaults of render block", () => {
         expandProcsInBlock(
           extractTopLevel<RenderBlock>(
             `
-fn fake_blur(vec2 direction, int channel = -1) {
-  return "white"4;
+fn fake_blur(vec2 direction) { return "white"4; }
+
+loop 3 {
+  {
+    fake_blur(vec2(1., 0.)); refresh;
+    fake_blur(vec2(0., 1.)); refresh;
+  }
+  fake_blur(vec2(0., 1.)); refresh;
+  fake_blur(vec2(1., 0.)); refresh;
 }
 
+/*
 loop 3 {
   fake_blur(vec2(1., 0.)); refresh;
   fake_blur(vec2(0., 1.)); refresh;
-}`,
+}
+*/
+`,
             1
           )
         )
       )
     );
+    //console.log("" + renderBlockToIR(expandedBlock));
+    console.log("" + expandedBlock);
 
-    console.log("regrouped block", "" + expandedBlock);
+    expect(expandedBlock.body.length).to.equal(3);
+
+    expect((expandedBlock.body[0] as RenderBlock).body.length).to.equal(2);
+    expect((expandedBlock.body[1] as RenderBlock).body.length).to.equal(2);
+    expect((expandedBlock.body[2] as RenderBlock).body.length).to.equal(1);
     // TODO do something with this test
   });
 });

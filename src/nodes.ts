@@ -285,8 +285,16 @@ function isOnlyNamed(args: (NamedArg | Expr)[]): args is NamedArg[] {
   return args.every((a) => !(a instanceof Expr));
 }
 
-function isOnlyExpr(args: any[]): args is Expr[] {
+// checking that undefined is not included is needed for "empty elements"
+
+export function isOnlyExpr(args: any[]): args is Expr[] {
   return args.every((a) => a instanceof Expr) && !args.includes(undefined);
+}
+
+export function isOnlyRenderBlock(args: any[]): args is RenderBlock[] {
+  return (
+    args.every((a) => a instanceof RenderBlock) && !args.includes(undefined)
+  );
 }
 
 abstract class DefLike extends Stmt {
@@ -510,6 +518,7 @@ export class RenderBlock extends Stmt {
     this.open = open;
   }
 
+  // TODO get rid of this
   containsRefresh(): boolean {
     return containsRefreshHelper(this, this.body);
   }

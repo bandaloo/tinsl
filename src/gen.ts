@@ -216,18 +216,31 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
 
   // new render block gets added to this on refresh
   // rest of body gets tacked on when it hits the end
-  const regrouped: ExSt[] = [];
+  const regrouped: RenderBlock[] = [];
+
+  const breakOff = () => {
+    if (previous.length > 0) regrouped.push(block.partialCopy(previous));
+    previous = [];
+  };
 
   for (const b of block.body) {
     if (b instanceof Refresh) {
-      regrouped.push(block.partialCopy(previous));
-      previous = [];
+      // break off, ignore refresh
+      breakOff();
+    } else if (b instanceof RenderBlock) {
+      // break off and push on this block separately
+      // this avoids redundant regrouping
+      breakOff();
+      regrouped.push(regroupByRefresh(b));
     } else {
       previous.push(b);
     }
   }
 
-  regrouped.push(...previous);
+  breakOff();
+
+  console.log("regrouped", regrouped);
   block.body = regrouped;
+
   return block;
 }
