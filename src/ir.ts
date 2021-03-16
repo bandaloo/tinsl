@@ -1,3 +1,4 @@
+import { Func } from "mocha";
 import {
   CallExpr,
   Expr,
@@ -55,18 +56,23 @@ export class IRLeaf extends IRNode {
   }
 }
 
-export function getAllUsedFuncs(exprs: Expr[]) {
-  const funcs: Set<FuncDef> = new Set();
+export function getAllUsedFuncs(
+  exprs: Expr[],
+  funcs: Set<FuncDef> = new Set()
+) {
   for (const e of exprs) {
+    // if it is a call expression and not a builtin or constructor, add it
     if (e instanceof CallExpr && e.userDefinedFuncDef !== undefined) {
+      // get all nested function dependencies of this function, and add them
       funcs.add(e.userDefinedFuncDef);
-    } else {
-      const subFuncs = getAllUsedFuncs(e.getSubExpressions());
-      for (const f of subFuncs) funcs.add(f);
-      // TODO also pull in the functions that that functino uses, and the
-      // functions those functions use. can't cause a cycle because no recursion
+      // tell the func def to add all of its dependencies to the set
+      e.userDefinedFuncDef.getAllNestedFunctionDeps(funcs);
     }
+
+    // do the same for all the sub expressions of each expression
+    getAllUsedFuncs(e.getSubExpressions(), funcs);
   }
+
   return funcs;
 }
 

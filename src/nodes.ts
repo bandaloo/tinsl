@@ -177,7 +177,20 @@ export class LexicalScope {
   private upperScope?: LexicalScope;
   private idents: IdentDictionary = {};
   private _returnType?: SpecType;
-  private _funcName?: string;
+  private _funcName?: string; // TODO rename this (could be proc)
+  private _funcDef?: FuncDef; // will only be defined within a func
+
+  constructor(
+    upperScope?: LexicalScope,
+    returnType?: SpecType,
+    funcName?: string,
+    funcDef?: FuncDef
+  ) {
+    this.upperScope = upperScope;
+    this._returnType = returnType ?? upperScope?._returnType;
+    this._funcName = funcName ?? upperScope?._funcName;
+    this._funcDef = funcDef ?? upperScope?.funcDef;
+  }
 
   get returnType(): SpecType | undefined {
     return this._returnType;
@@ -197,14 +210,12 @@ export class LexicalScope {
     this._funcName = str;
   }
 
-  constructor(
-    upperScope?: LexicalScope,
-    returnType?: SpecType,
-    funcName?: string
-  ) {
-    this.upperScope = upperScope;
-    this._returnType = returnType ?? upperScope?._returnType;
-    this._funcName = funcName ?? upperScope?._funcName;
+  get funcDef(): FuncDef | undefined {
+    return this._funcDef;
+  }
+
+  set funcDef(str: FuncDef | undefined) {
+    this._funcDef = str;
   }
 
   addToScope(name: string, result: IdentResult, msg = "duplicate") {
@@ -929,13 +940,18 @@ export class CallExpr extends Expr {
         const fragExpr = this.call;
 
         const helper = (typ: SpecTypeSimple) => {
-          if (!isOnlyExpr(this.args))
+          if (!isOnlyExpr(this.args)) {
             throw new TinslError("frag call cannot contain named args");
+          }
+
           const list = this.args.filter((x) => x.getType(scope) === typ);
-          if (list.length > 1)
+
+          if (list.length > 1) {
             throw new TinslError(
               `cannot have more than one ${typ} as an argument to "frag"`
             );
+          }
+
           return list.length === 1 ? list[0] : null;
         };
 
@@ -980,8 +996,9 @@ export class CallExpr extends Expr {
 
       const name = this.call.getToken().text;
 
-      if (name === scope.funcName)
+      if (name === scope.funcName) {
         throw new TinslError(`recursive call to "${name}" is not allowed`);
+      }
 
       const info = builtIns[name];
       if (info !== undefined) {
@@ -992,11 +1009,20 @@ export class CallExpr extends Expr {
       if (res === undefined) {
         throw new TinslError(`function "${name}" is not defined`);
       }
+
       if (!(res instanceof FuncDef)) {
         throw new TinslError(
           `identifier "${name}" does not refer to a function definition`
         );
       }
+
+      // add itself to the set of sub functions in the outer function
+      console.log("scope", scope);
+      if (scope.funcDef !== undefined) {
+        console.log("adding to subfuncs!!");
+        scope.funcDef.subFuncs.add(res);
+      }
+
       // make sure all the argument types match the param types
       res.argsValid(this.args, scope);
       this.userDefinedFuncDef = res;
@@ -1385,6 +1411,8 @@ export class FuncDef extends DefLike {
   body: ExSt[];
   private inferredType?: SpecType;
 
+  subFuncs: Set<FuncDef> = new Set();
+
   constructor(typ: TypeName | null, id: Token, params: Param[], body: ExSt[]) {
     super(params);
     this.typ = typ;
@@ -1420,6 +1448,16 @@ export class FuncDef extends DefLike {
 
   typeCheck(scope: LexicalScope): void {
     const innerScope = new LexicalScope(scope);
+
+    const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
+    const funcName = this.getToken().text;
+
+    innerScope.funcName = funcName;
+    innerScope.returnType = retType;
+    innerScope.funcDef = this;
+
+    console.log("scope here", innerScope.funcDef);
+
     const wrap = () =>
       this.wrapError(
         (scope: LexicalScope) => {
@@ -1444,15 +1482,10 @@ not contain a return statement in all conditional branches`
             );
           }
 
-          const retType = this.typ !== null ? this.typ.toSpecType() : undefined;
-          const funcName = this.getToken().text;
-
-          innerScope.funcName = funcName;
-          innerScope.returnType = retType;
-
           // add all the params to the scope
-          for (const p of this.params)
+          for (const p of this.params) {
             innerScope.addToScope(p.getToken().text, p);
+          }
 
           this.validateDefaultParams(scope);
         },
@@ -1476,6 +1509,17 @@ not contain a return statement in all conditional branches`
     throw new Error(
       "inferred type was null (possibly called before typeCheck)"
     );
+  }
+
+  getAllNestedFunctionDeps(set: Set<FuncDef> = new Set()): Set<FuncDef> {
+    console.log("sub funcs in get all nested function deps", this.subFuncs);
+    for (const f of this.subFuncs) {
+      set.add(f);
+      f.getAllNestedFunctionDeps(set);
+    }
+
+    console.log("ending set in getAllNestedFunctionDeps");
+    return set;
   }
 }
 

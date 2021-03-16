@@ -233,14 +233,34 @@ fn bar () { return "blue"4; }
       )
     );
 
-    if (!(ir instanceof IRLeaf)) {
-      throw new Error("ir not a leaf");
-    }
+    if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
     const funcSet = getAllUsedFuncs(ir.exprs);
-
     console.log(funcSet);
+    expect(funcSet.size).to.equal(2);
+  });
 
+  it("gets all used funcs in ir with no chains", () => {
+    const ir = processBlocks(
+      extractTopLevel<RenderBlock>(
+        `
+fn pippo () { return "red"3 / 2.; }
+fn pluto () { return "blue"3 / 2.; }
+fn paperino () { return "green"3 / 2.; }
+
+fn baz () { return pippo() + pluto() + paperino(); }
+fn bar () { a := baz(); return a + baz(); }
+fn foo () { return bar(); }
+
+{ vec4(foo().rgb, 1.); }`,
+        6
+      )
+    );
+
+    if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
+
+    const funcSet = getAllUsedFuncs(ir.exprs);
+    console.log("func set", funcSet);
     expect(funcSet.size).to.equal(2);
   });
 });
