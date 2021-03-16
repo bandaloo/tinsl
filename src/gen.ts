@@ -239,8 +239,6 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
 
   breakOff();
 
-  console.log("regrouped", regrouped);
   block.body = regrouped;
-
   return block;
 }

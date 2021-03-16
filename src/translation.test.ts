@@ -159,8 +159,8 @@ pr bar (int y) { @foo(y); }
   });
 });
 
-describe("fill in defaults of render block", () => {
-  it("defaults to 0 for undefined in/out nums", () => {
+describe("regrouping", () => {
+  it("regroups nested", () => {
     const expandedBlock = regroupByRefresh(
       fillInDefaults(
         expandProcsInBlock(
@@ -175,29 +175,22 @@ loop 3 {
   }
   fake_blur(vec2(0., 1.)); refresh;
   fake_blur(vec2(1., 0.)); refresh;
-}
-
-/*
-loop 3 {
-  fake_blur(vec2(1., 0.)); refresh;
-  fake_blur(vec2(0., 1.)); refresh;
-}
-*/
-`,
+}`,
             1
           )
         )
       )
     );
-    //console.log("" + renderBlockToIR(expandedBlock));
-    console.log("" + expandedBlock);
 
+    // it should look be shaped like: [[[] []] [] []]
+
+    // outer render blocks
     expect(expandedBlock.body.length).to.equal(3);
 
+    // inner render blocks
     expect((expandedBlock.body[0] as RenderBlock).body.length).to.equal(2);
-    expect((expandedBlock.body[1] as RenderBlock).body.length).to.equal(2);
+    expect((expandedBlock.body[1] as RenderBlock).body.length).to.equal(1);
     expect((expandedBlock.body[2] as RenderBlock).body.length).to.equal(1);
-    // TODO do something with this test
   });
 });
 
