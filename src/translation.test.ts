@@ -201,8 +201,24 @@ loop 3 {
     expect((expandedBlock.body[2] as RenderBlock).body.length).to.equal(1);
   });
 
-  // TODO simple test that checks that render blocks aren't wrapped in a
-  // redundant one
+  it("doesn't create redundant render block wrapping", () => {
+    const expandedBlock = regroupByRefresh(
+      fillInDefaults(
+        expandProcsInBlock(
+          extractTopLevel<RenderBlock>(
+            `
+loop 3 {
+  frag0 + frag1;
+  mix(frag, "red"4, 0.5);
+}`
+          )
+        )
+      )
+    );
+
+    // outer render blocks
+    expect(expandedBlock.body.length).to.equal(2);
+  });
 });
 
 describe("getting all funcs in a leaf", () => {
@@ -227,8 +243,6 @@ fn bar () { return "blue"4; }
 
     expect(funcSet.size).to.equal(2);
   });
-
-  // TODO test with chains (collect required functions in typeCheck)
 });
 
 // TODO don't let loop num be -1
