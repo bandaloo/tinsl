@@ -163,7 +163,6 @@ pr bar (int y) { @foo(y); }
 
     expect(rb.inNum).to.equal(1);
     expect(rb.outNum).to.equal(1);
-    // TODO do something with this test
   });
 });
 
@@ -236,7 +235,6 @@ fn bar () { return "blue"4; }
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
     const funcSet = getAllUsedFuncs(ir.exprs);
-    console.log(funcSet);
     expect(funcSet.size).to.equal(2);
   });
 
@@ -260,8 +258,7 @@ fn foo () { return bar(); }
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
     const funcSet = getAllUsedFuncs(ir.exprs);
-    console.log("func set", funcSet);
-    expect(funcSet.size).to.equal(2);
+    expect(funcSet.size).to.equal(6);
   });
 });
 

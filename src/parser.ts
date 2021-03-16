@@ -16,16 +16,6 @@ if (parser.results.length > 1) {
   console.error("ambiguous grammar!");
 }
 
-/*
-console.log(
-  util.inspect(constructors, {
-    showHidden: false,
-    depth: null,
-    colors: true,
-  })
-);
-*/
-
 for (let i = 0; i < parser.results.length; i++) {
   console.log(
     util.inspect(

@@ -850,7 +850,6 @@ export class IdentExpr extends AtomExpr {
         this.validLVal = "invalid"; // parameters are immutable by default
       }
 
-      //console.log("caching resolve", res);
       this.cachedResolve = res;
 
       return res.getRightType(scope);
@@ -1017,9 +1016,7 @@ export class CallExpr extends Expr {
       }
 
       // add itself to the set of sub functions in the outer function
-      console.log("scope", scope);
       if (scope.funcDef !== undefined) {
-        console.log("adding to subfuncs!!");
         scope.funcDef.subFuncs.add(res);
       }
 
@@ -1456,8 +1453,6 @@ export class FuncDef extends DefLike {
     innerScope.returnType = retType;
     innerScope.funcDef = this;
 
-    console.log("scope here", innerScope.funcDef);
-
     const wrap = () =>
       this.wrapError(
         (scope: LexicalScope) => {
@@ -1512,13 +1507,11 @@ not contain a return statement in all conditional branches`
   }
 
   getAllNestedFunctionDeps(set: Set<FuncDef> = new Set()): Set<FuncDef> {
-    console.log("sub funcs in get all nested function deps", this.subFuncs);
     for (const f of this.subFuncs) {
       set.add(f);
       f.getAllNestedFunctionDeps(set);
     }
 
-    console.log("ending set in getAllNestedFunctionDeps");
     return set;
   }
 }
