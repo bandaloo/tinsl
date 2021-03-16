@@ -471,6 +471,7 @@ function branchContainsReturn(exSts: ExSt[]) {
   );
 }
 
+// TODO this class isn't particularly necessary
 export class TinslProgram {
   topScope: LexicalScope = new LexicalScope();
   body: ExSt[];
@@ -481,6 +482,11 @@ export class TinslProgram {
 
   check(): void {
     typeCheckExprStmts(this.body, this.topScope);
+  }
+
+  // TODO get rid of this
+  getAllRenderBlocks(): RenderBlock[] {
+    return this.body.filter((e): e is RenderBlock => e instanceof RenderBlock);
   }
 }
 
@@ -518,14 +524,15 @@ export class RenderBlock extends Stmt {
     return containsRefreshHelper(this, this.body);
   }
 
-  partialCopy(body: ExSt[]): RenderBlock {
+  /** creates a copy but sets the loop num to 1 */
+  innerCopy(body: ExSt[]): RenderBlock {
     // it's okay for it to be a shallow copy
     const rb = new RenderBlock(
       this.once,
       body,
       this.inNum,
       this.outNum,
-      this.loopNum,
+      1,
       this.open
     );
     rb.cachedRefresh = this.cachedRefresh;
@@ -2058,10 +2065,6 @@ abstract class Basic extends Expr {
     return { name: this.name };
   }
 
-  translate(): string {
-    throw new Error("Method not implemented.");
-  }
-
   getToken(): Token {
     return this.token;
   }
@@ -2070,16 +2073,28 @@ abstract class Basic extends Expr {
 export class Pos extends Basic {
   typ: SpecTypeSimple = "vec2";
   name: string = "coord";
+
+  translate(): string {
+    return "POS" + stub;
+  }
 }
 
 export class Res extends Basic {
   typ: SpecTypeSimple = "vec2";
   name: string = "res";
+
+  translate(): string {
+    return "RES" + stub;
+  }
 }
 
 export class Time extends Basic {
   typ: SpecTypeSimple = "float";
   name: string = "time";
+
+  translate(): string {
+    return "TIME" + stub;
+  }
 }
 
 export class Refresh extends Stmt {
@@ -2096,7 +2111,7 @@ export class Refresh extends Stmt {
 
   translate(): string {
     // TODO this won't actually translate; just indicate a shader break
-    throw new Error("Method not implemented.");
+    throw new Error("can't translate refresh");
   }
 
   getToken(): Token {
@@ -2144,7 +2159,7 @@ export class Frag extends Expr {
   }
 
   translate(): string {
-    throw new Error("Method not implemented.");
+    return "FRAG" + stub;
   }
 
   getToken(): Token {

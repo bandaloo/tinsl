@@ -5,10 +5,12 @@ import {
   exprsToSource,
   processBlocks,
   regroupByRefresh,
+  gen,
 } from "./gen";
 import { getAllUsedFuncs, IRLeaf, renderBlockToIR } from "./ir";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
+import { bloom } from "./testprograms";
 
 describe("renderblock has refresh", () => {
   it("refresh at first level of render block", () => {
@@ -290,6 +292,13 @@ fn foo () { return bar(); }
 
     const source = exprsToSource(ir.exprs);
     console.log(source);
+  });
+});
+
+describe("logging source", () => {
+  it("gets all the function definitions", () => {
+    const comp = gen(bloom);
+    for (const c of comp) c.print();
   });
 });
 // TODO don't let loop num be -1

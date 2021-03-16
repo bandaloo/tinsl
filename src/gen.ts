@@ -1,4 +1,4 @@
-import { getAllUsedFuncs, IRLeaf, IRNode, renderBlockToIR } from "./ir";
+import { getAllUsedFuncs, IRLeaf, IRNode, IRTree, renderBlockToIR } from "./ir";
 import {
   CallExpr,
   compileTimeInt,
@@ -13,6 +13,7 @@ import {
   RenderBlock,
   UnaryExpr,
 } from "./nodes";
+import { parse, parseAndCheck } from "./testhelpers";
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
@@ -108,6 +109,10 @@ function expandBody(
 
   // TODO this is probably overly-defensive
   if (args.length !== params.length) {
+    console.log("args", args);
+    console.log("len", args.length);
+    console.log("params", params);
+    console.log("len", params.length);
     throw new Error(
       "args length didn't equal params length when expanding procedure"
     );
@@ -126,16 +131,36 @@ function expandBody(
       // fill in any arg that is an ident before passing on
       const newArgs: Expr[] = [];
 
-      for (const a of b.args) {
+      if (b.cachedProcDef === undefined) {
+        throw new Error("cached proc def was undefined");
+      }
+
+      const filledArgs = b.cachedProcDef.fillInNamed(b.args);
+      b.cachedProcDef.addInDefaults(filledArgs);
+
+      for (const a of filledArgs) {
+        // unwrap named if necessary
+        //if (!(a instanceof Expr)) a = a.expr;
+
         // TODO similar logic in the above function
+        /*
         if (a instanceof IntExpr || a instanceof UnaryExpr) {
           newArgs.push(a);
           continue;
         }
+        */
 
         if (!(a instanceof IdentExpr)) {
-          throw new Error("arg somehow not ident expr");
+          newArgs.push(a);
+          continue;
         }
+
+        /*
+        if (!(a instanceof IdentExpr)) {
+          console.log("arg", a);
+          throw new Error("arg somehow not ident expr ");
+        }
+        */
 
         const res = a.cachedResolve;
         if (res === undefined) {
@@ -223,7 +248,7 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
   let breaks = 0;
 
   const breakOff = () => {
-    if (previous.length > 0) regrouped.push(block.partialCopy(previous));
+    if (previous.length > 0) regrouped.push(block.innerCopy(previous));
     previous = [];
     breaks++;
   };
@@ -264,5 +289,40 @@ export function exprsToSource(exprs: Expr[]) {
   const funcsList = Array.from(funcs).reverse();
 
   const funcDefsSource = funcsList.map((f) => f.translate()).join("\n");
-  return funcDefsSource;
+
+  // generate gl_FragColor chain
+  /*
+  void main() {
+  gl_FragColor = gauss5(vec2((length((gl_FragCoord.xy / uResolution - 0.5)) * 3.), 0.));
+}
+  */
+  let mainSource = "void main(){\n";
+  for (const e of exprs) {
+    mainSource += "gl_FragColor=" + e.translate() + ";\n";
+  }
+  mainSource += "}";
+
+  return funcDefsSource + mainSource;
+}
+
+/** has the side effect of filling out the source string of each node */
+export function genSource(ir: IRNode) {
+  if (ir instanceof IRTree) {
+    for (const n of ir.subNodes) {
+      genSource(n);
+    }
+  } else if (ir instanceof IRLeaf) {
+    ir.source = exprsToSource(ir.exprs);
+  }
+
+  return ir;
+}
+
+export function gen(source: string) {
+  const exprs = parseAndCheck(source);
+  const blocks = exprs.filter(
+    (e): e is RenderBlock => e instanceof RenderBlock
+  );
+  const processed = blocks.map((b) => processBlocks(b)).map(genSource);
+  return processed;
 }

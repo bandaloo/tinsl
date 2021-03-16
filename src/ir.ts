@@ -20,7 +20,7 @@ interface LoopInfo {
 
 // IR classes are similar to render blocks but simpler, and narrow the types
 
-export class IRNode {
+export abstract class IRNode {
   loopInfo: LoopInfo;
   paramMappings: Map<Param, Expr>;
 
@@ -28,6 +28,7 @@ export class IRNode {
     this.loopInfo = loopInfo;
     this.paramMappings = paramMappings;
   }
+  abstract print(): void;
 }
 
 export class IRTree extends IRNode {
@@ -40,6 +41,15 @@ export class IRTree extends IRNode {
   ) {
     super(loopInfo, paramMappings);
     this.subNodes = subNodes;
+  }
+
+  print(): void {
+    console.log("#begin");
+    //console.log(JSON.stringify(this.loopInfo));
+    for (const s of this.subNodes) {
+      s.print();
+    }
+    console.log("#end");
   }
 }
 
@@ -54,6 +64,11 @@ export class IRLeaf extends IRNode {
   ) {
     super(loopInfo, paramMappings);
     this.exprs = exprs;
+  }
+
+  print(): void {
+    console.log("#" + JSON.stringify(this.loopInfo));
+    console.log(this.source);
   }
 }
 
