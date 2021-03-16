@@ -458,34 +458,16 @@ function branchContainsReturn(exSts: ExSt[]) {
   );
 }
 
-// TODO is this really a statement?
-export class TinslProgram extends Stmt {
+export class TinslProgram {
   topScope: LexicalScope = new LexicalScope();
   body: ExSt[];
 
   constructor(body: ExSt[]) {
-    super();
     this.body = body;
   }
 
-  getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
-    return { outer: [], inner: this.body };
-  }
-
-  typeCheck(): void {
+  check(): void {
     typeCheckExprStmts(this.body, this.topScope);
-  }
-
-  toJson(): object {
-    return { name: "program", body: this.body.map((e) => e.toJson()) };
-  }
-
-  translate(): string {
-    throw new Error("Method not implemented.");
-  }
-
-  getToken(): Token {
-    throw new Error("cannot get token of outer program");
   }
 }
 
@@ -1792,6 +1774,7 @@ export class Else extends Stmt {
   }
 }
 
+// TODO check to see that type of array uniform is specified
 export class Uniform extends Node {
   typ: TypeName;
   ident: Token;

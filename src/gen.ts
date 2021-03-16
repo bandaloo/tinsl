@@ -160,7 +160,8 @@ function expandBody(
       result.push(...expandBody(newBody, newArgs, newParams, outerBlock));
     } else if (b instanceof CallExpr && b.call instanceof Frag) {
       // TODO this should actually be a list of sampler
-      b.call.sampler = fillAtomicNum(b.call.sampler);
+      // TODO do we need to do anything special here?
+      //b.call.sampler = fillAtomicNum(b.call.sampler);
       result.push(b);
     } else {
       result.push(b);

@@ -154,7 +154,10 @@ pr bar (int y) { @foo(y); }
       )
     );
 
-    console.log("expanded block", "" + expandedBlock);
+    const rb = expandedBlock.body[0] as RenderBlock;
+
+    expect(rb.inNum).to.equal(1);
+    expect(rb.outNum).to.equal(1);
     // TODO do something with this test
   });
 });
