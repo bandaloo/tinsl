@@ -871,6 +871,8 @@ export class CallExpr extends Expr {
   call: Expr;
   args: (Expr | NamedArg)[];
 
+  userDefinedFuncDef?: FuncDef;
+
   constructor(open: Token, call: Expr, args: (Expr | NamedArg)[]) {
     super();
     this.open = open;
@@ -997,6 +999,7 @@ export class CallExpr extends Expr {
       }
       // make sure all the argument types match the param types
       res.argsValid(this.args, scope);
+      this.userDefinedFuncDef = res;
       return res.getReturnType();
     }, scope);
   }

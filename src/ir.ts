@@ -1,10 +1,14 @@
 import {
+  CallExpr,
   Expr,
+  FuncDef,
   isOnlyExpr,
   isOnlyRenderBlock,
   Param,
   RenderBlock,
+  TopDef,
 } from "./nodes";
+import { extractTopLevel } from "./testhelpers";
 
 interface LoopInfo {
   once: boolean;
@@ -15,7 +19,7 @@ interface LoopInfo {
 
 // IR classes are similar to render blocks but simpler, and narrow the types
 
-class IRNode {
+export class IRNode {
   loopInfo: LoopInfo;
   paramMappings: Map<Param, Expr>;
 
@@ -25,7 +29,7 @@ class IRNode {
   }
 }
 
-class IRTree extends IRNode {
+export class IRTree extends IRNode {
   subNodes: IRNode[];
 
   constructor(
@@ -38,7 +42,7 @@ class IRTree extends IRNode {
   }
 }
 
-class IRLeaf extends IRNode {
+export class IRLeaf extends IRNode {
   exprs: Expr[];
 
   constructor(
@@ -51,11 +55,26 @@ class IRLeaf extends IRNode {
   }
 }
 
+export function getAllUsedFuncs(exprs: Expr[]) {
+  const funcs: Set<FuncDef> = new Set();
+  for (const e of exprs) {
+    if (e instanceof CallExpr && e.userDefinedFuncDef !== undefined) {
+      funcs.add(e.userDefinedFuncDef);
+    } else {
+      const subFuncs = getAllUsedFuncs(e.getSubExpressions());
+      for (const f of subFuncs) funcs.add(f);
+      // TODO also pull in the functions that that functino uses, and the
+      // functions those functions use. can't cause a cycle because no recursion
+    }
+  }
+  return funcs;
+}
+
 export function renderBlockToIR(block: RenderBlock): IRNode {
   if (
     typeof block.inNum !== "number" ||
     typeof block.outNum !== "number" ||
-    typeof block.loopNum !== "number"
+    block.loopNum instanceof Expr
   ) {
     throw new Error("a render block num was not a normal number");
   }
@@ -63,7 +82,7 @@ export function renderBlockToIR(block: RenderBlock): IRNode {
   const loopInfo: LoopInfo = {
     inNum: block.inNum,
     outNum: block.outNum,
-    loopNum: block.loopNum,
+    loopNum: block.loopNum ?? 1,
     once: block.once,
   };
 

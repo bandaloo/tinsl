@@ -1,3 +1,4 @@
+import { IRNode, renderBlockToIR } from "./ir";
 import {
   CallExpr,
   compileTimeInt,
@@ -219,9 +220,12 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
   // rest of body gets tacked on when it hits the end
   const regrouped: RenderBlock[] = [];
 
+  let breaks = 0;
+
   const breakOff = () => {
     if (previous.length > 0) regrouped.push(block.partialCopy(previous));
     previous = [];
+    breaks++;
   };
 
   for (const b of block.body) {
@@ -238,8 +242,17 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
     }
   }
 
+  // prevents nesting in redundant block
+  if (breaks === 0) return block;
+
   breakOff();
 
   block.body = regrouped;
   return block;
+}
+
+export function processBlocks(block: RenderBlock): IRNode {
+  return renderBlockToIR(
+    regroupByRefresh(fillInDefaults(expandProcsInBlock(block)))
+  );
 }

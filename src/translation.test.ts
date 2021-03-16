@@ -1,6 +1,11 @@
 import { expect } from "chai";
-import { expandProcsInBlock, fillInDefaults, regroupByRefresh } from "./gen";
-import { renderBlockToIR } from "./ir";
+import {
+  expandProcsInBlock,
+  fillInDefaults,
+  processBlocks,
+  regroupByRefresh,
+} from "./gen";
+import { getAllUsedFuncs, IRLeaf, renderBlockToIR } from "./ir";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 
@@ -195,6 +200,35 @@ loop 3 {
     expect((expandedBlock.body[1] as RenderBlock).body.length).to.equal(1);
     expect((expandedBlock.body[2] as RenderBlock).body.length).to.equal(1);
   });
+
+  // TODO simple test that checks that render blocks aren't wrapped in a
+  // redundant one
+});
+
+describe("getting all funcs in a leaf", () => {
+  it("gets all used funcs in ir with no chains", () => {
+    const ir = processBlocks(
+      extractTopLevel<RenderBlock>(
+        `
+fn foo () { return "red"4; }
+fn bar () { return "blue"4; }
+{ foo(); bar(); }`,
+        2
+      )
+    );
+
+    if (!(ir instanceof IRLeaf)) {
+      throw new Error("ir not a leaf");
+    }
+
+    const funcSet = getAllUsedFuncs(ir.exprs);
+
+    console.log(funcSet);
+
+    expect(funcSet.size).to.equal(2);
+  });
+
+  // TODO test with chains (collect required functions in typeCheck)
 });
 
 // TODO don't let loop num be -1
