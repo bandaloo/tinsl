@@ -15,6 +15,8 @@ import {
   SourceTree,
   UnaryExpr,
   SourceLeaf,
+  Uniform,
+  TopDef,
 } from "./nodes";
 import { parse, parseAndCheck } from "./testhelpers";
 
@@ -110,12 +112,8 @@ function expandBody(
     return renderNum;
   };
 
-  // TODO this is probably overly-defensive
+  // TODO this is probably overly-defensive, but keep for now
   if (args.length !== params.length) {
-    console.log("args", args);
-    console.log("len", args.length);
-    console.log("params", params);
-    console.log("len", params.length);
     throw new Error(
       "args length didn't equal params length when expanding procedure"
     );
@@ -146,24 +144,10 @@ function expandBody(
         //if (!(a instanceof Expr)) a = a.expr;
 
         // TODO similar logic in the above function
-        /*
-        if (a instanceof IntExpr || a instanceof UnaryExpr) {
-          newArgs.push(a);
-          continue;
-        }
-        */
-
         if (!(a instanceof IdentExpr)) {
           newArgs.push(a);
           continue;
         }
-
-        /*
-        if (!(a instanceof IdentExpr)) {
-          console.log("arg", a);
-          throw new Error("arg somehow not ident expr ");
-        }
-        */
 
         const res = a.cachedResolve;
         if (res === undefined) {
@@ -179,7 +163,12 @@ function expandBody(
           continue;
         }
 
-        throw new Error("arg somehow not param " + a);
+        if (res instanceof Uniform || res instanceof TopDef) {
+          newArgs.push(a);
+          continue;
+        }
+
+        throw new Error("ident arg didn't resolve to a param or uniform decl");
       }
       if (b.cachedProcDef === undefined) throw new Error("no cached proc def");
       const newBody = b.cachedProcDef.body;
@@ -288,6 +277,7 @@ export function processBlocks(block: RenderBlock): IRTree | IRLeaf {
 export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   const funcs = getAllUsedFuncs(ir.exprs);
 
+  // wrap a leaf together with a map to pass down into translate
   const sl = {
     leaf: new SourceLeaf(ir.loopInfo.outNum),
     map: ir.paramMappings,
@@ -297,7 +287,7 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   const funcsList = Array.from(funcs).reverse();
   const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
 
-  // collect all required textures
+  // collect all required textures from functions
   const texNums = new Set<number>();
   for (const f of funcsList) {
     for (const t of f.requiredTexNums) {
@@ -305,11 +295,10 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     }
   }
 
+  // collect all required textures from ir
   for (const t of ir.texNums) {
     texNums.add(t);
   }
-
-  console.log("tex nums", texNums);
 
   // generate the main loop (series of assignments to gl_FragColor)
   let mainSource = "void main(){\n";
@@ -318,17 +307,23 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   }
   mainSource += "}";
 
-  // generate the uniform declarations
+  // generate built-in uniforms
+  let uniformsSource = "";
+  if (sl.leaf.requires.time) uniformsSource += "uniform float uTime;\n";
+  if (sl.leaf.requires.res) uniformsSource += "uniform vec2 uResolution;\n";
+
+  // generate user-defined uniforms
+  for (const u of sl.leaf.requires.uniforms) {
+    uniformsSource += u.translate();
+  }
+
+  // generate required samplers
   let samplersSource = "";
-  if (sl.leaf.requires.time) samplersSource += "uniform mediump uTime;\n";
-  if (sl.leaf.requires.res) samplersSource += "uniform mediump uResolution;\n";
   for (const s of sl.leaf.requires.samplers) {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
-  // TODO do user-defined uniforms
-
-  sl.leaf.source = funcDefsSource + mainSource;
+  sl.leaf.source = uniformsSource + funcDefsSource + mainSource;
 
   return sl.leaf;
 }

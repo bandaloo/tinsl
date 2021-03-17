@@ -277,12 +277,3 @@ export const lexer = moo.compile({
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),
   },
 });
-
-/*
-lexer.reset("vec4 color = vec4(1., 0.1, 3.0, 0.);\n");
-while (true) {
-  const next = lexer.next();
-  if (next === undefined) break;
-  console.log(next);
-}
-*/

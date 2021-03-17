@@ -1,4 +1,5 @@
 export const bloom = `def threshold 0.9
+uniform float u_size;
 
 fn luma(vec4 color) {
   return dot(color.rgb, vec3(0.299, 0.587, 0.114));
@@ -26,7 +27,7 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 
 { frag0 * step(luma(frag0), threshold); } -> 1
 
-{ @two_pass_blur(size: 1., reps: 3); } -> 1
+{ @two_pass_blur(size: u_size, reps: 3); } -> 1
 
 { frag0 + frag1; } -> 0`;
 

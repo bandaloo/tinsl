@@ -41,9 +41,9 @@ export class IRTree extends IRNode {
     this.subNodes = subNodes;
   }
 
+  // TODO get rid of this or make it better
   print(): void {
     console.log("#begin");
-    //console.log(JSON.stringify(this.loopInfo));
     for (const s of this.subNodes) {
       s.print();
     }

@@ -45,7 +45,7 @@ export class SourceLeaf {
     time: boolean;
     res: boolean;
     samplers: Set<number>;
-    uniforms: Set<string>; // TODO better type for this
+    uniforms: Set<Uniform>; // TODO better type for this
   } = {
     time: false,
     res: false,
@@ -65,8 +65,7 @@ export interface MappedLeaf {
   leaf: SourceLeaf;
 }
 
-// named args have a simple wrapper
-
+/** simple wrapper for named arguments */
 interface NamedArg {
   id: Token;
   expr: Expr;
@@ -1003,38 +1002,6 @@ export class IdentExpr extends AtomExpr {
             );
           }
           res.usage = requiredMatch;
-          /*
-          if (associatedParam === "in frag") {
-            console.log("in fragment!!!");
-            if (res.usage === "normal") {
-              throw new TinslError( // TODO better error message
-                "param used as a normal parameter elsewhere " +
-                  "was used as a sampler parameter"
-              );
-            } else {
-              res.usage = "sampler";
-            }
-          } else {
-            if (res.usage === "sampler") {
-              throw new TinslError( // TODO better error message
-                "param used as a sampler parameter elsewhere " +
-                  "was used as a normal parameter"
-              );
-            } else {
-              res.usage = "normal";
-            }
-          }
-          */
-          /*
-        if (res.usage === "sampler") {
-          throw new TinslError( // TODO better error message
-            "param used as a sampler parameter elsewhere " +
-              "was used as a normal parameter"
-          );
-        }
-        res.usage = "normal";
-        */
-          // TODO figure out
           this.validLVal = "invalid"; // parameters are immutable by default
         }
 
@@ -1051,7 +1018,12 @@ export class IdentExpr extends AtomExpr {
   }
 
   translate(sl: MappedLeaf) {
-    if (this.cachedResolve instanceof Param && sl.map.get(this.cachedResolve)) {
+    if (this.cachedResolve instanceof Uniform) {
+      sl.leaf.requires.uniforms.add(this.cachedResolve);
+    } else if (
+      this.cachedResolve instanceof Param &&
+      sl.map.get(this.cachedResolve)
+    ) {
       const mapping = sl.map.get(this.cachedResolve);
       if (mapping === undefined) throw new Error("param mapping undefined");
       return mapping.translate(sl);
@@ -1198,15 +1170,6 @@ export class CallExpr extends Expr {
                   atomicIntHint
               );
             }
-
-            /*
-            if (param.usage === "normal") {
-              throw new TinslError( // TODO better error message
-                "param used as a normal parameter elsewhere " +
-                  "was used as a sampler parameter"
-              );
-            }
-            */
 
             param.pureInt = true;
             param.isTexNum = true;
@@ -2100,10 +2063,11 @@ export class Uniform extends Stmt {
     return { name: "uniform", ident: this.ident.text };
   }
 
-  translate(sl: MappedLeaf): string {
+  translate(): string {
     //sl.leaf.requires.uniforms.add(typeToString(this.typ.toSpecType()));
-    return "UNIFORM" + stub;
-    throw new Error("Method not implemented.");
+    // TODO does mediump have to be specified?
+    const typ = typeToString(this.typ.toSpecType());
+    return `uniform ${typ} ${this.ident.text};\n`;
   }
 
   getToken(): Token {
