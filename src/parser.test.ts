@@ -1098,7 +1098,7 @@ fn foo (int tex) {
     ).to.throw("mixed use");
   });
 
-  it("usage status gets passed up thru function", () => {
+  it("usage status gets passed up through function", () => {
     expect(
       () =>
         parseAndCheck(`
@@ -1107,8 +1107,21 @@ fn foo (int tex) {
 }
 
 fn bar (int tex) {
-  return float(tex) * foo(tex);
+  float(tex) * foo(tex);
 }`) // TODO when removing the return in bar, extra error?
+    ).to.throw("mixed use");
+  });
+
+  it("usage status gets passed up through procedure", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int tex) {
+  return frag(tex);
+}
+
+pr bar (int tex) {
+  float(tex) * foo(tex);
+}`)
     ).to.throw("mixed use");
   });
 });

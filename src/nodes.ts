@@ -1731,15 +1731,6 @@ a defined size in the return type specifier`);
             }
           }
 
-          if (!branchContainsReturn(this.body)) {
-            throw new TinslError(
-              `function "${
-                this.getToken().text
-              }" does not definitely return a value. this may be because it does \
-not contain a return statement in all conditional branches`
-            );
-          }
-
           // add all the params to the scope
           for (const p of this.params) {
             innerScope.addToScope(p.getToken().text, p);
@@ -1752,6 +1743,23 @@ not contain a return statement in all conditional branches`
         this.body,
         innerScope
       );
+
+    // this is done in a separate step so it adds the symbol even when there is
+    // no branch, avoiding unwarranted "undefined identifier" errors
+    this.wrapError(
+      () => {
+        if (!branchContainsReturn(this.body)) {
+          throw new TinslError(
+            `function "${
+              this.getToken().text
+            }" does not definitely return a value. this may be because it does \
+not contain a return statement in all conditional branches`
+          );
+        }
+      },
+      scope,
+      false
+    );
 
     try {
       wrap();
