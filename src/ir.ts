@@ -1,4 +1,3 @@
-import { Func } from "mocha";
 import {
   CallExpr,
   Expr,
@@ -9,7 +8,6 @@ import {
   RenderBlock,
   TopDef,
 } from "./nodes";
-import { extractTopLevel } from "./testhelpers";
 
 interface LoopInfo {
   once: boolean;
@@ -32,12 +30,12 @@ export abstract class IRNode {
 }
 
 export class IRTree extends IRNode {
-  subNodes: IRNode[];
+  subNodes: (IRTree | IRLeaf)[];
 
   constructor(
     loopInfo: LoopInfo,
     paramMappings: Map<Param, Expr>,
-    subNodes: IRNode[]
+    subNodes: (IRTree | IRLeaf)[]
   ) {
     super(loopInfo, paramMappings);
     this.subNodes = subNodes;
@@ -92,7 +90,7 @@ export function getAllUsedFuncs(
   return funcs;
 }
 
-export function renderBlockToIR(block: RenderBlock): IRNode {
+export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
   if (
     typeof block.inNum !== "number" ||
     typeof block.outNum !== "number" ||

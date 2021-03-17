@@ -1,6 +1,5 @@
 import { Token } from "moo";
 import { colors } from "./colors";
-import { fillInDefaults } from "./gen";
 import {
   atomicIntHint,
   lValueHint,
@@ -25,6 +24,48 @@ import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
 import { arrHasRepeats, strHasRepeats, toColorKey } from "./util";
 
 const stub = "__STUB";
+
+// classes for output in final translation step
+
+export class SourceTree {
+  loop: number;
+  once: boolean;
+  body: (SourceTree | SourceLeaf)[];
+
+  constructor(loop: number, once: boolean, body: SourceTree[] = []) {
+    this.loop = loop;
+    this.once = once;
+    this.body = body;
+  }
+}
+
+export class SourceLeaf {
+  target: number;
+  requires: {
+    time: boolean;
+    res: boolean;
+    samplers: Set<number>;
+    uniforms: Set<string>; // TODO better type for this
+  } = {
+    time: false,
+    res: false,
+    samplers: new Set(),
+    uniforms: new Set(),
+  };
+  source: string = "";
+  //mappings: Map<Param, Expr>;
+
+  constructor(target: number) {
+    this.target = target;
+  }
+}
+
+export interface MappedLeaf {
+  map: Map<Param, Expr>;
+  leaf: SourceLeaf;
+}
+
+// named args have a simple wrapper
 
 interface NamedArg {
   id: Token;
@@ -130,12 +171,12 @@ export function typeCheckExprStmts(
   if (errors.length > 0) throw new TinslAggregateError(errors);
 }
 
-function commaSeparatedNodes(exprs: Node[]) {
-  return exprs.map((s) => s.translate()).join();
+function commaSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
+  return exprs.map((s) => s.translate(sl)).join();
 }
 
-function lineSeparatedNodes(exprs: Node[]) {
-  return "\n" + exprs.map((s) => s.translate()).join(";\n");
+function lineSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
+  return "\n" + exprs.map((s) => s.translate(sl)).join(";\n");
 }
 
 interface RenderLevel {
@@ -162,7 +203,7 @@ function containsRefreshHelper<T extends RenderLevel>(
 
 abstract class Node {
   abstract toJson(): object;
-  abstract translate(): string;
+  abstract translate(sl: MappedLeaf): string;
   abstract getToken(): Token;
   toString() {
     return JSON.stringify(this.toJson());
@@ -634,10 +675,10 @@ export class BinaryExpr extends Expr {
     };
   }
 
-  translate() {
-    return `(${this.left.translate()}${
+  translate(sl: MappedLeaf) {
+    return `(${this.left.translate(sl)}${
       this.operator.text
-    }${this.right.translate()})`;
+    }${this.right.translate(sl)})`;
   }
 
   getType(scope?: LexicalScope): SpecType {
@@ -729,8 +770,8 @@ export class UnaryExpr extends Expr {
     return this.operator;
   }
 
-  translate() {
-    return `(${this.operator}${this.argument.translate()})`;
+  translate(sl: MappedLeaf) {
+    return `(${this.operator}${this.argument.translate(sl)})`;
   }
 
   toJson() {
@@ -775,7 +816,7 @@ export abstract class AtomExpr extends Expr {
     return this.value;
   }
 
-  translate() {
+  translate(sl: MappedLeaf) {
     return this.value.text;
   }
 
@@ -867,6 +908,15 @@ export class IdentExpr extends AtomExpr {
     }, scope);
   }
 
+  translate(sl: MappedLeaf) {
+    if (this.cachedResolve instanceof Param && sl.map.get(this.cachedResolve)) {
+      const mapping = sl.map.get(this.cachedResolve);
+      if (mapping === undefined) throw new Error("param mapping undefined");
+      return mapping.translate(sl);
+    }
+    return this.value.text;
+  }
+
   isConst(scope: LexicalScope): boolean {
     const name = this.getToken().text;
     const res = scope.resolve(name);
@@ -909,18 +959,18 @@ export class CallExpr extends Expr {
     return this.open;
   }
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
     let argString = "";
     if (this.userDefinedFuncDef !== undefined) {
-      const name = this.userDefinedFuncDef.getToken().text;
+      //const name = this.userDefinedFuncDef.getToken().text;
       const filledArgs = this.userDefinedFuncDef.fillInNamed(this.args);
       this.userDefinedFuncDef.addInDefaults(filledArgs);
-      argString = commaSeparatedNodes(filledArgs);
+      argString = commaSeparatedNodes(filledArgs, sl);
     } else {
-      argString = commaSeparatedNodes(this.getSubExpressions());
+      argString = commaSeparatedNodes(this.getSubExpressions(), sl);
     }
 
-    return `${this.call.translate()}(${argString})`;
+    return `${this.call.translate(sl)}(${argString})`;
     throw new Error("not implemented");
     // TODO translate this differently if frag
     //return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
@@ -1090,8 +1140,8 @@ export class ConstructorExpr extends Expr {
     return this.open;
   }
 
-  translate(): string {
-    return `${this.typ.translate()}(${commaSeparatedNodes(this.args)})`;
+  translate(sl: MappedLeaf): string {
+    return `${this.typ.translate()}(${commaSeparatedNodes(this.args, sl)})`;
   }
 
   toJson(): object {
@@ -1153,8 +1203,8 @@ export class SubscriptExpr extends Expr {
     return this.open;
   }
 
-  translate(): string {
-    return `${this.call.translate()}[${this.index.translate()}]`;
+  translate(sl: MappedLeaf): string {
+    return `${this.call.translate(sl)}[${this.index.translate(sl)}]`;
   }
 
   toJson(): object {
@@ -1237,13 +1287,13 @@ export class VarDecl extends Stmt {
     };
   }
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
     return (
       typeToString(this.getRightType()) +
       " " +
       this.id.text +
       this.assign.text +
-      this.expr.translate()
+      this.expr.translate(sl)
     );
     //return "VAR_DECL" + stub;
     //throw new Error("Method not implemented");
@@ -1311,10 +1361,10 @@ export class Assign extends Stmt {
     };
   }
 
-  translate(): string {
-    return `${this.left.translate()}${
-      this.assign.text
-    }${this.right.translate()}`;
+  translate(sl: MappedLeaf): string {
+    return `${this.left.translate(sl)}${this.assign.text}${this.right.translate(
+      sl
+    )}`;
   }
 
   getToken(): Token {
@@ -1456,7 +1506,7 @@ export class FuncDef extends DefLike {
     };
   }
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
     if (this.inferredType === undefined && this.typ === null) {
       throw new Error("inferred type and explicit type were both not set");
     }
@@ -1467,8 +1517,9 @@ export class FuncDef extends DefLike {
         : this.typ?.toSpecType();
 
     return `${typeString} ${this.id.text}(${commaSeparatedNodes(
-      this.params
-    )}){${lineSeparatedNodes(this.body)}}\n`;
+      this.params,
+      sl
+    )}){${lineSeparatedNodes(this.body, sl)}}\n`;
   }
 
   getToken(): Token {
@@ -1566,8 +1617,8 @@ export class Return extends Stmt {
     return { name: "return", expr: this.expr.toJson() };
   }
 
-  translate(): string {
-    return `return ${this.expr.translate()};`;
+  translate(sl: MappedLeaf): string {
+    return `return ${this.expr.translate(sl)};`;
   }
 
   getToken(): Token {

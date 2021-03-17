@@ -11,7 +11,10 @@ import {
   ProcCall,
   Refresh,
   RenderBlock,
+  MappedLeaf,
+  SourceTree,
   UnaryExpr,
+  SourceLeaf,
 } from "./nodes";
 import { parse, parseAndCheck } from "./testhelpers";
 
@@ -276,19 +279,24 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
   return block;
 }
 
-export function processBlocks(block: RenderBlock): IRNode {
+export function processBlocks(block: RenderBlock): IRTree | IRLeaf {
   return renderBlockToIR(
     regroupByRefresh(fillInDefaults(expandProcsInBlock(block)))
   );
 }
 
-export function exprsToSource(exprs: Expr[]) {
-  const funcs = getAllUsedFuncs(exprs);
+export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
+  const funcs = getAllUsedFuncs(ir.exprs);
+
+  const sl = {
+    leaf: new SourceLeaf(ir.loopInfo.outNum),
+    map: ir.paramMappings,
+  };
 
   // generate the code for the function calls
   const funcsList = Array.from(funcs).reverse();
 
-  const funcDefsSource = funcsList.map((f) => f.translate()).join("\n");
+  const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
 
   // generate gl_FragColor chain
   /*
@@ -297,25 +305,27 @@ export function exprsToSource(exprs: Expr[]) {
 }
   */
   let mainSource = "void main(){\n";
-  for (const e of exprs) {
-    mainSource += "gl_FragColor=" + e.translate() + ";\n";
+  for (const e of ir.exprs) {
+    mainSource += "gl_FragColor=" + e.translate(sl) + ";\n";
   }
   mainSource += "}";
 
-  return funcDefsSource + mainSource;
+  sl.leaf.source = funcDefsSource + mainSource;
+
+  return sl.leaf;
 }
 
-/** has the side effect of filling out the source string of each node */
-export function genSource(ir: IRNode) {
+//export function genSource(ir: IRLeaf): SourceLeaf;
+//export function genSource(ir: IRTree): SourceTree;
+export function genSource(ir: IRTree | IRLeaf): SourceTree | SourceLeaf {
   if (ir instanceof IRTree) {
+    const st = new SourceTree(ir.loopInfo.loopNum, ir.loopInfo.once);
     for (const n of ir.subNodes) {
-      genSource(n);
+      st.body.push(genSource(n));
     }
-  } else if (ir instanceof IRLeaf) {
-    ir.source = exprsToSource(ir.exprs);
+    return st;
   }
-
-  return ir;
+  return irToSourceLeaf(ir);
 }
 
 export function gen(source: string) {
@@ -323,6 +333,10 @@ export function gen(source: string) {
   const blocks = exprs.filter(
     (e): e is RenderBlock => e instanceof RenderBlock
   );
-  const processed = blocks.map((b) => processBlocks(b)).map(genSource);
+
+  // TODO fix the cast
+  const processed = blocks
+    .map((b) => processBlocks(b))
+    .map((b) => genSource(b as IRTree | IRLeaf));
   return processed;
 }

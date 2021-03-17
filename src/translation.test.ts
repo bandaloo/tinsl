@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
   expandProcsInBlock,
   fillInDefaults,
-  exprsToSource,
+  irToSourceLeaf,
   processBlocks,
   regroupByRefresh,
   gen,
@@ -11,6 +11,7 @@ import { getAllUsedFuncs, IRLeaf, renderBlockToIR } from "./ir";
 import { RenderBlock } from "./nodes";
 import { extractTopLevel } from "./testhelpers";
 import { bloom } from "./testprograms";
+import util from "util";
 
 describe("renderblock has refresh", () => {
   it("refresh at first level of render block", () => {
@@ -290,15 +291,25 @@ fn foo () { return bar(); }
 
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
-    const source = exprsToSource(ir.exprs);
-    console.log(source);
+    const source = irToSourceLeaf(ir);
+    fullLog(source);
   });
 });
 
 describe("logging source", () => {
   it("gets all the function definitions", () => {
     const comp = gen(bloom);
-    for (const c of comp) c.print();
+    for (const c of comp) fullLog(c);
   });
 });
 // TODO don't let loop num be -1
+
+const fullLog = (input: any) => {
+  console.log(
+    util.inspect(input, {
+      showHidden: false,
+      depth: null,
+      colors: true,
+    })
+  );
+};
