@@ -331,7 +331,10 @@ type Validity = "valid" | "const" | "final" | "invalid";
 export abstract class Expr extends Node {
   cachedType?: SpecType;
 
-  abstract getType(scope?: LexicalScope, inFragment?: boolean): SpecType;
+  abstract getType(
+    scope?: LexicalScope,
+    associatedParam?: "sampler" | "normal" | Param
+  ): SpecType;
   abstract getSubExpressions(): Expr[];
   isConst(scope: LexicalScope): boolean {
     return this.getSubExpressions().every((e) => e.isConst(scope));
@@ -505,7 +508,7 @@ is of type ${typeToString(defType)}`);
     this.addInDefaults(exprArgs);
 
     const paramTypes = this.params.map((p) => p.getRightType());
-    const argTypes = exprArgs.map((a) => a.getType(scope));
+    const argTypes = exprArgs.map((a, i) => a.getType(scope, this.params[i]));
 
     // number of arguments <= to number of params because of defaults
     for (let i = 0; i < argTypes.length; i++) {
@@ -516,6 +519,24 @@ is of type ${typeToString(defType)}`);
 but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
       }
+
+      // check usage match
+
+      /*
+      const arg = exprArgs[i];
+      if (arg instanceof IdentExpr) {
+        if (arg.cachedResolve instanceof Param) {
+          if (arg.cachedResolve.usage !== this.params[i].usage) {
+            throw new TinslError(
+              "mix of usage types for int: " +
+                arg.cachedResolve.usage +
+                "and" +
+                this.params[i].usage
+            );
+          }
+        }
+      }
+      */
 
       if (this.params[i].pureInt) {
         // input must be compile time
@@ -922,7 +943,10 @@ export class IdentExpr extends AtomExpr {
     return this.jsonHelper("ident_expr");
   }
 
-  getType(scope?: LexicalScope, inFragment = false): SpecType {
+  getType(
+    scope?: LexicalScope,
+    associatedParam: "sampler" | "normal" | Param = "normal"
+  ): SpecType {
     // TODO this can't return the cached type!!! it needs to do this check every
     // time or else sampler/normal won't work
     return this.wrapError(
@@ -950,9 +974,36 @@ export class IdentExpr extends AtomExpr {
         if (res instanceof VarDecl) {
           this.validLVal = res.access === "mut" ? "valid" : res.access;
         } else if (res instanceof Param) {
-          // if it is resolved this way, it is not used inside frag
-          // if in function call, go into nested parameter
-          if (inFragment) {
+          if (associatedParam instanceof Param)
+            console.log(
+              "associated param",
+              associatedParam,
+              "res.usage",
+              res.usage
+            );
+
+          /*
+          const requiredMatch =
+            associatedParam === "in frag"
+              ? "sampler"
+              : associatedParam instanceof Param
+              ? associatedParam.usage
+              : "unused";
+          */
+
+          const requiredMatch =
+            associatedParam instanceof Param
+              ? associatedParam.usage
+              : associatedParam;
+
+          if (res.usage !== "unused" && res.usage !== requiredMatch) {
+            throw new TinslError(
+              `param has mixed use. ${requiredMatch} & ${res.usage}`
+            );
+          }
+          res.usage = requiredMatch;
+          /*
+          if (associatedParam === "in frag") {
             console.log("in fragment!!!");
             if (res.usage === "normal") {
               throw new TinslError( // TODO better error message
@@ -972,6 +1023,7 @@ export class IdentExpr extends AtomExpr {
               res.usage = "normal";
             }
           }
+          */
           /*
         if (res.usage === "sampler") {
           throw new TinslError( // TODO better error message
@@ -1116,7 +1168,9 @@ export class CallExpr extends Expr {
             throw new TinslError("frag call cannot contain named args");
           }
 
-          const list = this.args.filter((x) => x.getType(scope, true) === typ);
+          const list = this.args.filter(
+            (x) => x.getType(scope, "sampler") === typ
+          );
 
           if (list.length > 1) {
             throw new TinslError(

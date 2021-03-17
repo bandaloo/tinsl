@@ -1078,20 +1078,38 @@ describe("frag", () => {
     checkExpr("frag10", new Frag(tok("frag10")));
   });
 
-  it("throws when param used for tex num is used normally", () => {
-    expect(() =>
-      parseAndCheck(`
+  describe("pure int mixed usage test", () => {
+    it("throws when param used for tex num then normally", () => {
+      expect(() =>
+        parseAndCheck(`
 fn foo (int tex) {
   return frag(tex) / float(tex);
 }`)
-    ).to.throw("sampler parameter elsewhere");
+      ).to.throw("mixed use");
+    });
+  });
 
+  it("throws when param used normally then for tex num", () => {
     expect(() =>
       parseAndCheck(`
 fn foo (int tex) {
   return float(tex) * frag(tex);
 }`)
-    ).to.throw("normal parameter elsewhere");
+    ).to.throw("mixed use");
+  });
+
+  it("usage status gets passed up thru function", () => {
+    expect(
+      () =>
+        parseAndCheck(`
+fn foo (int tex) {
+  return frag(tex);
+}
+
+fn bar (int tex) {
+  return float(tex) * foo(tex);
+}`) // TODO when removing the return in bar, extra error?
+    ).to.throw("mixed use");
   });
 });
 
