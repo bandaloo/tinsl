@@ -1099,16 +1099,15 @@ fn foo (int tex) {
   });
 
   it("usage status gets passed up through function", () => {
-    expect(
-      () =>
-        parseAndCheck(`
+    expect(() =>
+      parseAndCheck(`
 fn foo (int tex) {
   return frag(tex);
 }
 
 fn bar (int tex) {
-  float(tex) * foo(tex);
-}`) // TODO when removing the return in bar, extra error?
+  return float(tex) * foo(tex);
+}`)
     ).to.throw("mixed use");
   });
 

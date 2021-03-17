@@ -326,6 +326,8 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
+  // TODO do user-defined uniforms
+
   sl.leaf.source = funcDefsSource + mainSource;
 
   return sl.leaf;

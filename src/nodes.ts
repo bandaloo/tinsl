@@ -211,7 +211,7 @@ abstract class Node {
   }
 }
 
-type IdentResult = TopDef | VarDecl | FuncDef | ProcDef | Param;
+type IdentResult = TopDef | VarDecl | FuncDef | ProcDef | Param | Uniform;
 
 interface IdentDictionary {
   [key: string]: IdentResult | undefined;
@@ -581,6 +581,7 @@ export class TinslProgram {
   }
 
   check(): void {
+    //sl.leaf.requires.uniforms.add(typeToString(this.typ.toSpecType()));
     typeCheckExprStmts(this.body, this.topScope);
   }
 
@@ -1107,12 +1108,7 @@ export class CallExpr extends Expr {
         if (res === undefined) {
           throw new Error("cached resolve of sampler expr undefined");
         }
-
-        /*
-        if (res instanceof Param) {
-          sl.map; // TODO this is clearly not complete so pick up here
-        }
-        */
+        // TODO finish this for frag
       }
     }
 
@@ -2089,7 +2085,8 @@ export class Else extends Stmt {
 }
 
 // TODO check to see that length of array uniform is specified
-export class Uniform extends Node {
+// TODO rename this to UniformDecl (where it is declared not used)
+export class Uniform extends Stmt {
   typ: TypeName;
   ident: Token;
 
@@ -2103,13 +2100,30 @@ export class Uniform extends Node {
     return { name: "uniform", ident: this.ident.text };
   }
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
+    //sl.leaf.requires.uniforms.add(typeToString(this.typ.toSpecType()));
     return "UNIFORM" + stub;
     throw new Error("Method not implemented.");
   }
 
   getToken(): Token {
     return this.ident;
+  }
+
+  getExprStmts(): ExSt[] | { outer: ExSt[]; inner: ExSt[] } {
+    return [];
+  }
+
+  typeCheck(scope: LexicalScope): void {
+    scope.addToScope(this.ident.text, this);
+  }
+
+  getRightType() {
+    try {
+      return this.typ.toSpecType();
+    } catch {
+      return "__undecided";
+    }
   }
 }
 
