@@ -48,6 +48,8 @@ const access = (d: any, alt: string) => d[0] !== null ? d[0][0].text : alt;
 
 @lexer nearleyLexer
 
+# TODO disallow frag (and eventually prev)
+
 Main ->
     _ TopLevel (__ TopLevel):* _
       {% ([, first, rest, ]: any) => [first, ...rest.map((t: any) => t[1])] %}

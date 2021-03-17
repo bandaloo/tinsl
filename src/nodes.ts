@@ -116,7 +116,7 @@ export function compileTimeInt(
 
 export function compileTimeParam(
   expr: Expr,
-  scope: LexicalScope | IdentResult // TODO make this just leixcal scope
+  scope: LexicalScope | IdentResult // TODO make this just lexical scope
 ) {
   if (expr instanceof IdentExpr) {
     const res =
@@ -126,6 +126,7 @@ export function compileTimeParam(
 
     if (res instanceof Param) {
       expr.cachedParam = res;
+      expr.validLVal = "invalid"; // TODO might not need this?
       return res;
     }
   }
@@ -281,9 +282,13 @@ export class LexicalScope {
 
   addTexNum(int: number) {
     if (this.renderBlock !== undefined) {
+      console.log("to render block", int);
       this.renderBlock.requiredTexNums.add(int);
+      console.log(this.renderBlock.requiredTexNums);
     } else if (this.funcDef !== undefined) {
+      console.log("to func def", int);
       this.funcDef.requiredTexNums.add(int);
+      console.log(this.funcDef.requiredTexNums);
     } else {
       throw Error(
         "both func def and render block of scope " +
@@ -326,7 +331,7 @@ type Validity = "valid" | "const" | "final" | "invalid";
 export abstract class Expr extends Node {
   cachedType?: SpecType;
 
-  abstract getType(scope?: LexicalScope): SpecType;
+  abstract getType(scope?: LexicalScope, inFragment?: boolean): SpecType;
   abstract getSubExpressions(): Expr[];
   isConst(scope: LexicalScope): boolean {
     return this.getSubExpressions().every((e) => e.isConst(scope));
@@ -341,9 +346,12 @@ export abstract class Expr extends Node {
     scope: LexicalScope | undefined,
     renderLevel = false,
     extraExSts: ExSt[] = [],
-    innerScope = scope
+    innerScope = scope,
+    suppressReturningCached = false
   ): SpecType {
-    if (this.cachedType !== undefined) return this.cachedType;
+    if (this.cachedType !== undefined && !suppressReturningCached) {
+      return this.cachedType;
+    }
     if (scope === undefined) throw new Error("TODO make this impossible");
     this.cachedType = wrapErrorHelper(
       callback,
@@ -528,6 +536,7 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         } else if (this.params[i].isTexNum) {
           // we know this is a texture number so sick it on either the render
           // block or the function def, whichever we are in
+          console.log("adding tex num in DefLike");
           scope.addTexNum(int);
         }
       }
@@ -609,6 +618,7 @@ export class RenderBlock extends Stmt {
     );
     rb.cachedRefresh = this.cachedRefresh;
     rb.paramMappings = this.paramMappings;
+    rb.requiredTexNums = this.requiredTexNums;
     return rb;
   }
 
@@ -660,6 +670,7 @@ export class RenderBlock extends Stmt {
           const param = compileTimeParam(num, scope);
           if (param !== null && param.getRightType() === "int") {
             param.pureInt = true;
+            param.usage = "sampler";
             return num;
           }
 
@@ -911,38 +922,79 @@ export class IdentExpr extends AtomExpr {
     return this.jsonHelper("ident_expr");
   }
 
-  getType(scope?: LexicalScope): SpecType {
-    return this.wrapError(() => {
-      if (scope === undefined) {
-        throw new Error(
-          "scope was somehow undefined when trying to resolve identifier"
-        );
-      }
+  getType(scope?: LexicalScope, inFragment = false): SpecType {
+    // TODO this can't return the cached type!!! it needs to do this check every
+    // time or else sampler/normal won't work
+    return this.wrapError(
+      () => {
+        if (scope === undefined) {
+          throw new Error(
+            "scope was somehow undefined when trying to resolve identifier"
+          );
+        }
 
-      const name = this.getToken().text;
-      const res = scope.resolve(name);
-      if (res === undefined)
-        throw new TinslError(`undefined identifier "${name}"`);
+        const name = this.getToken().text;
+        const res = scope.resolve(name);
+        if (res === undefined)
+          throw new TinslError(`undefined identifier "${name}"`);
 
-      const helper = (str: string) => {
-        return new TinslError(
-          `identifier ${name} is a ${str} definition, not an expression`
-        );
-      };
+        const helper = (str: string) => {
+          return new TinslError(
+            `identifier ${name} is a ${str} definition, not an expression`
+          );
+        };
 
-      if (res instanceof FuncDef) throw helper("function");
-      if (res instanceof ProcDef) throw helper("procedure");
+        if (res instanceof FuncDef) throw helper("function");
+        if (res instanceof ProcDef) throw helper("procedure");
 
-      if (res instanceof VarDecl) {
-        this.validLVal = res.access === "mut" ? "valid" : res.access;
-      } else if (res instanceof Param) {
-        this.validLVal = "invalid"; // parameters are immutable by default
-      }
+        if (res instanceof VarDecl) {
+          this.validLVal = res.access === "mut" ? "valid" : res.access;
+        } else if (res instanceof Param) {
+          // if it is resolved this way, it is not used inside frag
+          // if in function call, go into nested parameter
+          if (inFragment) {
+            console.log("in fragment!!!");
+            if (res.usage === "normal") {
+              throw new TinslError( // TODO better error message
+                "param used as a normal parameter elsewhere " +
+                  "was used as a sampler parameter"
+              );
+            } else {
+              res.usage = "sampler";
+            }
+          } else {
+            if (res.usage === "sampler") {
+              throw new TinslError( // TODO better error message
+                "param used as a sampler parameter elsewhere " +
+                  "was used as a normal parameter"
+              );
+            } else {
+              res.usage = "normal";
+            }
+          }
+          /*
+        if (res.usage === "sampler") {
+          throw new TinslError( // TODO better error message
+            "param used as a sampler parameter elsewhere " +
+              "was used as a normal parameter"
+          );
+        }
+        res.usage = "normal";
+        */
+          // TODO figure out
+          this.validLVal = "invalid"; // parameters are immutable by default
+        }
 
-      this.cachedResolve = res;
+        this.cachedResolve = res;
 
-      return res.getRightType(scope);
-    }, scope);
+        return res.getRightType(scope);
+      },
+      scope,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
   }
 
   translate(sl: MappedLeaf) {
@@ -1004,9 +1056,11 @@ export class CallExpr extends Expr {
           throw new Error("cached resolve of sampler expr undefined");
         }
 
+        /*
         if (res instanceof Param) {
           sl.map; // TODO this is clearly not complete so pick up here
         }
+        */
       }
     }
 
@@ -1049,11 +1103,11 @@ export class CallExpr extends Expr {
       }
 
       if (this.call instanceof Frag) {
-        if (this.args.length === 0)
+        if (this.args.length === 0) {
           throw new TinslError(
-            "can not call frag with no arguments. " +
-              "just use `frag` on its own"
+            "can not call frag with no arguments. just use `frag` on its own"
           );
+        }
 
         const fragExpr = this.call;
 
@@ -1062,7 +1116,7 @@ export class CallExpr extends Expr {
             throw new TinslError("frag call cannot contain named args");
           }
 
-          const list = this.args.filter((x) => x.getType(scope) === typ);
+          const list = this.args.filter((x) => x.getType(scope, true) === typ);
 
           if (list.length > 1) {
             throw new TinslError(
@@ -1094,11 +1148,23 @@ export class CallExpr extends Expr {
                   atomicIntHint
               );
             }
+
+            /*
+            if (param.usage === "normal") {
+              throw new TinslError( // TODO better error message
+                "param used as a normal parameter elsewhere " +
+                  "was used as a sampler parameter"
+              );
+            }
+            */
+
             param.pureInt = true;
             param.isTexNum = true;
+            //param.usage = "sampler";
             fragExpr.sampler = intExpr;
           } else {
             fragExpr.sampler = int;
+            console.log("adding tex num in CallExpr");
             scope.addTexNum(int);
           }
         }
@@ -1507,7 +1573,8 @@ export class Param extends Node {
   def: Expr | null;
   pureInt = false;
   /** null means it does not indicate a texture num */
-  isTexNum = false;
+  isTexNum = false; // TODO get rid of this; covered by the next attribute
+  usage: "normal" | "sampler" | "unused" = "unused";
 
   constructor(typ: TypeName, id: Token, def: Expr | null = null) {
     super();
@@ -2190,7 +2257,7 @@ export class Res extends Basic {
   name: string = "res";
 
   translate(): string {
-    return "RES" + stub;
+    return "uResolution";
   }
 }
 

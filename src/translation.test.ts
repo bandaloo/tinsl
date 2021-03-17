@@ -297,7 +297,7 @@ fn foo () { return bar(); }
 });
 
 describe("logging source", () => {
-  it("gets all the function definitions", () => {
+  it("fully logs bloom", () => {
     const comp = gen(bloom);
     for (const c of comp) fullLog(c);
   });
@@ -313,3 +313,5 @@ const fullLog = (input: any) => {
     })
   );
 };
+
+// TODO try to add in set of func def instead of render block

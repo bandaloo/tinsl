@@ -1077,6 +1077,22 @@ describe("frag", () => {
     expect(f.sampler).to.equal(10);
     checkExpr("frag10", new Frag(tok("frag10")));
   });
+
+  it("throws when param used for tex num is used normally", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int tex) {
+  return frag(tex) / float(tex);
+}`)
+    ).to.throw("sampler parameter elsewhere");
+
+    expect(() =>
+      parseAndCheck(`
+fn foo (int tex) {
+  return float(tex) * frag(tex);
+}`)
+    ).to.throw("normal parameter elsewhere");
+  });
 });
 
 describe("proc call", () => {

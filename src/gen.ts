@@ -297,6 +297,20 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   const funcsList = Array.from(funcs).reverse();
   const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
 
+  // collect all required textures
+  const texNums = new Set<number>();
+  for (const f of funcsList) {
+    for (const t of f.requiredTexNums) {
+      texNums.add(t);
+    }
+  }
+
+  for (const t of ir.texNums) {
+    texNums.add(t);
+  }
+
+  console.log("tex nums", texNums);
+
   // generate the main loop (series of assignments to gl_FragColor)
   let mainSource = "void main(){\n";
   for (const e of ir.exprs) {
