@@ -295,20 +295,22 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
 
   // generate the code for the function calls
   const funcsList = Array.from(funcs).reverse();
-
   const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
 
-  // generate gl_FragColor chain
-  /*
-  void main() {
-  gl_FragColor = gauss5(vec2((length((gl_FragCoord.xy / uResolution - 0.5)) * 3.), 0.));
-}
-  */
+  // generate the main loop (series of assignments to gl_FragColor)
   let mainSource = "void main(){\n";
   for (const e of ir.exprs) {
     mainSource += "gl_FragColor=" + e.translate(sl) + ";\n";
   }
   mainSource += "}";
+
+  // generate the uniform declarations
+  let samplersSource = "";
+  if (sl.leaf.requires.time) samplersSource += "uniform mediump uTime;\n";
+  if (sl.leaf.requires.res) samplersSource += "uniform mediump uResolution;\n";
+  for (const s of sl.leaf.requires.samplers) {
+    samplersSource += `uniform sampler2D uSampler${s};\n`;
+  }
 
   sl.leaf.source = funcDefsSource + mainSource;
 
@@ -334,9 +336,6 @@ export function gen(source: string) {
     (e): e is RenderBlock => e instanceof RenderBlock
   );
 
-  // TODO fix the cast
-  const processed = blocks
-    .map((b) => processBlocks(b))
-    .map((b) => genSource(b as IRTree | IRLeaf));
+  const processed = blocks.map(processBlocks).map(genSource);
   return processed;
 }

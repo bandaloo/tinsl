@@ -222,17 +222,20 @@ export class LexicalScope {
   private _returnType?: SpecType;
   private _funcName?: string; // TODO rename this (could be proc)
   private _funcDef?: FuncDef; // will only be defined within a func
+  private _renderBlock?: RenderBlock; // will only be defined within a rb
 
   constructor(
     upperScope?: LexicalScope,
     returnType?: SpecType,
     funcName?: string,
-    funcDef?: FuncDef
+    funcDef?: FuncDef,
+    renderBlock?: RenderBlock
   ) {
     this.upperScope = upperScope;
     this._returnType = returnType ?? upperScope?._returnType;
     this._funcName = funcName ?? upperScope?._funcName;
     this._funcDef = funcDef ?? upperScope?.funcDef;
+    this._renderBlock = renderBlock ?? upperScope?.renderBlock;
   }
 
   get returnType(): SpecType | undefined {
@@ -257,8 +260,16 @@ export class LexicalScope {
     return this._funcDef;
   }
 
-  set funcDef(str: FuncDef | undefined) {
-    this._funcDef = str;
+  set funcDef(def: FuncDef | undefined) {
+    this._funcDef = def;
+  }
+
+  get renderBlock(): RenderBlock | undefined {
+    return this._renderBlock;
+  }
+
+  set renderBlock(block: RenderBlock | undefined) {
+    this._renderBlock = block;
   }
 
   addToScope(name: string, result: IdentResult, msg = "duplicate") {
@@ -266,6 +277,19 @@ export class LexicalScope {
       throw new TinslError(`${msg} identifier "${name}"`);
     }
     this.idents[name] = result;
+  }
+
+  addTexNum(int: number) {
+    if (this.renderBlock !== undefined) {
+      this.renderBlock.requiredTexNums.add(int);
+    } else if (this.funcDef !== undefined) {
+      this.funcDef.requiredTexNums.add(int);
+    } else {
+      throw Error(
+        "both func def and render block of scope " +
+          "were null when trying to add new required tex num"
+      );
+    }
   }
 
   resolve(name: string): IdentResult | undefined {
@@ -487,19 +511,24 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
 
       if (this.params[i].pureInt) {
         // input must be compile time
-        const intExpr = compileTimeInt(exprArgs[i], scope);
+        const int = compileTimeInt(exprArgs[i], scope);
         const paramExpr = compileTimeParam(exprArgs[i], scope);
 
         if (paramExpr !== null) {
           // pure int status gets passed onto outer param
           paramExpr.pureInt = true; // this param is from the arg
-        } else if (intExpr === null) {
+          paramExpr.isTexNum = this.params[i].isTexNum;
+        } else if (int === null) {
           // both were null so it's not compile time
           throw new TinslError(
             `in function "${this.getToken().text}", argument for parameter "${
               this.params[i].getToken().text
             }" is not a compile time atomic int, ${atomicIntHint}`
           );
+        } else if (this.params[i].isTexNum) {
+          // we know this is a texture number so sick it on either the render
+          // block or the function def, whichever we are in
+          scope.addTexNum(int);
         }
       }
     }
@@ -542,6 +571,8 @@ export class RenderBlock extends Stmt {
   cachedRefresh?: boolean;
 
   paramMappings: Map<Param, Expr> = new Map();
+
+  requiredTexNums: Set<number> = new Set();
 
   constructor(
     once: boolean,
@@ -610,7 +641,13 @@ export class RenderBlock extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    const innerScope = new LexicalScope(scope);
+    const innerScope = new LexicalScope(
+      scope,
+      undefined, // skip everything, just pass in render block
+      undefined,
+      undefined,
+      this
+    );
 
     this.wrapError(
       (scope: LexicalScope) => {
@@ -960,6 +997,19 @@ export class CallExpr extends Expr {
   }
 
   translate(sl: MappedLeaf): string {
+    if (this.call instanceof Frag) {
+      if (this.call.sampler instanceof IdentExpr) {
+        const res = this.call.sampler.cachedResolve;
+        if (res === undefined) {
+          throw new Error("cached resolve of sampler expr undefined");
+        }
+
+        if (res instanceof Param) {
+          sl.map; // TODO this is clearly not complete so pick up here
+        }
+      }
+    }
+
     let argString = "";
     if (this.userDefinedFuncDef !== undefined) {
       //const name = this.userDefinedFuncDef.getToken().text;
@@ -971,9 +1021,6 @@ export class CallExpr extends Expr {
     }
 
     return `${this.call.translate(sl)}(${argString})`;
-    throw new Error("not implemented");
-    // TODO translate this differently if frag
-    //return `${this.call.translate}(${commaSeparatedNodes(this.args)})`;
   }
 
   toJson(): object {
@@ -1048,9 +1095,11 @@ export class CallExpr extends Expr {
               );
             }
             param.pureInt = true;
+            param.isTexNum = true;
             fragExpr.sampler = intExpr;
           } else {
             fragExpr.sampler = int;
+            scope.addTexNum(int);
           }
         }
 
@@ -1457,6 +1506,8 @@ export class Param extends Node {
   id: Token;
   def: Expr | null;
   pureInt = false;
+  /** null means it does not indicate a texture num */
+  isTexNum = false;
 
   constructor(typ: TypeName, id: Token, def: Expr | null = null) {
     super();
@@ -1482,6 +1533,8 @@ export class Param extends Node {
   }
 }
 
+// TODO interface for implementing requiredTexNums
+
 export class FuncDef extends DefLike {
   typ: TypeName | null;
   id: Token;
@@ -1489,6 +1542,8 @@ export class FuncDef extends DefLike {
   private inferredType?: SpecType;
 
   subFuncs: Set<FuncDef> = new Set();
+
+  requiredTexNums: Set<number> = new Set();
 
   constructor(typ: TypeName | null, id: Token, params: Param[], body: ExSt[]) {
     super(params);
