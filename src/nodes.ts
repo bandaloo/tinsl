@@ -100,7 +100,7 @@ function translateFrag(frag: Frag, sl: MappedLeaf) {
       ? frag.pos.translate(sl)
       : (() => {
           sl.leaf.requires.res = true;
-          return "gl_FragCoord/uResolution";
+          return "gl_FragCoord.xy/uResolution";
         })();
 
   if (typeof frag.sampler === "number") {
@@ -113,7 +113,7 @@ function translateFrag(frag: Frag, sl: MappedLeaf) {
     const conversion = convertToSampler(frag.sampler, sl);
     return `texture2D(${
       typeof conversion === "string" ? conversion : conversion.translate(sl)
-    }, ${posString})`;
+    },${posString})`;
   }
   throw new Error("sampler matched none of the cases");
 }
@@ -2368,7 +2368,7 @@ export class Pos extends Basic {
   name: string = "coord";
 
   translate(): string {
-    return "gl_FragCoord";
+    return "gl_FragCoord.xy";
   }
 }
 
