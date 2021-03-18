@@ -1085,6 +1085,8 @@ export class IdentExpr extends AtomExpr {
   translate(sl: MappedLeaf) {
     if (this.cachedResolve instanceof Uniform) {
       sl.leaf.requires.uniforms.add(this.cachedResolve);
+    } else if (this.cachedResolve instanceof TopDef) {
+      return this.cachedResolve.translate(sl);
     } else if (
       this.cachedResolve instanceof Param &&
       sl.map.get(this.cachedResolve) // TODO! take a look at this
@@ -2304,8 +2306,8 @@ export class TopDef extends Stmt {
     };
   }
 
-  translate(): string {
-    throw new Error("Method not implemented.");
+  translate(sl: MappedLeaf): string {
+    return this.expr.translate(sl);
   }
 
   getToken(): Token {
