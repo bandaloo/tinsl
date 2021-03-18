@@ -50,7 +50,7 @@ export class SourceLeaf {
     time: boolean;
     res: boolean;
     samplers: Set<number>;
-    uniforms: Set<Uniform>; // TODO better type for this
+    uniforms: Set<Uniform>;
   } = {
     time: false,
     res: false,
@@ -104,11 +104,13 @@ function translateFrag(frag: Frag, sl: MappedLeaf) {
         })();
 
   if (typeof frag.sampler === "number") {
+    sl.leaf.requires.samplers.add(frag.sampler);
     return `texture2D(uSampler${frag.sampler},${posString})`;
   } else if (frag.sampler === null) {
+    sl.leaf.requires.samplers.add(sl.leaf.inNum);
     return `texture2D(uSampler${sl.leaf.inNum},${posString})`;
   } else if (frag.sampler instanceof IdentExpr) {
-    const conversion = convertToSampler(frag.sampler, sl.leaf.inNum);
+    const conversion = convertToSampler(frag.sampler, sl);
     return `texture2D(${
       typeof conversion === "string" ? conversion : conversion.translate(sl)
     }, ${posString})`;
@@ -130,11 +132,13 @@ function isNegativeOneUnary(expr: Expr, num: number) {
 }
 */
 
-function convertToSampler(expr: Expr, replacement: number): Expr | string {
+function convertToSampler(expr: Expr, sl: MappedLeaf): Expr | string {
   // null will have compile time int used cached resolve
   const int = compileTimeInt(expr, null);
   if (int === null) return expr;
-  return "uSampler" + (int === -1 ? replacement : int);
+  const num = int === -1 ? sl.leaf.inNum : int;
+  sl.leaf.requires.samplers.add(num);
+  return "uSampler" + num;
 }
 
 export function compileTimeInt(
@@ -1032,13 +1036,16 @@ export class IdentExpr extends AtomExpr {
         if (res instanceof VarDecl) {
           this.validLVal = res.access === "mut" ? "valid" : res.access;
         } else if (res instanceof Param) {
-          if (associatedParam instanceof Param)
+          /*
+          if (associatedParam instanceof Param) {
             console.log(
               "associated param",
               associatedParam,
               "res.usage",
               res.usage
             );
+          }
+          */
 
           /*
           const requiredMatch =
@@ -1085,7 +1092,7 @@ export class IdentExpr extends AtomExpr {
       const mapping = sl.map.get(this.cachedResolve);
       if (mapping === undefined) throw new Error("param mapping undefined");
       if (this.cachedResolve.usage === "sampler") {
-        const ret = convertToSampler(mapping, sl.leaf.inNum);
+        const ret = convertToSampler(mapping, sl);
         return typeof ret === "string" ? ret : ret.translate(sl);
       }
       return mapping.translate(sl);
@@ -1151,7 +1158,11 @@ export class CallExpr extends Expr {
       console.log("params", params);
       console.log("args", filledArgs);
       const convertedToSamplers = filledArgs.map((a, i) =>
-        params[i].usage === "sampler" ? convertToSampler(a, sl.leaf.inNum) : a
+        params[i].usage === "sampler"
+          ? (() => {
+              return convertToSampler(a, sl);
+            })()
+          : a
       );
       argString = commaSeparatedNodes(convertedToSamplers, sl);
     } else {

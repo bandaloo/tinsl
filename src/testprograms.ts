@@ -21,14 +21,13 @@ fn blur5(vec2 direction, int channel) {
 pr two_pass_blur(float size, int reps, int channel = -1) {
   loop reps {
     blur5(vec2(size, 0.), channel); refresh;
-    // pass in -1 explicitly for testing purposes
-    blur5(vec2(0., size), -1); refresh;
+    blur5(vec2(0., size), channel); refresh;
   }
 }
 
 { frag0 * step(luma(frag0), threshold); } -> 1
 
-{ @two_pass_blur(size: u_size, reps: 3); } -> 1
+{ @two_pass_blur(size: u_size, reps: 3, channel: 1); } -> 1
 
 { frag0 + frag1; } -> 0`;
 

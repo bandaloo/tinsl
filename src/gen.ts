@@ -323,7 +323,8 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
-  sl.leaf.source = uniformsSource + funcDefsSource + mainSource;
+  sl.leaf.source =
+    samplersSource + uniformsSource + funcDefsSource + mainSource;
 
   return sl.leaf;
 }
