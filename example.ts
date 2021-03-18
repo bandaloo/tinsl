@@ -52,10 +52,10 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 { frag0 + frag1; } -> 0`;
 */
 
-const code = `0 -> { frag0; } -> 0`;
+const code = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
 
 console.log(code);
 
-const runner = new Runner(gl, code, [], {});
+const runner = new Runner(gl, code, [sourceCanvas], {});
 
 runner.draw();

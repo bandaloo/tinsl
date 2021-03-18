@@ -135,7 +135,9 @@ class WebGLProgramLeaf {
     if (last) {
       // draw to the screen by setting to default framebuffer (null)
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+      console.log("last!!!");
     } else {
+      console.log("not last!!!!");
       // we are not on the last pass
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
       this.gl.framebufferTexture2D(
@@ -145,17 +147,14 @@ class WebGLProgramLeaf {
         texInfo.channels[0].tex, // TODO do we always want zero?
         0
       );
-      // allows us to read from the back texture
-      // default sampler is 0, so `uSampler` will sample from texture 0
-      this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
-      // TODO is this the texture we want to bind? do we need to swap first?
-      this.gl.bindTexture(
-        this.gl.TEXTURE_2D,
-        texInfo.channels[this.target].tex
-      );
-      // we are on the last program, so draw
-      this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
+    // allows us to read from the back texture
+    // default sampler is 0, so `uSampler` will sample from texture 0
+    this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
+    // TODO is this the texture we want to bind? do we need to swap first?
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[this.target].tex);
+    // we are on the last program, so draw
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 
     // swap the textures back
     swap(); // TODO do we need to swap?
@@ -177,6 +176,7 @@ export class Runner {
   private readonly texInfo: TexInfo;
   private readonly framebuffer: WebGLFramebuffer;
   private readonly programs: WebGLProgramTree;
+  private readonly sources: (TexImageSource | WebGLTexture | undefined)[],
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -185,6 +185,8 @@ export class Runner {
     options: RunnerOptions
   ) {
     const tree = typeof code === "string" ? genTinsl(code) : code;
+
+    this.sources = sources;
 
     console.log(tree);
 
@@ -226,7 +228,7 @@ export class Runner {
     // make textures
     const scratch = { name: "scratch", tex: makeTex(this.gl, this.options) };
     //const samplers = Array.from(getAllSamplers(tree)).sort();
-    const samplers = [0, 1]; // TODO get rid of this
+    const samplers = [0]; // TODO get rid of this
 
     console.log("samplers", samplers);
 
@@ -247,6 +249,8 @@ export class Runner {
       }
     });
 
+    console.log(channels);
+
     console.log("channels", channels);
 
     this.texInfo = { scratch, channels };
@@ -266,8 +270,12 @@ export class Runner {
     //const offset = this.options.offset ?? 0;
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.scratch.tex);
-    sendTexture(this.gl, this.texInfo.channels[0].tex);
+    // TODO send to every texture that needs it
+    console.log('sources 0', this.sources[0]);
+    sendTexture(this.gl, this.sources[0]);
     this.programs.run(this.texInfo, this.framebuffer, true);
+    // TODO see if we should unbind this
+    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
     //this.gl.activeTexture(this.gl.TEXTURE0 + offset);
     // TODO implement this
   }
@@ -327,11 +335,11 @@ function makeTex(gl: WebGL2RenderingContext, options?: RunnerOptions) {
 /** copies onto texture */
 export function sendTexture(
   gl: WebGL2RenderingContext,
-  src: TexImageSource | WebGLTexture | null
+  src: TexImageSource | WebGLTexture | undefined // TODO type for this
 ) {
   // if you are using textures instead of images, the user is responsible for
   // updating that texture, so just return
-  if (src instanceof WebGLTexture || src === null) return;
+  if (src instanceof WebGLTexture || src === undefined) return;
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
 }
 
