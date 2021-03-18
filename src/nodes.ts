@@ -37,6 +37,10 @@ export class SourceTree {
     this.once = once;
     this.body = body;
   }
+
+  log() {
+    for (const b of this.body) b.log();
+  }
 }
 
 export class SourceLeaf {
@@ -59,6 +63,11 @@ export class SourceLeaf {
   constructor(outNum: number, inNum: number) {
     this.outNum = outNum;
     this.inNum = inNum;
+  }
+
+  log() {
+    console.log("// renders to texture " + this.outNum);
+    console.log(this.source);
   }
 }
 
@@ -83,6 +92,28 @@ function namedArgsToTypes(args: (NamedArg | Expr)[], scope: LexicalScope) {
   return args.map((a) =>
     a instanceof Expr ? a.getType(scope) : a.expr.getType(scope)
   );
+}
+
+function translateFrag(frag: Frag, sl: MappedLeaf) {
+  const posString =
+    frag.pos !== null
+      ? frag.pos.translate(sl)
+      : (() => {
+          sl.leaf.requires.res = true;
+          return "gl_FragCoord/uResolution";
+        })();
+
+  if (typeof frag.sampler === "number") {
+    return `texture2D(uSampler${frag.sampler},${posString})`;
+  } else if (frag.sampler === null) {
+    return `texture2D(uSampler${sl.leaf.inNum},${posString})`;
+  } else if (frag.sampler instanceof IdentExpr) {
+    const conversion = convertToSampler(frag.sampler, sl.leaf.inNum);
+    return `texture2D(${
+      typeof conversion === "string" ? conversion : conversion.translate(sl)
+    }, ${posString})`;
+  }
+  throw new Error("sampler matched none of the cases");
 }
 
 /*
@@ -1105,30 +1136,7 @@ export class CallExpr extends Expr {
   }
 
   translate(sl: MappedLeaf): string {
-    if (this.call instanceof Frag) {
-      if (!(this.call.sampler instanceof IdentExpr)) {
-        /*
-        const resSampler = this.call.sampler.cachedResolve;
-        if (resSampler === undefined) {
-          throw new Error("cached resolve of sampler expr undefined");
-        }
-        */
-        console.log("translating a frag!");
-        const posString =
-          this.call.pos !== null
-            ? this.call.pos.translate(sl)
-            : "gl_FragCoord / uResolution";
-
-        const tex = this.call.translate();
-
-        if (typeof this.call.sampler === "number") {
-          return `${tex}(uSampler${this.call.sampler},     ${posString})`;
-        } else if (this.call.sampler === null) {
-          return `${tex}(uSampler${sl.leaf.inNum},    ${posString})`;
-        }
-        throw new Error("sampler was not null or a number or ident");
-      }
-    }
+    if (this.call instanceof Frag) return translateFrag(this.call, sl);
 
     let argString = "";
     if (this.userDefinedFuncDef !== undefined) {
@@ -1473,14 +1481,13 @@ export class VarDecl extends Stmt {
 
   translate(sl: MappedLeaf): string {
     return (
+      (this.access === "const" ? "const " : "") +
       typeToString(this.getRightType()) +
       " " +
       this.id.text +
-      this.assign.text +
+      (this.assign.text === ":=" ? "=" : this.assign.text) +
       this.expr.translate(sl)
     );
-    //return "VAR_DECL" + stub;
-    //throw new Error("Method not implemented");
   }
 
   getToken(): Token {
@@ -1546,9 +1553,9 @@ export class Assign extends Stmt {
   }
 
   translate(sl: MappedLeaf): string {
-    return `${this.left.translate(sl)}${
-      this.assign.text === ":=" ? "=" : this.assign.text
-    }${this.right.translate(sl)}`;
+    return `${this.left.translate(sl)}${this.assign.text}${this.right.translate(
+      sl
+    )}`;
   }
 
   getToken(): Token {
@@ -2356,7 +2363,8 @@ export class Res extends Basic {
   typ: SpecTypeSimple = "vec2";
   name: string = "res";
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
+    sl.leaf.requires.res = true;
     return "uResolution";
   }
 }
@@ -2365,7 +2373,8 @@ export class Time extends Basic {
   typ: SpecTypeSimple = "float";
   name: string = "time";
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
+    sl.leaf.requires.time = true;
     return "uTime";
   }
 }
@@ -2439,9 +2448,8 @@ export class Frag extends Expr {
     };
   }
 
-  translate(): string {
-    return "texture2D";
-    //return "FRAG" + stub;
+  translate(sl: MappedLeaf): string {
+    return translateFrag(this, sl);
   }
 
   getToken(): Token {

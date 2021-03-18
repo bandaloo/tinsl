@@ -297,9 +297,9 @@ fn foo () { return bar(); }
 });
 
 describe("logging source", () => {
-  it("fully logs bloom", () => {
+  it("gets all the function definitions", () => {
     const comp = gen(bloom);
-    for (const c of comp) fullLog(c);
+    for (const c of comp) c.log();
   });
 });
 // TODO don't let loop num be -1

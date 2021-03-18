@@ -26,7 +26,7 @@ export abstract class IRNode {
     this.loopInfo = loopInfo;
     this.paramMappings = paramMappings;
   }
-  abstract print(): void;
+  //abstract print(): void;
 }
 
 export class IRTree extends IRNode {
@@ -42,13 +42,13 @@ export class IRTree extends IRNode {
   }
 
   // TODO get rid of this or make it better
+  /*
   print(): void {
-    console.log("#begin");
     for (const s of this.subNodes) {
       s.print();
     }
-    console.log("#end");
   }
+  */
 }
 
 export class IRLeaf extends IRNode {
@@ -67,10 +67,12 @@ export class IRLeaf extends IRNode {
     this.texNums = texNums;
   }
 
+  /*
   print(): void {
     console.log("#" + JSON.stringify(this.loopInfo));
     console.log(this.source);
   }
+  */
 }
 
 export function getAllUsedFuncs(
