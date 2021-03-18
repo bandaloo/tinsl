@@ -17,6 +17,7 @@ import {
   SourceLeaf,
   Uniform,
   TopDef,
+  TinslTree,
 } from "./nodes";
 import { parse, parseAndCheck } from "./testhelpers";
 
@@ -323,8 +324,16 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
+  const defaultPrecision = `#ifdef GL_ES
+precision mediump float;
+#endif\n`;
+
   sl.leaf.source =
-    samplersSource + uniformsSource + funcDefsSource + mainSource;
+    defaultPrecision +
+    samplersSource +
+    uniformsSource +
+    funcDefsSource +
+    mainSource;
 
   return sl.leaf;
 }
@@ -350,4 +359,11 @@ export function gen(source: string) {
 
   const processed = blocks.map(processBlocks).map(genSource);
   return processed;
+}
+
+export function genTinsl(source: string): TinslTree {
+  const tinslNodes = gen(source).map((s) => s.output());
+  // wrap in a tree
+  const outerTree = { loop: 1, once: false, body: tinslNodes };
+  return outerTree;
 }

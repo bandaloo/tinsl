@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "npx mocha -r ts-node/register src/testsetup.ts src/**/*.test.ts",
-    "grammar": "npx nearleyc src/grammar.ne -o src/grammar.ts"
+    "grammar": "npx nearleyc src/grammar.ne -o src/grammar.ts",
+    "build": "npx tsc --outDir dist",
+    "bundle": "npx browserify dist/example.js -o bundle.js",
+    "buildwatch": "npx tsc -w --outDir dist",
+    "bundlewatch": "npx watchify dist/example.js -o bundle.js",
+    "prepublish": "npm run build"
   },
   "keywords": [
     "glsl",
@@ -20,12 +25,14 @@
     "@types/moo": "^0.5.3",
     "@types/nearley": "^2.11.1",
     "@types/node": "^14.14.9",
+    "browserify": "^17.0.0",
     "chai": "^4.2.0",
     "chai-exclude": "^2.0.2",
     "mocha": "^8.1.3",
     "moo": "^0.5.1",
     "nearley": "^2.19.7",
     "ts-node": "^9.0.0",
-    "typescript": "^4.1.2"
+    "typescript": "^4.1.2",
+    "watchify": "^4.0.0"
   }
 }

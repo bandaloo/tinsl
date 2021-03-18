@@ -33,6 +33,23 @@ export interface TinslTree {
   body: (TinslTree | TinslLeaf)[];
 }
 
+// TODO fix
+export function getAllSamplers(
+  node: TinslTree | TinslLeaf,
+  set = new Set<number>()
+): Set<number> {
+  if (isTinslTree(node)) {
+    for (const b of node.body) {
+      const s = getAllSamplers(b);
+      for (const e of s) {
+        s.add(e);
+      }
+    }
+    return set;
+  }
+  return new Set(node.requires.samplers);
+}
+
 export function isTinslTree(node: TinslTree | TinslLeaf): node is TinslTree {
   return (node as TinslTree).body !== undefined;
 }

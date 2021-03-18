@@ -12,6 +12,13 @@ function simplifyNearleyErrorMessage(msg: string) {
   return msg.substr(0, msg.lastIndexOf(" Instead"));
 }
 
+export function increasesByOneFromZero(arr: number[]) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] !== i) return false;
+  }
+  return true;
+}
+
 export function tinslNearleyError(e: Error) {
   const simple = simplifyNearleyErrorMessage(e.message);
   const matches = simple.match(/line ([0-9]+) col ([0-9]+)/);
