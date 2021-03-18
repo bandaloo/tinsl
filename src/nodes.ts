@@ -27,20 +27,59 @@ const stub = "__STUB";
 
 // classes for output in final translation step
 
+export interface TinslTree {
+  loop: number;
+  once: boolean;
+  body: (TinslTree | TinslLeaf)[];
+}
+
+export function isTinslTree(node: TinslTree | TinslLeaf): node is TinslTree {
+  return (node as TinslTree).body !== undefined;
+}
+
 export class SourceTree {
   loop: number;
   once: boolean;
   body: (SourceTree | SourceLeaf)[];
 
-  constructor(loop: number, once: boolean, body: SourceTree[] = []) {
+  constructor(
+    loop: number,
+    once: boolean,
+    body: (SourceTree | SourceLeaf)[] = []
+  ) {
     this.loop = loop;
     this.once = once;
     this.body = body;
   }
 
+  output(): TinslTree {
+    return {
+      loop: this.loop,
+      once: this.once,
+      body: this.body.map((s) => s.output()),
+    };
+  }
+
   log() {
     for (const b of this.body) b.log();
   }
+}
+
+export interface UniformRequirements {
+  time: boolean;
+  resolution: boolean;
+  samplers: number[];
+  uniforms: { name: string; type: string }[];
+}
+
+export interface TinslLeaf {
+  target: number;
+  requires: UniformRequirements;
+  source: string;
+}
+
+export function isTinslLeaf(node: TinslTree | TinslLeaf): node is TinslLeaf {
+  return (node as TinslLeaf).target !== undefined;
 }
 
 export class SourceLeaf {
@@ -63,6 +102,24 @@ export class SourceLeaf {
   constructor(outNum: number, inNum: number) {
     this.outNum = outNum;
     this.inNum = inNum;
+  }
+
+  output(): TinslLeaf {
+    return {
+      target: this.outNum,
+      requires: {
+        time: this.requires.time,
+        resolution: this.requires.res,
+        samplers: Array.from(this.requires.samplers),
+        uniforms: Array.from(this.requires.uniforms).map((u) => {
+          return {
+            name: u.getToken().text,
+            type: typeToString(u.getRightType()),
+          };
+        }),
+      },
+      source: this.source,
+    };
   }
 
   log() {
