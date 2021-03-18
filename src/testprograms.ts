@@ -21,7 +21,8 @@ fn blur5(vec2 direction, int channel) {
 pr two_pass_blur(float size, int reps, int channel = -1) {
   loop reps {
     blur5(vec2(size, 0.), channel); refresh;
-    blur5(vec2(0., size), channel); refresh;
+    // pass in -1 explicitly for testing purposes
+    blur5(vec2(0., size), -1); refresh;
   }
 }
 

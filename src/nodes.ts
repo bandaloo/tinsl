@@ -40,7 +40,8 @@ export class SourceTree {
 }
 
 export class SourceLeaf {
-  target: number;
+  outNum: number;
+  inNum: number;
   requires: {
     time: boolean;
     res: boolean;
@@ -55,8 +56,9 @@ export class SourceLeaf {
   source: string = "";
   //mappings: Map<Param, Expr>;
 
-  constructor(target: number) {
-    this.target = target;
+  constructor(outNum: number, inNum: number) {
+    this.outNum = outNum;
+    this.inNum = inNum;
   }
 }
 
@@ -83,9 +85,30 @@ function namedArgsToTypes(args: (NamedArg | Expr)[], scope: LexicalScope) {
   );
 }
 
+/*
+function isNegativeOneUnary(expr: Expr, num: number) {
+  if (
+    expr instanceof UnaryExpr &&
+    expr.getToken().text === "-" &&
+    expr.argument instanceof IntExpr &&
+    parseInt(expr.argument.getToken().text) === 1
+  ) {
+    return "uSampler" + num;
+  }
+  return Expr;
+}
+*/
+
+function convertToSampler(expr: Expr, replacement: number): Expr | string {
+  // null will have compile time int used cached resolve
+  const int = compileTimeInt(expr, null);
+  if (int === null) return expr;
+  return "uSampler" + (int === -1 ? replacement : int);
+}
+
 export function compileTimeInt(
   expr: Expr,
-  scope: LexicalScope | IdentResult | null
+  scope: LexicalScope | IdentResult | null // TODO get rid of IdentResult
 ) {
   if (expr instanceof IntExpr) return parseInt(expr.getToken().text);
   if (
@@ -97,14 +120,18 @@ export function compileTimeInt(
   }
 
   if (expr instanceof IdentExpr) {
-    if (scope === null) {
-      throw new Error("scope result was null and expr was not an int or unary");
-    }
-
     const res =
       scope instanceof LexicalScope
         ? scope.resolve(expr.getToken().text)
-        : scope;
+        : scope === null
+        ? expr.cachedResolve
+        : undefined;
+
+    /*
+    if (scope === undefined) {
+      throw new Error("scope result was null and expr was not an int or unary");
+    }
+    */
 
     if (res instanceof TopDef && res.expr instanceof IntExpr) {
       return parseInt(res.expr.getToken().text);
@@ -171,8 +198,8 @@ export function typeCheckExprStmts(
   if (errors.length > 0) throw new TinslAggregateError(errors);
 }
 
-function commaSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
-  return exprs.map((s) => s.translate(sl)).join();
+function commaSeparatedNodes(exprs: (Node | string)[], sl: MappedLeaf) {
+  return exprs.map((s) => (s instanceof Node ? s.translate(sl) : s)).join();
 }
 
 function lineSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
@@ -1022,10 +1049,14 @@ export class IdentExpr extends AtomExpr {
       sl.leaf.requires.uniforms.add(this.cachedResolve);
     } else if (
       this.cachedResolve instanceof Param &&
-      sl.map.get(this.cachedResolve)
+      sl.map.get(this.cachedResolve) // TODO! take a look at this
     ) {
       const mapping = sl.map.get(this.cachedResolve);
       if (mapping === undefined) throw new Error("param mapping undefined");
+      if (this.cachedResolve.usage === "sampler") {
+        const ret = convertToSampler(mapping, sl.leaf.inNum);
+        return typeof ret === "string" ? ret : ret.translate(sl);
+      }
       return mapping.translate(sl);
     }
     return this.value.text;
@@ -1075,21 +1106,46 @@ export class CallExpr extends Expr {
 
   translate(sl: MappedLeaf): string {
     if (this.call instanceof Frag) {
-      if (this.call.sampler instanceof IdentExpr) {
-        const res = this.call.sampler.cachedResolve;
-        if (res === undefined) {
+      if (!(this.call.sampler instanceof IdentExpr)) {
+        /*
+        const resSampler = this.call.sampler.cachedResolve;
+        if (resSampler === undefined) {
           throw new Error("cached resolve of sampler expr undefined");
         }
-        // TODO finish this for frag
+        */
+        console.log("translating a frag!");
+        const posString =
+          this.call.pos !== null
+            ? this.call.pos.translate(sl)
+            : "gl_FragCoord / uResolution";
+
+        const tex = this.call.translate();
+
+        if (typeof this.call.sampler === "number") {
+          return `${tex}(uSampler${this.call.sampler},     ${posString})`;
+        } else if (this.call.sampler === null) {
+          return `${tex}(uSampler${sl.leaf.inNum},    ${posString})`;
+        }
+        throw new Error("sampler was not null or a number or ident");
       }
     }
 
     let argString = "";
     if (this.userDefinedFuncDef !== undefined) {
+      console.log(
+        "user defined func name " + this.userDefinedFuncDef.getToken().text
+      );
       //const name = this.userDefinedFuncDef.getToken().text;
       const filledArgs = this.userDefinedFuncDef.fillInNamed(this.args);
       this.userDefinedFuncDef.addInDefaults(filledArgs);
-      argString = commaSeparatedNodes(filledArgs, sl);
+      // convert -1 calls to outer num
+      const params = this.userDefinedFuncDef.params;
+      console.log("params", params);
+      console.log("args", filledArgs);
+      const convertedToSamplers = filledArgs.map((a, i) =>
+        params[i].usage === "sampler" ? convertToSampler(a, sl.leaf.inNum) : a
+      );
+      argString = commaSeparatedNodes(convertedToSamplers, sl);
     } else {
       argString = commaSeparatedNodes(this.getSubExpressions(), sl);
     }
@@ -1490,9 +1546,9 @@ export class Assign extends Stmt {
   }
 
   translate(sl: MappedLeaf): string {
-    return `${this.left.translate(sl)}${this.assign.text}${this.right.translate(
-      sl
-    )}`;
+    return `${this.left.translate(sl)}${
+      this.assign.text === ":=" ? "=" : this.assign.text
+    }${this.right.translate(sl)}`;
   }
 
   getToken(): Token {
@@ -1601,7 +1657,9 @@ export class Param extends Node {
   }
 
   translate(): string {
-    return `${this.typ.translate()} ${this.id.text}`;
+    return `${this.usage === "sampler" ? "sampler2D" : this.typ.translate()} ${
+      this.id.text
+    }`;
   }
 
   getToken(): Token {
@@ -2283,12 +2341,14 @@ abstract class Basic extends Expr {
   }
 }
 
+// TODO should the default position be normalized?
+// seems like the most common use case
 export class Pos extends Basic {
   typ: SpecTypeSimple = "vec2";
   name: string = "coord";
 
   translate(): string {
-    return "POS" + stub;
+    return "gl_FragCoord";
   }
 }
 
@@ -2306,7 +2366,7 @@ export class Time extends Basic {
   name: string = "time";
 
   translate(): string {
-    return "TIME" + stub;
+    return "uTime";
   }
 }
 
@@ -2341,7 +2401,7 @@ export class Refresh extends Stmt {
 }
 
 export class Frag extends Expr {
-  sampler: number | Expr | null;
+  _sampler: number | Expr | null;
   pos: Expr | null = null;
   tokn: Token;
 
@@ -2350,8 +2410,16 @@ export class Frag extends Expr {
     const matches = tokn.text.match(/frag([0-9]+)*/);
     if (matches === null) throw new Error("frag matches was null");
     const num = matches[1];
-    this.sampler = num === undefined ? null : parseInt(num);
+    this._sampler = num === undefined ? null : parseInt(num);
     this.tokn = tokn;
+  }
+
+  get sampler() {
+    return this._sampler;
+  }
+
+  set sampler(s: number | Expr | null) {
+    this._sampler = s === -1 ? null : s;
   }
 
   getSubExpressions(): Expr[] {
@@ -2372,7 +2440,8 @@ export class Frag extends Expr {
   }
 
   translate(): string {
-    return "FRAG" + stub;
+    return "texture2D";
+    //return "FRAG" + stub;
   }
 
   getToken(): Token {

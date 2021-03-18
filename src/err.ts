@@ -65,8 +65,9 @@ export function wrapErrorHelper<T>(
 
   if (totalErrors.length > 0) throw new TinslAggregateError(totalErrors);
 
-  if (ret === null)
+  if (ret === null) {
     throw new Error("ret was null and no throw happened before");
+  }
 
   return ret;
 }

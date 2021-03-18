@@ -279,7 +279,7 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
 
   // wrap a leaf together with a map to pass down into translate
   const sl = {
-    leaf: new SourceLeaf(ir.loopInfo.outNum),
+    leaf: new SourceLeaf(ir.loopInfo.outNum, ir.loopInfo.inNum),
     map: ir.paramMappings,
   };
 
