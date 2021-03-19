@@ -63,14 +63,18 @@ class WebGLProgramTree {
   constructor(
     gl: WebGL2RenderingContext,
     tree: TinslTree,
-    vShader: WebGLShader
+    vShader: WebGLShader,
+    rightMost: boolean
   ) {
     this.loop = tree.loop;
     this.once = tree.once;
 
-    const f = (node: TinslTree | TinslLeaf) => {
-      if (isTinslLeaf(node)) return new WebGLProgramLeaf(gl, node, vShader);
-      return new WebGLProgramTree(gl, node, vShader);
+    const f = (node: TinslTree | TinslLeaf, i: number) => {
+      const innerRightMost = rightMost && i === tree.body.length - 1;
+      if (isTinslLeaf(node)) {
+        return new WebGLProgramLeaf(gl, node, vShader, innerRightMost);
+      }
+      return new WebGLProgramTree(gl, node, vShader, innerRightMost);
     };
 
     this.body = tree.body.map(f);
@@ -90,15 +94,18 @@ class WebGLProgramLeaf {
   readonly target: number;
   readonly gl: WebGL2RenderingContext;
   readonly samplers: number[];
+  readonly last: boolean;
 
   constructor(
     gl: WebGL2RenderingContext,
     leaf: TinslLeaf,
-    vShader: WebGLShader
+    vShader: WebGLShader,
+    rightMost: boolean
   ) {
     this.gl = gl;
     this.target = leaf.target;
     this.samplers = leaf.requires.samplers; // TODO is this sorted? and does that matter?
+    this.last = rightMost;
     [this.program, this.locs] = compileProgram(this.gl, leaf, vShader);
   }
 
@@ -176,7 +183,7 @@ export class Runner {
   private readonly texInfo: TexInfo;
   private readonly framebuffer: WebGLFramebuffer;
   private readonly programs: WebGLProgramTree;
-  private readonly sources: (TexImageSource | WebGLTexture | undefined)[],
+  private readonly sources: (TexImageSource | WebGLTexture | undefined)[];
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -227,8 +234,7 @@ export class Runner {
 
     // make textures
     const scratch = { name: "scratch", tex: makeTex(this.gl, this.options) };
-    //const samplers = Array.from(getAllSamplers(tree)).sort();
-    const samplers = [0]; // TODO get rid of this
+    const samplers = Array.from(getAllSamplers(tree)).sort();
 
     console.log("samplers", samplers);
 
@@ -263,7 +269,7 @@ export class Runner {
 
     this.framebuffer = this.gl.createFramebuffer;
 
-    this.programs = new WebGLProgramTree(gl, tree, vShader);
+    this.programs = new WebGLProgramTree(gl, tree, vShader, true);
   }
 
   draw(time = 0) {
@@ -271,7 +277,7 @@ export class Runner {
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.scratch.tex);
     // TODO send to every texture that needs it
-    console.log('sources 0', this.sources[0]);
+    console.log("sources 0", this.sources[0]);
     sendTexture(this.gl, this.sources[0]);
     this.programs.run(this.texInfo, this.framebuffer, true);
     // TODO see if we should unbind this

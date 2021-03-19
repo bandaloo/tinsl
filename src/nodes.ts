@@ -42,7 +42,7 @@ export function getAllSamplers(
     for (const b of node.body) {
       const s = getAllSamplers(b);
       for (const e of s) {
-        s.add(e);
+        set.add(e);
       }
     }
     return set;
