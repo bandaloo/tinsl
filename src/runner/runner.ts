@@ -82,8 +82,14 @@ class WebGLProgramTree {
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
     // TODO get rid of hard-coded "last" and set it earlier
-    for (const b of this.body) {
-      b.run(texInfo, framebuffer, true);
+    for (let i = 0; i < this.loop; i++) {
+      console.log("i", i);
+      let counter = 0;
+      for (const b of this.body) {
+        const last = counter === this.body.length - 1 && i === this.loop - 1;
+        b.run(texInfo, framebuffer, last);
+        counter++;
+      }
     }
   }
 }
@@ -118,12 +124,13 @@ class WebGLProgramLeaf {
     };
 
     // swap against the target texture slot
-    swap();
+    //swap();
 
     // bind all the required textures
     for (const c of this.samplers) {
       // TODO add offset
       this.gl.activeTexture(this.gl.TEXTURE0 + c);
+      // TODO can save some texture slots
       this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[c].tex);
     }
 
@@ -139,19 +146,20 @@ class WebGLProgramLeaf {
     // we want to update all uniforms in the same way
     if (uTime !== undefined) this.gl.uniform1f(uTime, 0);
 
-    if (last) {
+    if (last && this.last) {
       // draw to the screen by setting to default framebuffer (null)
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-      console.log("last!!!");
+      console.log("last!!");
     } else {
-      console.log("not last!!!!");
+      console.log("not last");
       // we are not on the last pass
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
       this.gl.framebufferTexture2D(
         this.gl.FRAMEBUFFER,
         this.gl.COLOR_ATTACHMENT0,
         this.gl.TEXTURE_2D,
-        texInfo.channels[0].tex, // TODO do we always want zero?
+        //texInfo.channels[0].tex, // TODO do we always want zero?
+        texInfo.channels[this.target].tex, // TODO do we always want zero?
         0
       );
     }
@@ -159,7 +167,8 @@ class WebGLProgramLeaf {
     // default sampler is 0, so `uSampler` will sample from texture 0
     this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
     // TODO is this the texture we want to bind? do we need to swap first?
-    this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[this.target].tex);
+    //this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[this.target].tex);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.scratch.tex);
     // we are on the last program, so draw
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 
@@ -195,7 +204,7 @@ export class Runner {
 
     this.sources = sources;
 
-    console.log(tree);
+    console.log("program tree", tree);
 
     this.gl = gl;
     this.options = options;
@@ -235,6 +244,8 @@ export class Runner {
     // make textures
     const scratch = { name: "scratch", tex: makeTex(this.gl, this.options) };
     const samplers = Array.from(getAllSamplers(tree)).sort();
+    //const samplers = [0, 1];
+    // TODO not sampling from 0 and only rendering to it is fine
 
     console.log("samplers", samplers);
 
@@ -263,11 +274,11 @@ export class Runner {
 
     // create the frame buffer
     const framebuffer = gl.createFramebuffer();
-    if (framebuffer === "null") {
+    if (framebuffer === null) {
       throw new Error("problem creating the framebuffer");
     }
 
-    this.framebuffer = this.gl.createFramebuffer;
+    this.framebuffer = framebuffer;
 
     this.programs = new WebGLProgramTree(gl, tree, vShader, true);
   }

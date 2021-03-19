@@ -12,13 +12,15 @@ console.log(source);
 
 if (source === null) throw new Error("problem getting the source context");
 
-source.fillStyle = "black";
+const grd = source.createLinearGradient(0, 0, 960, 0);
+grd.addColorStop(0, "black");
+grd.addColorStop(1, "white");
+source.fillStyle = grd;
 source.fillRect(0, 0, 960, 540);
 source.fillStyle = "white";
 source.fillRect(960 / 4, 540 / 4, 960 / 2, 540 / 2);
 
-/*
-const code = `def threshold 0.9
+const bloom = `def threshold 0.9
 uniform float u_size;
 
 fn luma(vec4 color) {
@@ -45,14 +47,22 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
   }
 }
 
-{ frag0 * step(luma(frag0), threshold); } -> 1
+//0 -> { frag0 * step(luma(frag0), 0.2); } -> 0
+//{ frag0; } -> 1
+0 -> { @two_pass_blur(size: 1., reps: 2, channel: 0);} -> 0
 
-{ @two_pass_blur(size: u_size, reps: 3, channel: 1); } -> 1
+//{ @two_pass_blur(size: u_size, reps: 3, channel: 1); } -> 1
 
-{ frag0 + frag1; } -> 0`;
-*/
+//{ frag0 + frag1; } -> 0`;
 
-const code = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
+const redSimple = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
+
+const greenToOne = `
+0 -> { frag * vec4(0., 1., 0., 1.); } -> 1
+1 -> { frag; } -> 0
+`;
+
+const code = bloom;
 
 console.log(code);
 
