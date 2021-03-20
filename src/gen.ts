@@ -302,7 +302,7 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   }
 
   // input and output the webgl2 way
-  const fragCoord = "out vec4 fragColor;";
+  const fragColorSource = "out vec4 fragColor;\n";
 
   // generate the main loop (series of assignments to fragColor)
   let mainSource = `
@@ -328,14 +328,14 @@ void main(){\n`;
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
-  const defaultPrecision = `#version 300 es
+  const defaultPrecisionSource = `#version 300 es
 #ifdef GL_ES
 precision mediump float;
 #endif\n`;
 
   sl.leaf.source =
-    defaultPrecision +
-    fragCoord +
+    defaultPrecisionSource +
+    fragColorSource +
     samplersSource +
     uniformsSource +
     funcDefsSource +

@@ -976,7 +976,9 @@ export class UnaryExpr extends Expr {
   }
 
   translate(sl: MappedLeaf) {
-    return `(${this.operator}${this.argument.translate(sl)})`;
+    return this.postfix
+      ? `(${this.argument.translate(sl)}${this.operator})`
+      : `(${this.operator}${this.argument.translate(sl)})`;
   }
 
   toJson() {
@@ -1704,7 +1706,7 @@ export class TypeName extends Node {
   }
 
   translate(): string {
-    return this.token.text;
+    return typeToString(this.toSpecType());
   }
 
   getToken(): Token {

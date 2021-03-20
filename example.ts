@@ -87,7 +87,34 @@ fn keepDividingByTwo (float x, int reps) {
 { frag * keepDividingByTwo(1., 3); }
 `;
 
-const code = forLoop;
+const sobel = `
+vec4 sobel(int channel = -1) {
+  vec2 uv = pos / res;
+  float w = 1. / res.x;
+  float h = 1. / res.y;
+
+  vec4[8] k = vec4[8](
+    frag(channel, uv + vec2(-w, -h)),
+    frag(channel, uv + vec2(0., -h)),
+    frag(channel, uv + vec2(w, -h)),
+    frag(channel, uv + vec2(-w, 0.)),
+
+    frag(channel, uv + vec2(w, 0.)),
+    frag(channel, uv + vec2(-w, h)),
+    frag(channel, uv + vec2(0., h)),
+    frag(channel, uv + vec2(w, h))
+  );
+
+  vec4 edge_h = k[2] + (2. * k[4]) + k[7] - (k[0] + (2. * k[3]) + k[5]);
+  vec4 edge_v = k[0] + (2. * k[1]) + k[2] - (k[5] + (2. * k[6]) + k[7]);
+  vec4 sob = sqrt(edge_h * edge_h + edge_v * edge_v);
+
+  return vec4(1. - sob.rgb, 1.);
+}
+
+{ sobel(); }`;
+
+const code = sobel;
 
 try {
   const runner = new Runner(gl, code, [sourceCanvas], {});
