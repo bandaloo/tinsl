@@ -1,6 +1,5 @@
 import { genTinsl } from "../gen";
 import { getAllSamplers, isTinslLeaf, TinslLeaf, TinslTree } from "../nodes";
-import { increasesByOneFromZero } from "../util";
 
 ////////////////////////////////////////////////////////////////////////////////
 // constants
@@ -39,6 +38,8 @@ interface RunnerOptions {
 interface TexInfo {
   scratch: TexWrapper;
   channels: TexWrapper[];
+  /** maps defined sampler num to sequential sampler num */
+  definedNumToChannelNum: Map<number, number>;
 }
 
 /** useful for debugging */
@@ -64,7 +65,8 @@ class WebGLProgramTree {
     gl: WebGL2RenderingContext,
     tree: TinslTree,
     vShader: WebGLShader,
-    rightMost: boolean
+    rightMost: boolean,
+    texInfo: TexInfo
   ) {
     this.loop = tree.loop;
     this.once = tree.once;
@@ -72,24 +74,30 @@ class WebGLProgramTree {
     const f = (node: TinslTree | TinslLeaf, i: number) => {
       const innerRightMost = rightMost && i === tree.body.length - 1;
       if (isTinslLeaf(node)) {
-        return new WebGLProgramLeaf(gl, node, vShader, innerRightMost);
+        return new WebGLProgramLeaf(gl, node, vShader, innerRightMost, texInfo);
       }
-      return new WebGLProgramTree(gl, node, vShader, innerRightMost);
+      return new WebGLProgramTree(gl, node, vShader, innerRightMost, texInfo);
     };
 
     this.body = tree.body.map(f);
   }
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
-    // TODO get rid of hard-coded "last" and set it earlier
     for (let i = 0; i < this.loop; i++) {
       console.log("i", i);
-      let counter = 0;
-      for (const b of this.body) {
-        const last = counter === this.body.length - 1 && i === this.loop - 1;
-        b.run(texInfo, framebuffer, last);
-        counter++;
-      }
+      this.body.forEach((b, j) => {
+        const lastInBody = j === this.body.length - 1;
+        const lastInLoop = i === this.loop - 1;
+        console.log(
+          "last",
+          last,
+          "lastInBody",
+          lastInBody,
+          "lastInLoop",
+          lastInLoop
+        );
+        b.run(texInfo, framebuffer, last && lastInBody && lastInLoop);
+      });
     }
   }
 }
@@ -98,24 +106,47 @@ class WebGLProgramLeaf {
   readonly program: WebGLProgram;
   readonly locs: NameToLoc;
   readonly target: number;
-  readonly gl: WebGL2RenderingContext;
   readonly samplers: number[];
   readonly last: boolean;
+  readonly definedNumToChannelNum: Map<number, number> = new Map();
 
   constructor(
-    gl: WebGL2RenderingContext,
+    readonly gl: WebGL2RenderingContext,
     leaf: TinslLeaf,
     vShader: WebGLShader,
-    rightMost: boolean
+    rightMost: boolean,
+    texInfo: TexInfo
   ) {
-    this.gl = gl;
-    this.target = leaf.target;
-    this.samplers = leaf.requires.samplers; // TODO is this sorted? and does that matter?
+    const channelTarget = texInfo.definedNumToChannelNum.get(leaf.target);
+    if (channelTarget === undefined) {
+      throw new Error("channel target undefined");
+    }
+    this.target = channelTarget;
+    this.samplers = leaf.requires.samplers;
     this.last = rightMost;
-    [this.program, this.locs] = compileProgram(this.gl, leaf, vShader);
+
+    const definedNumToTexNum: Map<number, number> = new Map();
+
+    // create mapping of texture num on the gpu to index in channels
+    this.samplers.forEach((s, i) => {
+      const channelNum = texInfo.definedNumToChannelNum.get(s);
+      if (channelNum === undefined) {
+        throw new Error("defined num did not exist on the map");
+      }
+      this.definedNumToChannelNum.set(s, channelNum);
+      definedNumToTexNum.set(s, i);
+    });
+
+    [this.program, this.locs] = compileProgram(
+      this.gl,
+      leaf,
+      vShader,
+      definedNumToTexNum
+    );
   }
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
+    // TODO move this out
     const swap = () => {
       [texInfo.scratch, texInfo.channels[this.target]] = [
         texInfo.channels[this.target],
@@ -127,12 +158,18 @@ class WebGLProgramLeaf {
     //swap();
 
     // bind all the required textures
-    for (const c of this.samplers) {
+    this.samplers.forEach((s, i) => {
       // TODO add offset
-      this.gl.activeTexture(this.gl.TEXTURE0 + c);
+      console.log("TEXTURE0 + " + i);
+      this.gl.activeTexture(this.gl.TEXTURE0 + i);
       // TODO can save some texture slots
-      this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[c].tex);
-    }
+      const channelNum = this.definedNumToChannelNum.get(s);
+      if (channelNum === undefined) {
+        throw new Error("sampler offset undefined");
+      }
+      console.log("binding texture " + s + " to unit " + i);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[channelNum].tex);
+    });
 
     // final swap to replace the texture
     this.gl.useProgram(this.program);
@@ -154,11 +191,13 @@ class WebGLProgramLeaf {
       console.log("not last");
       // we are not on the last pass
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+      console.log(this.target);
       this.gl.framebufferTexture2D(
         this.gl.FRAMEBUFFER,
         this.gl.COLOR_ATTACHMENT0,
         this.gl.TEXTURE_2D,
         //texInfo.channels[0].tex, // TODO do we always want zero?
+        // have to map target, which is a defined num, to channel num
         texInfo.channels[this.target].tex, // TODO do we always want zero?
         0
       );
@@ -244,15 +283,21 @@ export class Runner {
     // make textures
     const scratch = { name: "scratch", tex: makeTex(this.gl, this.options) };
     const samplers = Array.from(getAllSamplers(tree)).sort();
-    //const samplers = [0, 1];
-    // TODO not sampling from 0 and only rendering to it is fine
+
+    const mapping = new Map();
+
+    for (let i = 0; i < samplers.length; i++) {
+      mapping.set(samplers[i], i);
+    }
 
     console.log("samplers", samplers);
 
+    /*
     if (!increasesByOneFromZero(samplers)) {
       // TODO throw this earlier
       throw new Error("all sampler numbers must start from 0 without skipping");
     }
+    */
 
     const channels = samplers.map((s, i) => {
       // over-indexing is fine because it will be undefined, meaning empty
@@ -270,7 +315,8 @@ export class Runner {
 
     console.log("channels", channels);
 
-    this.texInfo = { scratch, channels };
+    this.texInfo = { scratch, channels, definedNumToChannelNum: mapping };
+    console.log(this.texInfo);
 
     // create the frame buffer
     const framebuffer = gl.createFramebuffer();
@@ -280,7 +326,7 @@ export class Runner {
 
     this.framebuffer = framebuffer;
 
-    this.programs = new WebGLProgramTree(gl, tree, vShader, true);
+    this.programs = new WebGLProgramTree(gl, tree, vShader, true, this.texInfo);
   }
 
   draw(time = 0) {
@@ -364,7 +410,8 @@ export function sendTexture(
 function compileProgram(
   gl: WebGL2RenderingContext,
   leaf: TinslLeaf,
-  vShader: WebGLShader
+  vShader: WebGLShader,
+  definedNumToTexNum: Map<number, number>
 ): [WebGLProgram, NameToLoc] {
   const uniformLocs: NameToLoc = {};
 
@@ -424,6 +471,11 @@ function compileProgram(
     const samplerName = "uSampler" + s;
     const uSampler = getLocation(samplerName);
     uniformLocs[samplerName] = { type: "sampler2D", loc: uSampler };
+    const texNum = definedNumToTexNum.get(s);
+    if (texNum === undefined) {
+      throw new Error("tex number is defined");
+    }
+    gl.uniform1i(uSampler, texNum);
   }
 
   const position = gl.getAttribLocation(program, "aPosition");

@@ -47,22 +47,20 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
   }
 }
 
-//0 -> { frag0 * step(luma(frag0), 0.2); } -> 0
-//{ frag0; } -> 1
-0 -> { @two_pass_blur(size: 1., reps: 2, channel: 0);} -> 0
+{ vec4(frag0.rgb * (step(1. - luma(frag0), 1. - threshold)), frag0.a); } -> 1 
 
-//{ @two_pass_blur(size: u_size, reps: 3, channel: 1); } -> 1
+{ @two_pass_blur(size: 1., reps: 2, channel: 1);} -> 1
 
-//{ frag0 + frag1; } -> 0`;
+{ frag0; } -> 0`;
 
 const redSimple = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
 
 const greenToOne = `
-0 -> { frag * vec4(0., 1., 0., 1.); } -> 1
-1 -> { frag; } -> 0
+{ vec4(0., 1., 0., 1.); } -> 101
+101 -> { frag101 * frag100; } -> 100
 `;
 
-const code = bloom;
+const code = greenToOne;
 
 console.log(code);
 

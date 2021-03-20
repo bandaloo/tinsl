@@ -33,7 +33,6 @@ export interface TinslTree {
   body: (TinslTree | TinslLeaf)[];
 }
 
-// TODO fix
 export function getAllSamplers(
   node: TinslTree | TinslLeaf,
   set = new Set<number>()
@@ -47,7 +46,8 @@ export function getAllSamplers(
     }
     return set;
   }
-  return new Set(node.requires.samplers);
+  return new Set([...node.requires.samplers, node.target]);
+  //return new Set(node.requires.samplers);
 }
 
 export function isTinslTree(node: TinslTree | TinslLeaf): node is TinslTree {
@@ -127,7 +127,7 @@ export class SourceLeaf {
       requires: {
         time: this.requires.time,
         resolution: this.requires.res,
-        samplers: Array.from(this.requires.samplers),
+        samplers: Array.from(this.requires.samplers).sort(),
         uniforms: Array.from(this.requires.uniforms).map((u) => {
           return {
             name: u.getToken().text,
