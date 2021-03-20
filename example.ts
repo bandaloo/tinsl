@@ -49,10 +49,10 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 
 { vec4(frag.rgb * (step(1. - luma(frag0), 1. - threshold)), frag.a); } -> 1 
 
-//{ @two_pass_blur(size: 1., reps: 3, channel: 1);} -> 1
-{ vec4(1., 0., 0., 1.); } -> 1
+{ @two_pass_blur(size: 1., reps: 3, channel: 1);} -> 1
+//{ vec4(1., 0., 0., 1.); } -> 1
 
-{ frag0; } -> 0
+{ frag0 + frag1; } -> 0
 `;
 
 const redSimple = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
@@ -64,10 +64,20 @@ const rgbTextures = `
 { frag0 * (frag1 + frag2); }
 `;
 
-const code = rgbTextures;
+const ifElse = `
+fn redOrBlue (int x) {
+  if (x > 0) return vec4(1., 0., 0., 1.);
+  else return vec4(0., 0., 1., 1.);
+}
 
-console.log(code);
+{frag * redOrBlue(-1);}
+`;
 
-const runner = new Runner(gl, code, [sourceCanvas], {});
+const code = ifElse;
 
-runner.draw();
+try {
+  const runner = new Runner(gl, code, [sourceCanvas], {});
+  runner.draw();
+} catch (err) {
+  console.log(err.message);
+}

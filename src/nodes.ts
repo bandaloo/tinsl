@@ -311,7 +311,7 @@ function commaSeparatedNodes(exprs: (Node | string)[], sl: MappedLeaf) {
   return exprs.map((s) => (s instanceof Node ? s.translate(sl) : s)).join();
 }
 
-function lineSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
+function semicolonSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
   return "\n" + exprs.map((s) => s.translate(sl)).join(";\n");
 }
 
@@ -1806,7 +1806,7 @@ export class FuncDef extends DefLike {
     return `${typeString} ${this.id.text}(${commaSeparatedNodes(
       this.params,
       sl
-    )}){${lineSeparatedNodes(this.body, sl)}}\n`;
+    )}){${semicolonSeparatedNodes(this.body, sl)}}\n`;
   }
 
   getToken(): Token {
@@ -2093,7 +2093,6 @@ export class ForLoop extends Stmt {
   }
 }
 
-// TODO stmt
 export class If extends Stmt {
   cond: Expr;
   body: ExSt[];
@@ -2121,9 +2120,12 @@ export class If extends Stmt {
     };
   }
 
-  translate(): string {
-    return "IF" + stub;
-    throw new Error("Method not implemented.");
+  translate(sl: MappedLeaf): string {
+    return `if(${this.cond.translate(sl)}){${semicolonSeparatedNodes(
+      this.body,
+      sl
+    )}
+}${this.cont !== null ? this.cont.translate(sl) : ""}\n`;
   }
 
   getToken(): Token {
@@ -2137,7 +2139,6 @@ export class If extends Stmt {
         if (this.cond.getType(scope) !== "bool") {
           throw new TinslError("if condition must be a boolean expression");
         }
-        //typeCheckExprStmts(this.body, innerScope);
       },
       scope,
       false,
@@ -2176,9 +2177,8 @@ export class Else extends Stmt {
     };
   }
 
-  translate(): string {
-    return "ELSE" + stub;
-    throw new Error("Method not implemented.");
+  translate(sl: MappedLeaf): string {
+    return `else{${semicolonSeparatedNodes(this.body, sl)}\n}`;
   }
 
   getToken(): Token {
@@ -2188,6 +2188,7 @@ export class Else extends Stmt {
   typeCheck(scope: LexicalScope): void {
     const innerScope = new LexicalScope(scope);
     this.wrapError(
+      // using a noop to just check the body
       (scope: LexicalScope) => {
         //typeCheckExprStmts(this.body, innerScope);
       },
