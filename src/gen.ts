@@ -301,10 +301,14 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     texNums.add(t);
   }
 
-  // generate the main loop (series of assignments to gl_FragColor)
-  let mainSource = "void main(){\n";
+  // input and output the webgl2 way
+  const fragCoord = "out vec4 fragColor;";
+
+  // generate the main loop (series of assignments to fragColor)
+  let mainSource = `
+void main(){\n`;
   for (const e of ir.exprs) {
-    mainSource += "gl_FragColor=" + e.translate(sl) + ";\n";
+    mainSource += "fragColor=" + e.translate(sl) + ";\n";
   }
   mainSource += "}";
 
@@ -324,12 +328,14 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
-  const defaultPrecision = `#ifdef GL_ES
+  const defaultPrecision = `#version 300 es
+#ifdef GL_ES
 precision mediump float;
 #endif\n`;
 
   sl.leaf.source =
     defaultPrecision +
+    fragCoord +
     samplersSource +
     uniformsSource +
     funcDefsSource +
@@ -348,7 +354,9 @@ export function genSource(ir: IRTree | IRLeaf): SourceTree | SourceLeaf {
     }
     return st;
   }
-  return irToSourceLeaf(ir);
+  const leaf = irToSourceLeaf(ir);
+  leaf.log(); // TODO get rid of this
+  return leaf;
 }
 
 export function gen(source: string) {

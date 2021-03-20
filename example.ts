@@ -70,10 +70,24 @@ fn redOrBlue (int x) {
   else return vec4(0., 0., 1., 1.);
 }
 
-{frag * redOrBlue(-1);}
+{ redOrBlue(-1); } -> 1
+{ redOrBlue(1); } -> 2
+0 -> { frag * (frag1 + frag2); }
 `;
 
-const code = ifElse;
+const forLoop = `
+fn keepDividingByTwo (float x, int reps) {
+  mut r := 1.;
+  for (int i = 0; i < reps; i++) {
+    r /= float(2);
+  }
+  return r;
+}
+
+{ frag * keepDividingByTwo(1., 3); }
+`;
+
+const code = forLoop;
 
 try {
   const runner = new Runner(gl, code, [sourceCanvas], {});

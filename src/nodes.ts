@@ -179,13 +179,13 @@ function translateFrag(frag: Frag, sl: MappedLeaf) {
 
   if (typeof frag.sampler === "number") {
     sl.leaf.requires.samplers.add(frag.sampler);
-    return `texture2D(uSampler${frag.sampler},${posString})`;
+    return `texture(uSampler${frag.sampler},${posString})`;
   } else if (frag.sampler === null) {
     sl.leaf.requires.samplers.add(sl.leaf.inNum);
-    return `texture2D(uSampler${sl.leaf.inNum},${posString})`;
+    return `texture(uSampler${sl.leaf.inNum},${posString})`;
   } else if (frag.sampler instanceof IdentExpr) {
     const conversion = convertToSampler(frag.sampler, sl);
-    return `texture2D(${
+    return `texture(${
       typeof conversion === "string" ? conversion : conversion.translate(sl)
     },${posString})`;
   }
@@ -312,7 +312,7 @@ function commaSeparatedNodes(exprs: (Node | string)[], sl: MappedLeaf) {
 }
 
 function semicolonSeparatedNodes(exprs: Node[], sl: MappedLeaf) {
-  return "\n" + exprs.map((s) => s.translate(sl)).join(";\n");
+  return "\n" + exprs.map((s) => s.translate(sl)).join(";\n") + ";";
 }
 
 interface RenderLevel {
@@ -1913,7 +1913,7 @@ export class Return extends Stmt {
   }
 
   translate(sl: MappedLeaf): string {
-    return `return ${this.expr.translate(sl)};`;
+    return `return ${this.expr.translate(sl)}`;
   }
 
   getToken(): Token {
@@ -1992,25 +1992,14 @@ export class TernaryExpr extends Expr {
 }
 
 export class ForLoop extends Stmt {
-  init: ExSt | null;
-  cond: Expr | null;
-  loop: ExSt | null;
-  body: ExSt[];
-  token: Token;
-
   constructor(
-    init: ExSt | null,
-    cond: Expr | null,
-    loop: ExSt | null,
-    body: ExSt[],
-    token: Token
+    public init: ExSt | null,
+    public cond: Expr | null,
+    public loop: ExSt | null,
+    public body: ExSt[],
+    public token: Token
   ) {
     super();
-    this.init = init;
-    this.cond = cond;
-    this.loop = loop;
-    this.body = body;
-    this.token = token;
   }
 
   getExprStmts() {
@@ -2034,9 +2023,12 @@ export class ForLoop extends Stmt {
     };
   }
 
-  translate(): string {
-    return "FOR" + stub;
-    throw new Error("Method not implemented.");
+  translate(sl: MappedLeaf): string {
+    return `for(
+${this.init !== null ? this.init.translate(sl) : ""};
+${this.cond !== null ? this.cond.translate(sl) : ""};
+${this.loop !== null ? this.loop.translate(sl) : ""}
+){${semicolonSeparatedNodes(this.body, sl)}}`;
   }
 
   getToken(): Token {
@@ -2442,7 +2434,8 @@ export class Pos extends Basic {
   typ: SpecTypeSimple = "vec2";
   name: string = "coord";
 
-  translate(): string {
+  translate(sl: MappedLeaf): string {
+    sl.leaf.requires.res = true;
     return "gl_FragCoord.xy";
   }
 }

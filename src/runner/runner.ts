@@ -4,7 +4,8 @@ import { getAllSamplers, isTinslLeaf, TinslLeaf, TinslTree } from "../nodes";
 ////////////////////////////////////////////////////////////////////////////////
 // constants
 
-const V_SOURCE = `attribute vec2 aPosition;
+const V_SOURCE = `#version 300 es
+in vec2 aPosition;
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }\n`;
@@ -433,20 +434,16 @@ function compileProgram(
   gl.linkProgram(program);
   gl.useProgram(program);
 
-  for (const unif of leaf.requires.uniforms) {
-    const location = gl.getUniformLocation(program, unif.name);
-    if (location === null) {
-      throw new Error("couldn't find uniform " + unif.name);
-    }
-
-    uniformLocs[unif.name] = { type: unif.type, loc: location };
-  }
-
   const getLocation = (name: string) => {
     const loc = gl.getUniformLocation(program, name);
     if (loc === null) throw new Error(`could not get location for "${name}"`);
     return loc;
   };
+
+  for (const unif of leaf.requires.uniforms) {
+    const location = getLocation(unif.name);
+    uniformLocs[unif.name] = { type: unif.type, loc: location };
+  }
 
   if (leaf.requires.resolution) {
     const uResolution = getLocation(U_RES);

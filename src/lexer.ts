@@ -2,6 +2,8 @@ import * as moo from "moo";
 
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf p18
 // "The maximum length of an identifier is 1024 characters." p20
+
+// TODO add fragColor
 export const keywords = [
   // TODO get rid of the unused ones and just make sure they don't appear in an
   // identifier
