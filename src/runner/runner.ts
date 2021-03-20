@@ -88,14 +88,6 @@ class WebGLProgramTree {
       this.body.forEach((b, j) => {
         const lastInBody = j === this.body.length - 1;
         const lastInLoop = i === this.loop - 1;
-        console.log(
-          "last",
-          last,
-          "lastInBody",
-          lastInBody,
-          "lastInLoop",
-          lastInLoop
-        );
         b.run(texInfo, framebuffer, last && lastInBody && lastInLoop);
       });
     }
@@ -146,8 +138,8 @@ class WebGLProgramLeaf {
   }
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
-    // TODO move this out
     const swap = () => {
+      console.log("swapping " + this.target + " with scratch");
       [texInfo.scratch, texInfo.channels[this.target]] = [
         texInfo.channels[this.target],
         texInfo.scratch,
@@ -160,9 +152,7 @@ class WebGLProgramLeaf {
     // bind all the required textures
     this.samplers.forEach((s, i) => {
       // TODO add offset
-      console.log("TEXTURE0 + " + i);
       this.gl.activeTexture(this.gl.TEXTURE0 + i);
-      // TODO can save some texture slots
       const channelNum = this.definedNumToChannelNum.get(s);
       if (channelNum === undefined) {
         throw new Error("sampler offset undefined");
@@ -198,21 +188,21 @@ class WebGLProgramLeaf {
         this.gl.TEXTURE_2D,
         //texInfo.channels[0].tex, // TODO do we always want zero?
         // have to map target, which is a defined num, to channel num
-        texInfo.channels[this.target].tex, // TODO do we always want zero?
+        texInfo.scratch.tex,
+        //texInfo.scratch.tex,
         0
       );
     }
     // allows us to read from the back texture
     // default sampler is 0, so `uSampler` will sample from texture 0
-    this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
+    //this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
     // TODO is this the texture we want to bind? do we need to swap first?
     //this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[this.target].tex);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.scratch.tex);
+    //this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.scratch.tex);
     // we are on the last program, so draw
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 
-    // swap the textures back
-    swap(); // TODO do we need to swap?
+    swap();
   }
 
   delete() {
@@ -332,7 +322,7 @@ export class Runner {
   draw(time = 0) {
     //const offset = this.options.offset ?? 0;
     this.gl.activeTexture(this.gl.TEXTURE0);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.scratch.tex);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.channels[0].tex);
     // TODO send to every texture that needs it
     console.log("sources 0", this.sources[0]);
     sendTexture(this.gl, this.sources[0]);
@@ -398,6 +388,7 @@ function makeTex(gl: WebGL2RenderingContext, options?: RunnerOptions) {
 /** copies onto texture */
 export function sendTexture(
   gl: WebGL2RenderingContext,
+  // TODO consider if passing in undefined makes sense
   src: TexImageSource | WebGLTexture | undefined // TODO type for this
 ) {
   // if you are using textures instead of images, the user is responsible for
@@ -475,6 +466,7 @@ function compileProgram(
     if (texNum === undefined) {
       throw new Error("tex number is defined");
     }
+    console.log("setting " + samplerName + " to TEXTURE" + texNum);
     gl.uniform1i(uSampler, texNum);
   }
 
