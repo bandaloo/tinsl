@@ -20,6 +20,24 @@ export function extractMatrixDimensions(typ: string) {
   return dims;
 }
 
+export function isInIndexableRange(typ: SpecType, index: number) {
+  if (typeof typ === "object") {
+    return index >= 0 && index < typ.size;
+  }
+
+  if (isVec(typ)) {
+    const len = parseInt(extractVecLength(typ));
+    return index >= 0 && index < len;
+  }
+
+  if (isMat(typ)) {
+    const dim = parseInt(extractMatrixDimensions(typ)[0]);
+    return index >= 0 && index < dim;
+  }
+
+  throw new Error("not an indexable type");
+}
+
 export function matchingVecScalar(vec: SpecTypeSimple): SpecType {
   return /^vec/.test(vec)
     ? "float"

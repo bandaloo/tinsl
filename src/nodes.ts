@@ -20,7 +20,12 @@ import {
   unaryTyping,
   vectorAccessTyping,
 } from "./typing";
-import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
+import {
+  isInIndexableRange,
+  isMat,
+  isVec,
+  matchingVecScalar,
+} from "./typinghelpers";
 import { arrayPad, arrHasRepeats, strHasRepeats, toColorKey } from "./util";
 
 const stub = "__STUB";
@@ -1455,6 +1460,14 @@ export class SubscriptExpr extends Expr {
 
   getType(scope?: LexicalScope): SpecType {
     const callType = this.call.getType(scope);
+
+    const intResult = compileTimeInt(this.index, null);
+
+    if (intResult !== null) {
+      if (!isInIndexableRange(callType, intResult)) {
+        throw new TinslError(`index ${intResult} out of range`);
+      }
+    }
 
     if (typeof callType === "string") {
       if (isVec(callType)) {

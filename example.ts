@@ -181,12 +181,9 @@ fn outline (int channel = -1) {
 }
 
 { frag1 + vec4(1. - outline().rgb, 1.); }
-{ godrays(num_samples: 20); }
-//{vec4(0., 1., 0., 1.);} -> 1
-//{vec4(0., 1., 1., 1.);} -> 2
-
+{ godrays(num_samples: 75); }
 `,
-].join("\n\n");
+].join("\n");
 
 const code = fullTest;
 

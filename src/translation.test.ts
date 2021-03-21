@@ -120,7 +120,7 @@ pr foo () { 'red'4; }
       )
     );
 
-    console.log("expanded block", "" + expandedBlock);
+    //console.log("expanded block", "" + expandedBlock);
     // TODO do something with this test
   });
 
@@ -134,7 +134,7 @@ pr foo (int x, int y, int z) { x -> loop z {'red'4; } -> y }
       )
     );
 
-    console.log("expanded block", "" + expandedBlock);
+    //console.log("expanded block", "" + expandedBlock);
     // TODO do something with this test
   });
 
@@ -148,7 +148,7 @@ pr foo (int x, int y, int z, int w) { x -> loop z { frag(w); } -> y }
       )
     );
 
-    console.log("expanded block", "" + expandedBlock);
+    //console.log("expanded block", "" + expandedBlock);
     // TODO do something with this test
   });
 
@@ -292,7 +292,7 @@ fn foo () { return bar(); }
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
     const source = irToSourceLeaf(ir);
-    fullLog(source);
+    //fullLog(source);
   });
 });
 

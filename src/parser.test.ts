@@ -1059,6 +1059,59 @@ describe("function calls and subscripting", () => {
   });
 });
 
+describe("index out of range tests", () => {
+  it("checks index for arrays", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo() { return int[](1, 2, 3)[3]; }`)
+    ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return int[](1, 2, 3)[-1]; }`)
+      ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return int[](1, 2, 3)[0]; }`)
+      ).to.not.throw();
+  });
+
+  it("checks index for vecs", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo() { return ivec3(1, 2, 3)[3]; }`)
+    ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return ivec3(1, 2, 3)[-1]; }`)
+      ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return ivec3(1, 2, 3)[0]; }`)
+      ).to.not.throw();
+  });
+
+  it("checks index for matrices", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo() { return mat3x4(1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.)[3]; }`)
+    ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return mat3x4(1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.)[-1]; }`)
+      ).to.throw("index");
+    () =>
+      expect(
+        parseAndCheck(`
+fn foo() { return mat3x4(1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.)[0]; }`)
+      ).to.not.throw();
+  });
+});
+
 describe("frag", () => {
   it("parses a frag expression with no sampler number", () => {
     const f = new Frag(tok("frag"));
