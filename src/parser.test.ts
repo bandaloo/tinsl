@@ -1221,6 +1221,14 @@ fn bar() { return foo(0, b: 2, c: 3, a: 4); }`)
     ).to.throw("mix");
   });
 
+  it("works when all defaults and middle named is passed", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int a = 1, int b = 2, int c = 3, int d = 4) { return a + b; }
+fn bar() { return foo(b: 2); }`)
+    ).to.not.throw();
+  });
+
   it("whitespace after colon allowed for named arguments", () => {
     expect(() =>
       parseAndCheck(`

@@ -567,7 +567,12 @@ abstract class DefLike extends Stmt {
       if (isOnlyExpr(filledArgs)) {
         return filledArgs;
       }
+      //return filledArgs as Expr[];
 
+      console.log("args", args);
+      console.log("filledArgs", filledArgs);
+
+      // TODO this doesn't account for previous defaults
       throw new TinslError("skipped naming a required argument");
     }
 
@@ -2286,10 +2291,10 @@ export class TopDef extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    // TODO test type errors for top defs 
+    // TODO test type errors for top defs
     this.wrapError(() => {
-    scope.addToScope(this.getToken().text, this);
-    this.getRightType(scope);
+      scope.addToScope(this.getToken().text, this);
+      this.getRightType(scope);
     }, scope);
   }
 

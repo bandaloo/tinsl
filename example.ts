@@ -13,6 +13,7 @@ console.log(source);
 
 if (source === null) throw new Error("problem getting the source context");
 
+/*
 const grd = source.createLinearGradient(0, 0, 960, 0);
 grd.addColorStop(0, "black");
 grd.addColorStop(1, "white");
@@ -20,8 +21,9 @@ source.fillStyle = grd;
 source.fillRect(0, 0, 960, 540);
 source.fillStyle = "white";
 source.fillRect(960 / 4, 540 / 4, 960 / 2, 540 / 2);
+*/
 
-const bloom = `def threshold 0.9
+const bloom = `def threshold 0.2
 uniform float u_size;
 
 fn luma(vec4 color) {
@@ -56,6 +58,22 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 { frag0 + frag1; } -> 0
 `;
 
+const blur13Func = `fn blur13(vec2 dir, int channel = -1) {
+  uv := pos / res;
+  mut col := vec4(0.);
+  off1 := vec2(1.411764705882353) * dir;
+  off2 := vec2(3.2941176470588234) * dir;
+  off3 := vec2(5.176470588235294) * dir;
+  col += frag(channel, uv) * 0.1964825501511404;
+  col += frag(frag, uv + (off1 / res)) * 0.2969069646728344;
+  col += frag(frag, uv - (off1 / res)) * 0.2969069646728344;
+  col += frag(frag, uv + (off2 / res)) * 0.09447039785044732;
+  col += frag(frag, uv - (off2 / res)) * 0.09447039785044732;
+  col += frag(frag, uv + (off3 / res)) * 0.010381362401148057;
+  col += frag(frag, uv - (off3 / res)) * 0.010381362401148057;
+  return col;
+}`;
+
 const redSimple = `0 -> { frag0 * vec4(1., 0., 0., 1.); } -> 0`;
 
 const rgbTextures = `
@@ -88,7 +106,7 @@ fn keepDividingByTwo (float x, int reps) {
 { frag * keepDividingByTwo(1., 3); }
 `;
 
-const sobel = `
+const sobelFunc = `
 vec4 sobel(int channel = -1) {
   uv := pos / res;
   w := 1. / res.x;
@@ -111,11 +129,9 @@ vec4 sobel(int channel = -1) {
   sob := sqrt(edge_h * edge_h + edge_v * edge_v);
 
   return vec4(1. - sob.rgb, 1.);
-}
+}`;
 
-{ sobel(); }`;
-
-const godrays = `fn godrays (
+const godraysFunc = `fn godrays (
   vec4 col = frag,
   float exposure = 1.,
   float decay = 1.,
@@ -140,11 +156,41 @@ const godrays = `fn godrays (
   }
 
   return color * exposure;
+}`;
+
+const twoPassBlurProc = `
+pr two_pass_blur(float size, int reps = 2, int channel = -1) {
+  loop reps {
+    blur13(vec2(size, 0.), channel); refresh;
+    blur13(vec2(0., size), channel); refresh;
+  }
+}`;
+
+const fullTest = [
+  godraysFunc,
+  blur13Func,
+  twoPassBlurProc,
+  sobelFunc,
+  `0 -> { frag; } -> 1
+1 -> { @two_pass_blur(reps: 6, size: 1.); } -> 1
+
+fn outline (int channel = -1) {
+  sob := sobel(channel);
+  avg := (sob.x + sob.y + sob.z) / 3.;
+  return vec4(avg, avg, avg, 1.);
 }
 
-{ godrays(); }`;
+{ frag1 + vec4(1. - outline().rgb, 1.); }
+{ godrays(num_samples: 20); }
+//{vec4(0., 1., 0., 1.);} -> 1
+//{vec4(0., 1., 1., 1.);} -> 2
 
-const code = godrays;
+`,
+].join("\n\n");
+
+const code = fullTest;
+
+console.log(code);
 
 let runner: Runner;
 
@@ -159,12 +205,16 @@ let drawingFunc = higherOrderSpiral([255, 0, 0], [0, 0, 0]);
 
 let frame = 0;
 
+/*
 const animate = (time: number) => {
   runner.draw();
   drawingFunc(time / 1000, frame, source, sourceCanvas);
   requestAnimationFrame(animate);
+  frame++;
 };
 
 animate(0);
+*/
 
-//runner.draw();
+drawingFunc(0, frame, source, sourceCanvas);
+runner.draw();

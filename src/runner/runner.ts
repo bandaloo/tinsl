@@ -14,7 +14,7 @@ const U_TIME = "uTime";
 
 const U_RES = "uResolution";
 
-const verbosity = 0;
+const verbosity = 2;
 
 ////////////////////////////////////////////////////////////////////////////////
 // types
@@ -162,7 +162,8 @@ class WebGLProgramLeaf {
         throw new Error("sampler offset undefined");
       }
       if (verbosity > 1) {
-        console.log("binding texture " + s + " to unit " + i);
+        //console.log("binding texture " + s + " to unit " + i);
+        console.log("defined num", s, "channel num", channelNum, "tex num", i);
       }
       this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[channelNum].tex);
     });
@@ -463,7 +464,7 @@ function compileProgram(
     if (texNum === undefined) {
       throw new Error("tex number is defined");
     }
-    console.log("setting " + samplerName + " to TEXTURE" + texNum);
+    console.log("setting", samplerName, "to TEXTURE", texNum);
     gl.uniform1i(uSampler, texNum);
   }
 
