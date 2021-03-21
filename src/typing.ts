@@ -466,10 +466,6 @@ on a vector of length ${len}`
   if (comps.length === 1) return matchingVecScalar(vec);
   return (base + comps.length) as SpecType;
 }
-// note: modf is skipped because it has an output parameter
-
-// TODO check for valid l-value for dot application in assignment
-// aka no `pos.xyx = something;`
 
 // TODO length method for arrays
 // TODO does the grammar allow return statements inside procedures?

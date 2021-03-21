@@ -1,3 +1,4 @@
+import { higherOrderSpiral } from "./src/runner/draws";
 import { Runner } from "./src/runner/runner";
 
 const glCanvas = document.getElementById("gl") as HTMLCanvasElement;
@@ -145,9 +146,25 @@ const godrays = `fn godrays (
 
 const code = godrays;
 
+let runner: Runner;
+
 try {
-  const runner = new Runner(gl, code, [sourceCanvas], {});
-  runner.draw();
+  runner = new Runner(gl, code, [sourceCanvas], {});
 } catch (err) {
   console.log(err.message);
+  throw "look at the logged error message";
 }
+
+let drawingFunc = higherOrderSpiral([255, 0, 0], [0, 0, 0]);
+
+let frame = 0;
+
+const animate = (time: number) => {
+  runner.draw();
+  drawingFunc(time / 1000, frame, source, sourceCanvas);
+  requestAnimationFrame(animate);
+};
+
+animate(0);
+
+//runner.draw();

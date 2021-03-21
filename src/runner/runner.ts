@@ -14,6 +14,8 @@ const U_TIME = "uTime";
 
 const U_RES = "uResolution";
 
+const verbosity = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 // types
 
@@ -85,7 +87,9 @@ class WebGLProgramTree {
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
     for (let i = 0; i < this.loop; i++) {
-      console.log("i", i);
+      if (verbosity > 1) {
+        console.log("loop iteration", i);
+      }
       this.body.forEach((b, j) => {
         const lastInBody = j === this.body.length - 1;
         const lastInLoop = i === this.loop - 1;
@@ -140,7 +144,9 @@ class WebGLProgramLeaf {
 
   run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
     const swap = () => {
-      console.log("swapping " + this.target + " with scratch");
+      if (verbosity > 1) {
+        console.log("swapping " + this.target + " with scratch");
+      }
       [texInfo.scratch, texInfo.channels[this.target]] = [
         texInfo.channels[this.target],
         texInfo.scratch,
@@ -155,7 +161,9 @@ class WebGLProgramLeaf {
       if (channelNum === undefined) {
         throw new Error("sampler offset undefined");
       }
-      console.log("binding texture " + s + " to unit " + i);
+      if (verbosity > 1) {
+        console.log("binding texture " + s + " to unit " + i);
+      }
       this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[channelNum].tex);
     });
 
@@ -174,12 +182,18 @@ class WebGLProgramLeaf {
     if (last && this.last) {
       // draw to the screen by setting to default framebuffer (null)
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-      console.log("last!!");
+      if (verbosity > 1) {
+        console.log("last!!");
+      }
     } else {
-      console.log("not last");
+      if (verbosity > 1) {
+        console.log("not last");
+      }
       // we are not on the last pass
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
-      console.log(this.target);
+      if (verbosity > 1) {
+        console.log(this.target);
+      }
       this.gl.framebufferTexture2D(
         this.gl.FRAMEBUFFER,
         this.gl.COLOR_ATTACHMENT0,
@@ -312,7 +326,6 @@ export class Runner {
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.channels[0].tex);
     // TODO send to every texture that needs it
-    console.log("sources 0", this.sources[0]);
     sendTexture(this.gl, this.sources[0]);
     this.programs.run(this.texInfo, this.framebuffer, true);
     // TODO see if we should unbind this
