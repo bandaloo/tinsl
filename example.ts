@@ -166,6 +166,10 @@ pr two_pass_blur(float size, int reps = 2, int channel = -1) {
   }
 }`;
 
+const identityMultTest = `
+{ vec4(float(int[](1)[int(cos(0.))]), 0., 0., 1.); }
+`;
+
 const fullTest = [
   godraysFunc,
   blur13Func,
@@ -185,7 +189,7 @@ fn outline (int channel = -1) {
 `,
 ].join("\n");
 
-const code = fullTest;
+const code = identityMultTest;
 
 console.log(code);
 

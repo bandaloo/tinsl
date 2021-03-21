@@ -15,6 +15,7 @@ import {
   Uniform,
 } from "./nodes";
 import { parseAndCheck } from "./testhelpers";
+import { NON_CONST_ID } from "./util";
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
@@ -230,13 +231,21 @@ export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
   const funcsList = Array.from(funcs).reverse();
   const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
 
+  let needsOneMult = ir.oneMult;
+
   // collect all required textures from functions
   const texNums = new Set<number>();
   for (const f of funcsList) {
     for (const t of f.requiredTexNums) {
       texNums.add(t);
     }
+    // also see if any functions need a one multiplication
+    needsOneMult ||= f.needsOneMult;
   }
+
+  const nonConstIdDeclSource = needsOneMult
+    ? `int int_${NON_CONST_ID} = 1;\nuint uint_${NON_CONST_ID} = 1u;\n`
+    : "";
 
   // collect all required textures from ir
   for (const t of ir.texNums) {
@@ -278,6 +287,7 @@ precision mediump float;
   sl.leaf.source =
     defaultPrecisionSource +
     fragColorSource +
+    nonConstIdDeclSource +
     samplersSource +
     uniformsSource +
     funcDefsSource +

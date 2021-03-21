@@ -26,7 +26,13 @@ import {
   isVec,
   matchingVecScalar,
 } from "./typinghelpers";
-import { arrayPad, arrHasRepeats, strHasRepeats, toColorKey } from "./util";
+import {
+  arrayPad,
+  arrHasRepeats,
+  NON_CONST_ID,
+  strHasRepeats,
+  toColorKey,
+} from "./util";
 
 const stub = "__STUB";
 
@@ -408,17 +414,26 @@ export class LexicalScope {
 
   addTexNum(int: number) {
     if (this.renderBlock !== undefined) {
-      console.log("to render block", int);
       this.renderBlock.requiredTexNums.add(int);
-      console.log(this.renderBlock.requiredTexNums);
     } else if (this.funcDef !== undefined) {
-      console.log("to func def", int);
       this.funcDef.requiredTexNums.add(int);
-      console.log(this.funcDef.requiredTexNums);
     } else {
       throw Error(
         "both func def and render block of scope " +
           "were null when trying to add new required tex num"
+      );
+    }
+  }
+
+  addNeedsOneMult() {
+    if (this.renderBlock !== undefined) {
+      this.renderBlock.needsOneMult = true;
+    } else if (this.funcDef !== undefined) {
+      this.funcDef.needsOneMult = true;
+    } else {
+      throw Error(
+        "both func def and render block of scope " +
+          "were null when trying to add needs one mult"
       );
     }
   }
@@ -711,35 +726,26 @@ export class TinslProgram {
   }
 }
 
-export class RenderBlock extends Stmt {
-  once: boolean;
-  inNum: number | Expr | null;
-  outNum: number | Expr | null;
-  loopNum: number | Expr | null;
-  body: ExSt[];
-  open: Token;
+interface Encompassing {
+  needsOneMult: boolean;
+  requiredTexNums: Set<number>;
+}
 
+export class RenderBlock extends Stmt implements Encompassing {
   cachedRefresh?: boolean;
-
   paramMappings: Map<Param, Expr> = new Map();
-
   requiredTexNums: Set<number> = new Set();
+  needsOneMult = false;
 
   constructor(
-    once: boolean,
-    body: ExSt[],
-    inNum: number | Expr | null,
-    outNum: number | Expr | null,
-    loopNum: number | Expr | null,
-    open: Token
+    public once: boolean,
+    public body: ExSt[],
+    public inNum: number | Expr | null,
+    public outNum: number | Expr | null,
+    public loopNum: number | Expr | null,
+    public open: Token
   ) {
     super();
-    this.once = once;
-    this.body = body;
-    this.inNum = inNum;
-    this.outNum = outNum;
-    this.loopNum = loopNum;
-    this.open = open;
   }
 
   // TODO get rid of this
@@ -1427,15 +1433,10 @@ ${arrType}[${this.args.length}]`);
 }
 
 export class SubscriptExpr extends Expr {
-  open: Token;
-  call: Expr;
-  index: Expr;
+  private multsByOne = false;
 
-  constructor(open: Token, call: Expr, index: Expr) {
+  constructor(public open: Token, public call: Expr, public index: Expr) {
     super();
-    this.open = open;
-    this.call = call;
-    this.index = index;
   }
 
   getSubExpressions(): Expr[] {
@@ -1447,7 +1448,13 @@ export class SubscriptExpr extends Expr {
   }
 
   translate(sl: MappedLeaf): string {
-    return `${this.call.translate(sl)}[${this.index.translate(sl)}]`;
+    return `${this.call.translate(sl)}[${
+      this.multsByOne
+        ? (this.index.getType() === "int" ? "int_" : "uint_") +
+          NON_CONST_ID +
+          "*"
+        : ""
+    }${this.index.translate(sl)}]`;
   }
 
   toJson(): object {
@@ -1458,34 +1465,44 @@ export class SubscriptExpr extends Expr {
     };
   }
 
-  getType(scope?: LexicalScope): SpecType {
-    const callType = this.call.getType(scope);
+  getType(scope: LexicalScope): SpecType {
+    return this.wrapError(() => {
+      const callType = this.call.getType(scope);
 
-    const intResult = compileTimeInt(this.index, null);
-
-    if (intResult !== null) {
-      if (!isInIndexableRange(callType, intResult)) {
-        throw new TinslError(`index ${intResult} out of range`);
+      const indexType = this.index.getType(scope);
+      if (!(indexType === "int" || indexType === "uint")) {
+        throw new TinslError("index must be an integer");
       }
-    }
 
-    if (typeof callType === "string") {
-      if (isVec(callType)) {
-        return matchingVecScalar(callType);
-      }
-      if (isMat(callType)) {
-        return matrixAccessTyping(callType);
-      }
-      throw new TinslError(
-        "can only index arrays and vectors with square brackets"
-      );
-    }
-    const indexType = this.index.getType(scope);
-    if (!(indexType === "int" || indexType === "uint")) {
-      throw new TinslError("index must be an integer");
-    }
+      // TODO pass in scope instead of null?
+      const intResult = compileTimeInt(this.index, null);
 
-    return callType.typ;
+      if (intResult !== null) {
+        if (!isInIndexableRange(callType, intResult)) {
+          throw new TinslError(`index ${intResult} out of range`);
+        }
+      } else if (this.call.isConst(scope)) {
+        // if it's a const expr, then we can't fully evaluate; we multiply by
+        // non-const 1 when generating code
+        console.log("scope", scope);
+        scope.addNeedsOneMult();
+        this.multsByOne = true;
+      }
+
+      if (typeof callType === "string") {
+        if (isVec(callType)) {
+          return matchingVecScalar(callType);
+        }
+        if (isMat(callType)) {
+          return matrixAccessTyping(callType);
+        }
+        throw new TinslError(
+          "can only index arrays and vectors with square brackets"
+        );
+      }
+
+      return callType.typ;
+    }, scope);
   }
 
   isLVal() {
@@ -1718,9 +1735,7 @@ export class Param extends Node {
   }
 }
 
-// TODO interface for implementing requiredTexNums
-
-export class FuncDef extends DefLike {
+export class FuncDef extends DefLike implements Encompassing {
   typ: TypeName | null;
   id: Token;
   body: ExSt[];
@@ -1729,6 +1744,8 @@ export class FuncDef extends DefLike {
   subFuncs: Set<FuncDef> = new Set();
 
   requiredTexNums: Set<number> = new Set();
+
+  needsOneMult = false;
 
   constructor(typ: TypeName | null, id: Token, params: Param[], body: ExSt[]) {
     super(params);

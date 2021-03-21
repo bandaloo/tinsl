@@ -52,19 +52,16 @@ export class IRTree extends IRNode {
 }
 
 export class IRLeaf extends IRNode {
-  exprs: Expr[];
   source = "";
-  texNums: Set<number> = new Set();
 
   constructor(
     loopInfo: LoopInfo,
     paramMappings: Map<Param, Expr>,
-    exprs: Expr[],
-    texNums: Set<number>
+    public exprs: Expr[],
+    public oneMult: boolean,
+    public texNums: Set<number>
   ) {
     super(loopInfo, paramMappings);
-    this.exprs = exprs;
-    this.texNums = texNums;
   }
 
   /*
@@ -116,6 +113,7 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
       loopInfo,
       block.paramMappings,
       block.body,
+      block.needsOneMult,
       block.requiredTexNums
     );
   }

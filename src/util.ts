@@ -1,4 +1,4 @@
-import { TinslError, TinslLineError } from "./err";
+import { TinslLineError } from "./err";
 
 export function strHasRepeats(str: string) {
   return /(.).*\1/.test(str);
@@ -49,3 +49,6 @@ export function toColorKey(str: string) {
 
 export const arrayPad = <T, U>(arr: T[], len: number, elem: U): (T | U)[] =>
   arr.concat(new Array(len - arr.length).fill(elem));
+
+// TODO make this an invalid ident
+export const NON_CONST_ID = "non_const_identity";
