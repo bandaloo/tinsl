@@ -147,9 +147,6 @@ class WebGLProgramLeaf {
       ];
     };
 
-    // swap against the target texture slot
-    //swap();
-
     // bind all the required textures
     this.samplers.forEach((s, i) => {
       // TODO add offset
@@ -187,20 +184,10 @@ class WebGLProgramLeaf {
         this.gl.FRAMEBUFFER,
         this.gl.COLOR_ATTACHMENT0,
         this.gl.TEXTURE_2D,
-        //texInfo.channels[0].tex, // TODO do we always want zero?
-        // have to map target, which is a defined num, to channel num
         texInfo.scratch.tex,
-        //texInfo.scratch.tex,
         0
       );
     }
-    // allows us to read from the back texture
-    // default sampler is 0, so `uSampler` will sample from texture 0
-    //this.gl.activeTexture(this.gl.TEXTURE0); // TODO revisit with offset
-    // TODO is this the texture we want to bind? do we need to swap first?
-    //this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[this.target].tex);
-    //this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.scratch.tex);
-    // we are on the last program, so draw
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 
     swap();

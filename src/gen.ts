@@ -1,82 +1,35 @@
-import { getAllUsedFuncs, IRLeaf, IRNode, IRTree, renderBlockToIR } from "./ir";
+import { getAllUsedFuncs, IRLeaf, IRTree, renderBlockToIR } from "./ir";
 import {
-  CallExpr,
   compileTimeInt,
   Expr,
   ExSt,
-  Frag,
   IdentExpr,
-  IntExpr,
   Param,
   ProcCall,
   Refresh,
   RenderBlock,
-  MappedLeaf,
-  SourceTree,
-  UnaryExpr,
   SourceLeaf,
-  Uniform,
-  TopDef,
+  SourceTree,
   TinslTree,
+  TopDef,
+  Uniform,
 } from "./nodes";
-import { parse, parseAndCheck } from "./testhelpers";
+import { parseAndCheck } from "./testhelpers";
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
-/*
-export function expandProcsInBlock(
-  block: RenderBlock,
-  args: Expr[] = [],
-  params: Param[] = []
-) {
-  block.body = expandProcsInBody(block.body, args, params);
-  return block;
-}
-
-export function expandProcsInBody(
-  blockBody: ExSt[],
-  args: Expr[],
-  params: Param[]
-) {
-  const newBody: ExSt[] = [];
-
-  for (const b of blockBody) {
-    if (b instanceof ProcCall) {
-      if (b.cachedProcDef === undefined) {
-        throw new Error("procedure in body didn't have cached definition");
-      }
-      newBody.push(...expandProc(b, args, params));
-    } else if (b instanceof RenderBlock) {
-      expandProcsInBlock(b, args, params);
-      newBody.push(b);
-    } else {
-      newBody.push(b);
-    }
-  }
-
-  return newBody;
-}
-*/
-
-// TODO move on because this finally works, but consider refactoring
 export function expandProcsInBlock(block: RenderBlock) {
   block.body = expandBody(block.body, [], [], block);
   return block;
 }
 
+// TODO move on because this finally works, but consider refactoring
 function expandBody(
-  //call: ProcCall,
   body: ExSt[],
-  args: Expr[], //= call.getAllArgs(),
+  args: Expr[],
   params: Param[],
   outerBlock: RenderBlock
 ): ExSt[] {
-  //const def = call.cachedProcDef;
-  //if (def === undefined) throw new Error("call didn't have cached proc");
-
-  //const _args = args;
-  //const _params = params ?? def.params;
-
   const fillAtomicNum = (renderNum: null | Expr | number) => {
     if (renderNum instanceof Expr) {
       if (!(renderNum instanceof IdentExpr)) {
@@ -141,9 +94,6 @@ function expandBody(
       b.cachedProcDef.addInDefaults(filledArgs);
 
       for (const a of filledArgs) {
-        // unwrap named if necessary
-        //if (!(a instanceof Expr)) a = a.expr;
-
         // TODO similar logic in the above function
         if (!(a instanceof IdentExpr)) {
           newArgs.push(a);
@@ -177,19 +127,10 @@ function expandBody(
       // set in the map
       const newParams = b.cachedProcDef.params;
       result.push(...expandBody(newBody, newArgs, newParams, outerBlock));
-    } else if (b instanceof CallExpr && b.call instanceof Frag) {
-      // TODO this should actually be a list of sampler
-      // TODO do we need to do anything special here?
-      //b.call.sampler = fillAtomicNum(b.call.sampler);
-      result.push(b);
     } else {
       result.push(b);
     }
   }
-
-  // TODO we somehow need an attribute on proc the param so it can be translate
-  // maybe a mapping of params to args on each render block? now the above
-  // function will have to have a reference to the outer block
 
   // TODO elements might be added redundantly but that's okay for now
   // TODO create this map earlier? then won't have the need for indexOf
@@ -344,8 +285,6 @@ precision mediump float;
   return sl.leaf;
 }
 
-//export function genSource(ir: IRLeaf): SourceLeaf;
-//export function genSource(ir: IRTree): SourceTree;
 export function genSource(ir: IRTree | IRLeaf): SourceTree | SourceLeaf {
   if (ir instanceof IRTree) {
     const st = new SourceTree(ir.loopInfo.loopNum, ir.loopInfo.once);

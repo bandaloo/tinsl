@@ -44,6 +44,6 @@ export type SpecTypeSimple =
   | "mat4x2"
   | "mat4x3"
   | "mat4x4"
-  | "__undecided"; // TODO really think about this one
+  | "__undecided"; // if this shows up in an error message, that's a mistake
 
 export type SpecType = SpecTypeSimple | ArrayType<SpecTypeSimple>;

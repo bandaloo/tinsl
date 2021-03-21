@@ -192,20 +192,6 @@ function translateFrag(frag: Frag, sl: MappedLeaf) {
   throw new Error("sampler matched none of the cases");
 }
 
-/*
-function isNegativeOneUnary(expr: Expr, num: number) {
-  if (
-    expr instanceof UnaryExpr &&
-    expr.getToken().text === "-" &&
-    expr.argument instanceof IntExpr &&
-    parseInt(expr.argument.getToken().text) === 1
-  ) {
-    return "uSampler" + num;
-  }
-  return Expr;
-}
-*/
-
 function convertToSampler(expr: Expr, sl: MappedLeaf): Expr | string {
   // null will have compile time int used cached resolve
   const int = compileTimeInt(expr, null);
@@ -523,10 +509,6 @@ export function isOnlyRenderBlock(args: any[]): args is RenderBlock[] {
 abstract class DefLike extends Stmt {
   params: Param[];
 
-  // TODO cache all the idents that refer to this when pureInt
-  // TODO this maybe belongs on param?
-  //pureCache: Map<Param, Param | number> = new Map();
-
   constructor(params: Param[]) {
     super();
     this.params = params;
@@ -697,7 +679,6 @@ export class TinslProgram {
   }
 
   check(): void {
-    //sl.leaf.requires.uniforms.add(typeToString(this.typ.toSpecType()));
     typeCheckExprStmts(this.body, this.topScope);
   }
 
@@ -904,17 +885,9 @@ export class BinaryExpr extends Expr {
           this.validLVal = "invalid";
         }
 
-        // if it is
         if (this.validLVal !== "invalid") {
           this.validLVal = this.left.isLVal();
         }
-
-        /*
-        this.validLVal =
-          this.left.validLVal !== "const" && this.left.validLVal !== "final"
-            ? "valid"
-            : this.left.validLVal;
-        */
 
         return ret;
       }
@@ -1066,7 +1039,7 @@ export class IdentExpr extends AtomExpr {
     scope?: LexicalScope,
     associatedParam: "sampler" | "normal" | Param = "normal"
   ): SpecType {
-    // this can't return the cached type!!! it needs to do this check every time
+    // this can't return the cached type; it needs to do this check every time
     // or else sampler/normal won't work. but when we are translating we just
     // want the cached type. (TODO think about if there's a better way)
     if (scope === undefined) {
@@ -1463,14 +1436,6 @@ export class SubscriptExpr extends Expr {
   getType(scope?: LexicalScope): SpecType {
     const callType = this.call.getType(scope);
 
-    // valid l-value when accessing a not constant-declared
-    /*
-    this.validLVal =
-      this.call.validLVal !== "const" && this.call.validLVal !== "final"
-        ? "valid"
-        : this.call.validLVal;
-    */
-
     if (typeof callType === "string") {
       if (isVec(callType)) {
         return matchingVecScalar(callType);
@@ -1564,7 +1529,6 @@ export class VarDecl extends Stmt {
     try {
       return this.expr.getType(scope);
     } catch (err) {
-      throw err;
       return "__undecided";
     }
   }
@@ -1902,17 +1866,13 @@ but the function should return ${typeToString(oldRetType)}`
 }
 
 export class TernaryExpr extends Expr {
-  bool: Expr;
-  expr1: Expr;
-  expr2: Expr;
-  token: Token;
-
-  constructor(bool: Expr, expr1: Expr, expr2: Expr, token: Token) {
+  constructor(
+    public bool: Expr,
+    public expr1: Expr,
+    public expr2: Expr,
+    public token: Token
+  ) {
     super();
-    this.bool = bool;
-    this.expr1 = expr1;
-    this.expr2 = expr2;
-    this.token = token;
   }
 
   getSubExpressions(): Expr[] {
@@ -2000,7 +1960,7 @@ ${this.loop !== null ? this.loop.translate(sl) : ""}
 
     try {
       this.wrapError(
-        () => {},
+        () => {}, // pass in noop just to check the body
         scope, // doesn't matter
         false,
         [...(this.init ? [this.init] : []), ...(this.loop ? [this.loop] : [])],
@@ -2016,11 +1976,8 @@ ${this.loop !== null ? this.loop.translate(sl) : ""}
     try {
       this.wrapError(
         (scope: LexicalScope) => {
-          //typeCheckExprStmts(outer, scope);
-          //typeCheckExprStmts(inner, innerScope);
-
-          // has to be after checking the other expressions or else unknown
-          // identifier
+          // this check has to be after checking the other expressions or else
+          // cascading unknown identifier error
           if (this.cond !== null && this.cond.getType(scope) !== "bool") {
             throw new TinslError("conditional in a for loop must be a boolean");
           }
@@ -2042,17 +1999,13 @@ ${this.loop !== null ? this.loop.translate(sl) : ""}
 }
 
 export class If extends Stmt {
-  cond: Expr;
-  body: ExSt[];
-  token: Token;
-  cont: Else | null;
-
-  constructor(cond: Expr, body: ExSt[], token: Token, cont: Else | null) {
+  constructor(
+    public cond: Expr,
+    public body: ExSt[],
+    public token: Token,
+    public cont: Else | null
+  ) {
     super();
-    this.cond = cond;
-    this.body = body;
-    this.token = token;
-    this.cont = cont;
   }
 
   getExprStmts() {
@@ -2105,13 +2058,8 @@ export class If extends Stmt {
 }
 
 export class Else extends Stmt {
-  body: ExSt[];
-  token: Token;
-
-  constructor(body: ExSt[], token: Token) {
+  constructor(public body: ExSt[], public token: Token) {
     super();
-    this.body = body;
-    this.token = token;
   }
 
   getExprStmts(): ExSt[] {
@@ -2137,9 +2085,7 @@ export class Else extends Stmt {
     const innerScope = new LexicalScope(scope);
     this.wrapError(
       // using a noop to just check the body
-      (scope: LexicalScope) => {
-        //typeCheckExprStmts(this.body, innerScope);
-      },
+      () => {},
       scope,
       false,
       this.body,
@@ -2149,7 +2095,6 @@ export class Else extends Stmt {
 }
 
 // TODO check to see that length of array uniform is specified
-// TODO rename this to UniformDecl (where it is declared not used)
 export class Uniform extends Stmt {
   typ: TypeName;
   ident: Token;
@@ -2234,7 +2179,6 @@ export class ProcDef extends DefLike {
           innerScope.addToScope(p.getToken().text, p);
         }
         this.validateDefaultParams(scope);
-        //typeCheckExprStmts(this.body, innerScope, true);
       },
       scope,
       true,
@@ -2342,13 +2286,15 @@ export class TopDef extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    // TODO wrap this in error
+    // TODO test type errors for top defs 
+    this.wrapError(() => {
     scope.addToScope(this.getToken().text, this);
     this.getRightType(scope);
+    }, scope);
   }
 
   getRightType(scope?: LexicalScope) {
-    // this is the same as in vardecl
+    // TODO this is the same as in vardecl
     try {
       return this.expr.getType(scope);
     } catch {
