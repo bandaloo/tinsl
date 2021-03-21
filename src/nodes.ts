@@ -481,7 +481,7 @@ export abstract class Expr extends Node {
 
   wrapError(
     callback: (scope: LexicalScope) => SpecType,
-    scope: LexicalScope | undefined,
+    scope: LexicalScope,
     renderLevel = false,
     extraExSts: ExSt[] = [],
     innerScope = scope,
@@ -490,7 +490,6 @@ export abstract class Expr extends Node {
     if (this.cachedType !== undefined && !suppressReturningCached) {
       return this.cachedType;
     }
-    if (scope === undefined) throw new Error("TODO make this impossible");
     this.cachedType = wrapErrorHelper(
       callback,
       this,
@@ -654,24 +653,6 @@ is of type ${typeToString(defType)}`);
 but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         );
       }
-
-      // check usage match
-
-      /*
-      const arg = exprArgs[i];
-      if (arg instanceof IdentExpr) {
-        if (arg.cachedResolve instanceof Param) {
-          if (arg.cachedResolve.usage !== this.params[i].usage) {
-            throw new TinslError(
-              "mix of usage types for int: " +
-                arg.cachedResolve.usage +
-                "and" +
-                this.params[i].usage
-            );
-          }
-        }
-      }
-      */
 
       if (this.params[i].pureInt) {
         // input must be compile time
@@ -886,7 +867,7 @@ export class BinaryExpr extends Expr {
     }${this.right.translate(sl)})`;
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError(() => {
       const lType = this.left.getType(scope);
       const op = this.operator.text;
@@ -990,7 +971,7 @@ export class UnaryExpr extends Expr {
     };
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError(() => {
       const argType = this.argument.getType(scope);
 
@@ -1085,16 +1066,19 @@ export class IdentExpr extends AtomExpr {
     scope?: LexicalScope,
     associatedParam: "sampler" | "normal" | Param = "normal"
   ): SpecType {
-    // TODO this can't return the cached type!!! it needs to do this check every
-    // time or else sampler/normal won't work
+    // this can't return the cached type!!! it needs to do this check every time
+    // or else sampler/normal won't work. but when we are translating we just
+    // want the cached type. (TODO think about if there's a better way)
+    if (scope === undefined) {
+      if (this.cachedType === undefined) {
+        throw new Error(
+          "cached type was undefined when getting type for translation"
+        );
+      }
+      return this.cachedType;
+    }
     return this.wrapError(
       () => {
-        if (scope === undefined) {
-          throw new Error(
-            "scope was somehow undefined when trying to resolve identifier"
-          );
-        }
-
         const name = this.getToken().text;
         const res = scope.resolve(name);
         if (res === undefined)
@@ -1112,26 +1096,6 @@ export class IdentExpr extends AtomExpr {
         if (res instanceof VarDecl) {
           this.validLVal = res.access === "mut" ? "valid" : res.access;
         } else if (res instanceof Param) {
-          /*
-          if (associatedParam instanceof Param) {
-            console.log(
-              "associated param",
-              associatedParam,
-              "res.usage",
-              res.usage
-            );
-          }
-          */
-
-          /*
-          const requiredMatch =
-            associatedParam === "in frag"
-              ? "sampler"
-              : associatedParam instanceof Param
-              ? associatedParam.usage
-              : "unused";
-          */
-
           const requiredMatch =
             associatedParam instanceof Param
               ? associatedParam.usage
@@ -1258,7 +1222,7 @@ export class CallExpr extends Expr {
     };
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
       if (this.call instanceof BinaryExpr) {
         this.call.getType(scope);
@@ -1433,7 +1397,7 @@ export class ConstructorExpr extends Expr {
     };
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError(() => {
       if (this.typ.size !== null) {
         const arrType = this.typ.getToken().text as SpecTypeSimple;
@@ -1534,25 +1498,14 @@ export class SubscriptExpr extends Expr {
 type Access = "mut" | "const" | "final";
 
 export class VarDecl extends Stmt {
-  access: Access;
-  typ: TypeName | null;
-  id: Token;
-  expr: Expr;
-  assign: Token;
-
   constructor(
-    access: Access,
-    typ: TypeName | null,
-    id: Token,
-    expr: Expr,
-    assign: Token
+    public access: Access,
+    public typ: TypeName | null,
+    public id: Token,
+    public expr: Expr,
+    public assign: Token
   ) {
     super();
-    this.access = access;
-    this.typ = typ;
-    this.id = id;
-    this.expr = expr;
-    this.assign = assign;
   }
 
   getExprStmts(): ExSt[] {
@@ -1610,7 +1563,8 @@ export class VarDecl extends Stmt {
     // TODO this is the same as top def
     try {
       return this.expr.getType(scope);
-    } catch {
+    } catch (err) {
+      throw err;
       return "__undecided";
     }
   }
@@ -1982,7 +1936,7 @@ export class TernaryExpr extends Expr {
     return this.token;
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError(() => {
       return ternaryTyping(
         this.bool.getType(scope),
@@ -2552,7 +2506,7 @@ export class ColorString extends Expr {
     this.num = num;
   }
 
-  getType(scope?: LexicalScope): SpecType {
+  getType(scope: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
       if (this.num !== null && this.num !== 3 && this.num !== 4)
         throw new TinslError(

@@ -89,11 +89,11 @@ fn keepDividingByTwo (float x, int reps) {
 
 const sobel = `
 vec4 sobel(int channel = -1) {
-  vec2 uv = pos / res;
-  float w = 1. / res.x;
-  float h = 1. / res.y;
+  uv := pos / res;
+  w := 1. / res.x;
+  h := 1. / res.y;
 
-  vec4[8] k = vec4[8](
+  k := vec4[](
     frag(channel, uv + vec2(-w, -h)),
     frag(channel, uv + vec2(0., -h)),
     frag(channel, uv + vec2(w, -h)),
@@ -105,16 +105,45 @@ vec4 sobel(int channel = -1) {
     frag(channel, uv + vec2(w, h))
   );
 
-  vec4 edge_h = k[2] + (2. * k[4]) + k[7] - (k[0] + (2. * k[3]) + k[5]);
-  vec4 edge_v = k[0] + (2. * k[1]) + k[2] - (k[5] + (2. * k[6]) + k[7]);
-  vec4 sob = sqrt(edge_h * edge_h + edge_v * edge_v);
+  edge_h := k[2] + (2. * k[4]) + k[7] - (k[0] + (2. * k[3]) + k[5]);
+  edge_v := k[0] + (2. * k[1]) + k[2] - (k[5] + (2. * k[6]) + k[7]);
+  sob := sqrt(edge_h * edge_h + edge_v * edge_v);
 
   return vec4(1. - sob.rgb, 1.);
 }
 
 { sobel(); }`;
 
-const code = sobel;
+const godrays = `fn godrays (
+  vec4 col = frag,
+  float exposure = 1.,
+  float decay = 1.,
+  float density = 1.,
+  float weight = 0.01,
+  vec2 light_pos = vec2(.5, .5),
+  int num_samples = 100,
+  int channel = -1
+) {
+  mut uv := pos / res;
+  delta_uv := (uv - light_pos) / float(num_samples) * density;
+
+  mut illumination_decay := 1.;
+
+  vec4 color = col;
+
+  for (int i = 0; i < num_samples; i++) {
+    uv -= delta_uv;
+    tex_sample := frag(channel, uv) * illumination_decay * weight;
+    color += tex_sample;
+    illumination_decay *= decay;
+  }
+
+  return color * exposure;
+}
+
+{ godrays(); }`;
+
+const code = godrays;
 
 try {
   const runner = new Runner(gl, code, [sourceCanvas], {});
