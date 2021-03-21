@@ -21,7 +21,7 @@ import {
   vectorAccessTyping,
 } from "./typing";
 import { isMat, isVec, matchingVecScalar } from "./typinghelpers";
-import { arrHasRepeats, strHasRepeats, toColorKey } from "./util";
+import { arrayPad, arrHasRepeats, strHasRepeats, toColorKey } from "./util";
 
 const stub = "__STUB";
 
@@ -529,6 +529,7 @@ abstract class DefLike extends Stmt {
     }
   }
 
+  /*
   addInDefaults(named: (NamedArg | Expr)[]) {
     const defaultStartIndex = named.length;
     // fill in the missing arguments
@@ -540,43 +541,61 @@ abstract class DefLike extends Stmt {
       named.push(def);
     }
   }
+  */
 
   // TODO function to get filled in names and defaults
 
-  fillInNamed(args: (NamedArg | Expr)[]): Expr[] {
-    if (isOnlyExpr(args)) {
-      return args;
+  fillInNamedAndDefaults(
+    args: (NamedArg | Expr)[]
+    //scope?: LexicalScope
+  ): Expr[] {
+    let paddedArgs: (Expr | undefined)[];
+
+    if (args.length > this.params.length) {
+      throw new TinslError("too many arguments");
     }
 
-    if (isOnlyNamed(args)) {
-      // TODO not necessary; caught by "duplicate identifier"
+    if (isOnlyExpr(args)) {
+      paddedArgs = arrayPad(args, this.params.length, undefined);
+    } else if (isOnlyNamed(args)) {
       if (arrHasRepeats(args.map((a) => a.id.text)))
         throw new TinslError("repeated name in named argument call");
 
       const paramNames = this.params.map((p) => p.getToken().text);
       const filledArgs: (Expr | undefined)[] = [];
+
       for (const arg of args) {
         const name = arg.id.text;
         const index = paramNames.indexOf(name);
         // TODO name the function in the error message
-        if (index === -1)
+        if (index === -1) {
           throw new TinslError(`named argument "${name}" does not exist`);
+        }
         filledArgs[index] = arg.expr;
       }
 
-      if (isOnlyExpr(filledArgs)) {
-        return filledArgs;
-      }
-      //return filledArgs as Expr[];
-
-      console.log("args", args);
-      console.log("filledArgs", filledArgs);
-
-      // TODO this doesn't account for previous defaults
-      throw new TinslError("skipped naming a required argument");
+      // this turns the empty items into undefined
+      paddedArgs = arrayPad([...filledArgs], this.params.length, undefined);
+    } else {
+      throw new TinslError(
+        "call contained a mix of named and unnamed arguments"
+      );
     }
 
-    throw new TinslError("call contained a mix of named and unnamed arguments");
+    const ret = paddedArgs.map((p, i) => {
+      if (p !== undefined) return p;
+      const def = this.params[i].def;
+      if (def === null) {
+        throw new TinslError(
+          `required argument for "${
+            this.params[i].getToken().text
+          }" not filled in`
+        );
+      }
+      return def;
+    });
+
+    return ret;
   }
 
   validateDefaultParams(scope: LexicalScope) {
@@ -613,7 +632,7 @@ is of type ${typeToString(defType)}`);
   }
 
   argsValid(args: (Expr | NamedArg)[], scope: LexicalScope): void {
-    const exprArgs = this.fillInNamed(args);
+    const exprArgs = this.fillInNamedAndDefaults(args);
 
     const kind = this instanceof ProcDef ? "procedure" : "function";
     const name = this.getToken().text;
@@ -621,12 +640,6 @@ is of type ${typeToString(defType)}`);
 
     const err = (str: string) =>
       new TinslError(`too ${str} arguments for ${kind} call "${name}"`);
-
-    if (this.params.length - defaultsNum > exprArgs.length) throw err("few");
-    if (this.params.length < exprArgs.length) throw err("many");
-
-    // add the default args so they can be checked
-    this.addInDefaults(exprArgs);
 
     const paramTypes = this.params.map((p) => p.getRightType());
     const argTypes = exprArgs.map((a, i) => a.getType(scope, this.params[i]));
@@ -642,6 +655,7 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
       }
 
       if (this.params[i].pureInt) {
+        console.log("arg was pure param");
         // input must be compile time
         const int = compileTimeInt(exprArgs[i], scope);
         const paramExpr = compileTimeParam(exprArgs[i], scope);
@@ -660,7 +674,6 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
         } else if (this.params[i].isTexNum) {
           // we know this is a texture number so sick it on either the render
           // block or the function def, whichever we are in
-          console.log("adding tex num in DefLike");
           scope.addTexNum(int);
         }
       }
@@ -1171,8 +1184,10 @@ export class CallExpr extends Expr {
         "user defined func name " + this.userDefinedFuncDef.getToken().text
       );
       //const name = this.userDefinedFuncDef.getToken().text;
-      const filledArgs = this.userDefinedFuncDef.fillInNamed(this.args);
-      this.userDefinedFuncDef.addInDefaults(filledArgs);
+      const filledArgs = this.userDefinedFuncDef.fillInNamedAndDefaults(
+        this.args
+      );
+      //this.userDefinedFuncDef.addInDefaults(filledArgs);
       // convert -1 calls to outer num
       const params = this.userDefinedFuncDef.params;
       console.log("params", params);
@@ -2254,8 +2269,8 @@ export class ProcCall extends Stmt implements RenderLevel {
     if (this.cachedProcDef === undefined) {
       throw new Error("cached proc was undefined");
     }
-    const filledArgs = this.cachedProcDef.fillInNamed(this.args);
-    this.cachedProcDef.addInDefaults(filledArgs);
+    const filledArgs = this.cachedProcDef.fillInNamedAndDefaults(this.args);
+    //this.cachedProcDef.addInDefaults(filledArgs);
     return filledArgs;
   }
 }

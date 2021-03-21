@@ -46,3 +46,6 @@ export function toColorKey(str: string) {
     .filter((a) => a !== " " && a !== "\t")
     .join("");
 }
+
+export const arrayPad = <T, U>(arr: T[], len: number, elem: U): (T | U)[] =>
+  arr.concat(new Array(len - arr.length).fill(elem));

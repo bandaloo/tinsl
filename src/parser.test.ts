@@ -1194,7 +1194,7 @@ fn bar() { return foo(b: 0, a: 1, c: 2); }`)
       parseAndCheck(`
 fn foo (int a, int b, int c, int d = 2) { return a + b; }
 fn bar() { return foo(a: 0, c: 2); }`)
-    ).to.throw("skipped");
+    ).to.throw("not filled in");
   });
 
   it("throws too few when missing arg is trailing", () => {
@@ -1202,13 +1202,13 @@ fn bar() { return foo(a: 0, c: 2); }`)
       parseAndCheck(`
 fn foo (int a, int b, int c, int d = 2) { return a + b; }
 fn bar() { return foo(a: 0, b: 2); }`)
-    ).to.throw("too few");
+    ).to.throw("not filled in");
   });
 
   it("throws when named argument is declared twice", () => {
     expect(() =>
       parseAndCheck(`
-fn foo (int a) { return a; }
+fn foo (int a, int b, int c) { return a; }
 fn bar() { return foo(a: 3, a: 2); }`)
     ).to.throw("repeat");
   });

@@ -90,8 +90,8 @@ function expandBody(
         throw new Error("cached proc def was undefined");
       }
 
-      const filledArgs = b.cachedProcDef.fillInNamed(b.args);
-      b.cachedProcDef.addInDefaults(filledArgs);
+      const filledArgs = b.cachedProcDef.fillInNamedAndDefaults(b.args);
+      //b.cachedProcDef.addInDefaults(filledArgs);
 
       for (const a of filledArgs) {
         // TODO similar logic in the above function
@@ -141,6 +141,7 @@ function expandBody(
   return result;
 }
 
+// TODO rename
 export function fillInDefaults(
   block: RenderBlock,
   outer?: RenderBlock

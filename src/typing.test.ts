@@ -1601,7 +1601,7 @@ fn baz() { return foo(1, 2, 3.14); }`)
       parseAndCheck(`
 fn foo(int a, int b = 42, float radians = 2. * 3.14) { return a; }
 fn bar() { return foo(); }`)
-    ).to.throw("too few");
+    ).to.throw("not filled in");
   });
 
   it("calls function with default args with too many args", () => {
