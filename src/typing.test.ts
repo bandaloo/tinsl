@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { parseAndCheck } from "./gen";
 import {
   CallExpr,
   Frag,
@@ -8,7 +9,7 @@ import {
   UnaryExpr,
   VarDecl,
 } from "./nodes";
-import { extractExpr, parseAndCheck, tok } from "./testhelpers";
+import { extractExpr, tok } from "./test.helpers";
 import { builtIns, constructors } from "./typeinfo";
 import { ArrayType, SpecType } from "./typetypes";
 import {

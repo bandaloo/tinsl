@@ -1,10 +1,7 @@
 import { expect } from "chai";
 import { Token } from "moo";
-import nearley from "nearley";
-import util from "util";
-import grammar from "./grammar";
-import { ExSt, Stmt, TinslProgram } from "./nodes";
-import { tinslNearleyError } from "./util";
+import { Stmt } from "./nodes";
+import { parse, parseAndCheck } from "./gen";
 
 export function tok(val: string): Token {
   return {
@@ -18,35 +15,8 @@ export function tok(val: string): Token {
   };
 }
 
-export function parse(str: string) {
-  const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-  try {
-    parser.feed(str);
-  } catch (e) {
-    throw tinslNearleyError(e);
-  }
-
-  if (parser.results.length > 1) {
-    console.log(
-      util.inspect(parser.results, {
-        showHidden: false,
-        depth: null,
-        colors: true,
-      })
-    );
-    throw new Error("ambiguous grammar! length: " + parser.results.length);
-  }
-  return parser.results[0];
-}
-
 export function extractExpr(str: string, semicolon: boolean) {
   return parse(`float f () {${str}${semicolon ? ";" : ""}}`)[0].body[0];
-}
-
-export function parseAndCheck(str: string) {
-  const res = parse(str) as ExSt[];
-  new TinslProgram(res).check();
-  return res;
 }
 
 const excludes = ["toString", "offset", "lineBreaks", "line", "col", "type"];

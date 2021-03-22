@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { parse, parseAndCheck } from "./gen";
 import {
   Assign,
   BinaryExpr,
@@ -31,13 +32,7 @@ import {
   Uniform,
   VarDecl,
 } from "./nodes";
-import {
-  checkExpr,
-  checkProgram,
-  parse,
-  parseAndCheck,
-  tok,
-} from "./testhelpers";
+import { checkExpr, checkProgram, tok } from "./test.helpers";
 
 const oneTwoThreeForward = (op1: string, op2: string) =>
   new BinaryExpr(

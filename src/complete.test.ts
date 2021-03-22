@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { parseAndCheck } from "./testhelpers";
-import { bloom, errBloom, godrays } from "./testprograms";
+import { parseAndCheck } from "./gen";
+import { bloom, errBloom, godrays } from "./test.programs";
 
 describe("complex program tests", () => {
   it("parses a bloom effect program", () => {

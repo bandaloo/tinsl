@@ -1,3 +1,5 @@
+import nearley from "nearley";
+import grammar from "./grammar";
 import { getAllUsedFuncs, IRLeaf, IRTree, renderBlockToIR } from "./ir";
 import {
   compileTimeInt,
@@ -10,12 +12,41 @@ import {
   RenderBlock,
   SourceLeaf,
   SourceTree,
+  TinslProgram,
   TinslTree,
   TopDef,
   Uniform,
 } from "./nodes";
-import { parseAndCheck } from "./testhelpers";
-import { NON_CONST_ID } from "./util";
+import { NON_CONST_ID, tinslNearleyError } from "./util";
+
+export function parse(str: string) {
+  const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+  try {
+    parser.feed(str);
+  } catch (e) {
+    throw tinslNearleyError(e);
+  }
+
+  if (parser.results.length > 1) {
+    /*
+    console.log(
+      util.inspect(parser.results, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
+    */
+    throw new Error("ambiguous grammar! length: " + parser.results.length);
+  }
+  return parser.results[0];
+}
+
+export function parseAndCheck(str: string) {
+  const res = parse(str) as ExSt[];
+  new TinslProgram(res).check();
+  return res;
+}
 
 // expand procs -> fill in default in/out nums -> regroup by refresh
 

@@ -9,8 +9,8 @@ import {
 } from "./gen";
 import { getAllUsedFuncs, IRLeaf, renderBlockToIR } from "./ir";
 import { RenderBlock } from "./nodes";
-import { extractTopLevel } from "./testhelpers";
-import { bloom } from "./testprograms";
+import { extractTopLevel } from "./test.helpers";
+import { bloom } from "./test.programs";
 import util from "util";
 
 describe("renderblock has refresh", () => {
