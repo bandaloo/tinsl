@@ -1,11 +1,5 @@
 import { higherOrderSpiral } from "./src/runner/draws";
 import { Runner } from "./src/runner/runner";
-import * as monaco from "monaco-editor";
-
-monaco.editor.create(document.getElementById("editor") as HTMLElement, {
-  value: 'console.log("Hello, world")',
-  language: "javascript",
-});
 
 const glCanvas = document.getElementById("gl") as HTMLCanvasElement;
 const gl = glCanvas.getContext("webgl2");
