@@ -25,7 +25,7 @@ module.exports = (env, argv) => {
     name === "playground"
       ? [
           new MonacoWebpackPlugin({
-            languages: ["markdown"],
+            languages: ["javascript"],
             features: [
               "!accessibilityHelp",
               "!bracketMatching",
@@ -33,7 +33,6 @@ module.exports = (env, argv) => {
               "!clipboard",
               "!codeAction",
               "!codelens",
-              "!colorDetector",
               "!comment",
               "!contextmenu",
               "!coreCommands",
