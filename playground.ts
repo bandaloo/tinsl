@@ -50,41 +50,40 @@ function getVideo() {
   return video;
 }
 
-/*
-async function getVideo(constraints?: MediaStreamConstraints) {
-  let stream = null;
-
-  try {
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-  } catch (err) {
-  }
-
-  const video = document.createElement("video");
-  video.srcObject = stream;
-  video.play();
-  return video;
-}*/
-
 const video = getVideo();
 
-const startup = () => {
+document.addEventListener("keypress", (e) => {
+  if (e.shiftKey && e.key === "Enter") {
+    console.log("shift enter!");
+    const code = monaco.editor.getModels()[0].getValue();
+    startup(code);
+  }
+});
+
+let request: number | undefined = undefined;
+
+//const code = `0->{vec4(1., 0., 0., 1.)*frag;}->1`;
+
+const startTinsl = (code: string) => {
+  if (request !== undefined) cancelAnimationFrame(request);
+  let runner: Runner;
+  runner = new Runner(gl, code, [video], {});
+
+  const animate = (time: number) => {
+    runner.draw();
+    request = requestAnimationFrame(animate);
+  };
+
+  animate(0);
+};
+
+const startup = (code: string) => {
   try {
-    console.log("vid", video.videoWidth, video.videoHeight);
-    let runner: Runner;
-    const code = `0->{vec4(1., 0., 0., 1.)*frag;}->1`;
-    runner = new Runner(gl, code, [video], {});
-
-    const animate = (time: number) => {
-      runner.draw();
-      //drawingFunc(time / 1000, frame, source, sourceCanvas);
-      requestAnimationFrame(animate);
-    };
-
-    animate(0);
+    startTinsl(code);
   } catch (err) {
     console.log(err.message);
     throw "look at the logged error message";
   }
 };
 
-video.addEventListener("playing", startup);
+video.addEventListener("playing", () => startup("{frag;}"));

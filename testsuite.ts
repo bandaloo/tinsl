@@ -189,7 +189,7 @@ fn outline (int channel = -1) {
 `,
 ].join("\n");
 
-const code = identityMultTest;
+const code = fullTest;
 
 console.log(code);
 
