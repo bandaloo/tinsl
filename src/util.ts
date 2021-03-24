@@ -24,8 +24,8 @@ export function tinslNearleyError(e: Error) {
   const matches = simple.match(/line ([0-9]+) col ([0-9]+)/);
   const index = simple.indexOf("\n\n");
   if (matches === null) throw new Error("no matches in nearley error");
-  const line = +matches[1];
-  const col = +matches[2];
+  const line = parseInt(matches[1]);
+  const col = parseInt(matches[2]);
   return new TinslLineError(simple.substr(index, simple.length), { line, col });
 }
 
@@ -37,7 +37,6 @@ export function hexColorToVector(str: string) {
   }
   const num = str.length === 3 || str.length === 4 ? 1 : 2;
   const vals = num === 2 ? str.match(/../g) : str.match(/./g);
-  console.log(vals);
   if (vals === null) throw new Error("no match in color");
   const vec = vals.map((n) => parseInt(n, 16) / (num === 1 ? 7 : 255));
   if (vec.includes(NaN)) throw new TinslError("not a valid color");

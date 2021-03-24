@@ -1,33 +1,51 @@
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import { tinslMonarchTokens } from "./src/runner/editorlang";
 import { Runner } from "./src/runner/runner";
 
-monaco.editor.defineTheme("tinsl", {
-  base: "vs-dark",
-  inherit: true,
-  rules: [],
-  colors: {
-    "editor.foreground": "#00000000",
-    "editor.background": "#EDF9FA00",
-    "editorCursor.foreground": "#8B0000",
-    "editor.lineHighlightBackground": "#0000FF20",
-    "editorLineNumber.foreground": "#008800",
-    "editor.selectionBackground": "#88000030",
-    "editor.inactiveSelectionBackground": "#88000015",
+///////////////////////////////////////////////////////////////////////////////
+// constants
+
+const STARTING_CODE = "{ 'magenta'4 * frag; }";
+
+///////////////////////////////////////////////////////////////////////////////
+// monaco setup
+
+monaco.languages.register({ id: "tinsl-lang" });
+
+monaco.languages.setMonarchTokensProvider("tinsl-lang", {
+  tokenizer: {
+    root: [[/(fn|pr)/, "tinsl-keyword"]],
   },
 });
 
-console.log("test!!!");
+monaco.editor.defineTheme("tinsl-theme", {
+  base: "vs-dark",
+  inherit: true,
+  rules: [{ token: "tinsl-keyword", foreground: "#00ff00" }],
+  colors: {
+    //"editor.foreground": "#00000000",
+    "editor.background": "#EDF9FA00",
+    //"editorCursor.foreground": "#8B0000",
+    //"editor.lineHighlightBackground": "#0000FF20",
+    //"editorLineNumber.foreground": "#008800",
+    //"editor.selectionBackground": "#88000030",
+    //"editor.inactiveSelectionBackground": "#00000066",
+    //contrastBorder: "#ff0000",
+    //"textCodeBlock.background": "#ff0000",
+  },
+});
 
 monaco.editor.create(document.getElementById("editor") as HTMLElement, {
-  value: 'console.log("Hello, world")',
-  language: "javascript",
+  value: STARTING_CODE,
+  language: "tinsl-lang",
   minimap: {
     enabled: false,
   },
-  theme: "tinsl",
+  theme: "tinsl-theme",
 });
 
-console.log("playground environment");
+///////////////////////////////////////////////////////////////////////////////
+// canvas setup
 
 const glCanvas = document.getElementById("gl") as HTMLCanvasElement;
 const glTemp = glCanvas.getContext("webgl2");
@@ -62,8 +80,6 @@ document.addEventListener("keypress", (e) => {
 
 let request: number | undefined = undefined;
 
-//const code = `0->{vec4(1., 0., 0., 1.)*frag;}->1`;
-
 const startTinsl = (code: string) => {
   if (request !== undefined) cancelAnimationFrame(request);
   let runner: Runner;
@@ -86,4 +102,4 @@ const startup = (code: string) => {
   }
 };
 
-video.addEventListener("playing", () => startup("{frag;}"));
+video.addEventListener("playing", () => startup(STARTING_CODE));

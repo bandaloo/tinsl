@@ -176,7 +176,7 @@ const fullTest = [
   twoPassBlurProc,
   sobelFunc,
   `0 -> { frag; } -> 1
-1 -> { @two_pass_blur(reps: 6, size: 1.); } -> 1
+1 -> { @two_pass_blur(reps: 10, size: 1.); } -> 1
 
 fn outline (int channel = -1) {
   sob := sobel(channel);
@@ -184,8 +184,8 @@ fn outline (int channel = -1) {
   return vec4(avg, avg, avg, 1.);
 }
 
-{ frag1 + vec4(1. - outline().rgb, 1.); }
-{ godrays(num_samples: 75); }
+//{ frag1 + vec4(1. - outline().rgb, 1.); }
+//{ godrays(num_samples: 75); }
 `,
 ].join("\n");
 
@@ -206,7 +206,6 @@ let drawingFunc = higherOrderSpiral([255, 0, 0], [0, 0, 0]);
 
 let frame = 0;
 
-/*
 const animate = (time: number) => {
   runner.draw();
   drawingFunc(time / 1000, frame, source, sourceCanvas);
@@ -215,7 +214,6 @@ const animate = (time: number) => {
 };
 
 animate(0);
-*/
 
-drawingFunc(0, frame, source, sourceCanvas);
-runner.draw();
+//drawingFunc(0, frame, source, sourceCanvas);
+//runner.draw();

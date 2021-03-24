@@ -3,40 +3,7 @@ import * as moo from "moo";
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf p18
 // "The maximum length of an identifier is 1024 characters." p20
 
-// TODO add fragColor
-export const keywords = [
-  // TODO get rid of the unused ones and just make sure they don't appear in an
-  // identifier
-
-  // specific to glsl
-  "const",
-  "uniform",
-  "layout",
-  "centroid",
-  "flat",
-  "smooth",
-  "break",
-  "continue",
-  "do",
-  "for",
-  "while",
-  "switch",
-  "case",
-  "default",
-  "if",
-  "else",
-  "in",
-  "out",
-  "inout",
-  "float",
-  "int",
-  "void",
-  "bool",
-  "true",
-  "false",
-  "invariant",
-  "discard",
-  "return",
+const types = [
   "mat2",
   "mat3",
   "mat4",
@@ -62,9 +29,69 @@ export const keywords = [
   "uvec2",
   "uvec3",
   "uvec4",
-  "lowp",
-  "mediump",
-  "highp",
+  "float",
+  "int",
+  "bool",
+];
+
+const precision = ["lowp", "mediump", "highp"];
+
+// currently unused
+const generics = [
+  "genType",
+  "genBType",
+  "genIType",
+  "genUType",
+  "mat",
+  "vec",
+  "bvec",
+  "ivec",
+  "uvec",
+];
+
+const overlap = [
+  "const",
+  "uniform",
+  "continue", // TODO
+  "break", // TODO
+  "for",
+  "if",
+  "else",
+  "true",
+  "false",
+  "return",
+];
+
+const tinsl = [
+  "fn",
+  "pr",
+  "final",
+  "mut",
+  "def",
+  "once",
+  "loop",
+  "refresh",
+  "res",
+  "pos",
+  "time",
+];
+
+const glsl = [
+  "layout",
+  "centroid",
+  "flat",
+  "smooth",
+  "do",
+  "while",
+  "switch",
+  "case",
+  "default",
+  "in",
+  "out",
+  "inout",
+  "void",
+  "invariant",
+  "discard",
   "precision",
   "sampler2D",
   "sampler3D",
@@ -82,7 +109,9 @@ export const keywords = [
   "usamplerCube",
   "usampler2DArray",
   "struct",
-  // reserved for glsl
+];
+
+const future = [
   "attribute",
   "varying",
   "coherent",
@@ -181,32 +210,12 @@ export const keywords = [
   "cast",
   "namespace",
   "using",
-  // specific to tinsl
-  "fn",
-  "pr",
-  "let", // TODO not used
-  "final",
-  "mut",
-  "def",
-  "once",
-  "loop",
-  "refresh",
-  "res",
-  "pos",
-  "time",
-  // types added for generics
-  // TODO get rid of these
-  "genType",
-  "genBType",
-  "genIType",
-  "genUType",
-  "mat",
-  "vec",
-  "bvec",
-  "ivec",
-  "uvec",
-] as const;
+];
 
+// TODO add fragColor
+export const keywords = [...tinsl, ...overlap, ...types] as const;
+
+// TODO break all these regexes out so they can be used by editor
 export const lexer = moo.compile({
   lbc: {
     //match: /(?:[\t ]+\n+[\t ]+|[ \t]+\n+|\n+[\t ]+|\n+)+/,

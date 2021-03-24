@@ -2307,13 +2307,8 @@ export class ProcCall extends Stmt implements RenderLevel {
 }
 
 export class TopDef extends Stmt {
-  id: Token;
-  expr: Expr;
-
-  constructor(id: Token, expr: Expr) {
+  constructor(public id: Token, public expr: Expr) {
     super();
-    this.id = id;
-    this.expr = expr;
   }
 
   toJson(): object {
