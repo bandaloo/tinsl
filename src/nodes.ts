@@ -29,6 +29,7 @@ import {
 import {
   arrayPad,
   arrHasRepeats,
+  hexColorToVector,
   NON_CONST_ID,
   strHasRepeats,
   toColorKey,
@@ -2494,6 +2495,7 @@ export class ColorString extends Expr {
   str: string;
   id: Token;
   num: number | null;
+  cachedColorVec?: number[];
 
   constructor(id: Token, num: number | null = null) {
     super();
@@ -2504,31 +2506,53 @@ export class ColorString extends Expr {
 
   getType(scope: LexicalScope): SpecType {
     return this.wrapError((scope: LexicalScope) => {
-      if (this.num !== null && this.num !== 3 && this.num !== 4)
+      if (this.num !== null && this.num !== 3 && this.num !== 4) {
         throw new TinslError(
           "can only specify suffix number of 3 or 4 for color strings"
         );
+      }
 
       const numType = (def: number) =>
         ("vec" + (this.num ?? def)) as SpecTypeSimple;
 
-      if (/^#[0-9|a-f|A-F]{6}$/.test(this.str)) return numType(3);
-      else if (/^#[0-9|a-f|A-F]{8}$/.test(this.str)) return numType(4);
+      const getColorVec = (): number[] => {
+        const hexColor = hexColorToVector(this.str);
+        if (hexColor !== undefined) return hexColor;
 
-      if (this.str[0] === "#")
-        throw new TinslError(`invalid hex color "${this.str}"`);
-      if (colors[toColorKey(this.str)] === undefined)
-        throw new TinslError(
-          `color string "${this.str}" did not match any colors. supported colors \
+        const namedColor = colors[toColorKey(this.str)];
+
+        if (namedColor === undefined) {
+          throw new TinslError(
+            `color string "${this.str}" did not match any colors. supported colors \
 are the HTML named color values, which can be seen here: \
 https://www.w3schools.com/colors/colors_hex.asp` +
-            (toColorKey(this.str) !== this.str
-              ? ` (color strings are insensitive to \
+              (toColorKey(this.str) !== this.str
+                ? ` (color strings are insensitive to \
 capitalization and whitespace, so "${this.str}" \
 is the same as "${toColorKey(this.str)}")`
-              : "")
-        );
-      return numType(3);
+                : "")
+          );
+        }
+
+        const namedColorHex = hexColorToVector(namedColor);
+
+        if (namedColorHex === undefined) {
+          throw new Error("named color had invalid hex");
+        }
+
+        return namedColorHex;
+      };
+
+      let colorVec = getColorVec();
+
+      if (this.num !== undefined) {
+        if (this.num === 3) colorVec = colorVec.slice(0, 3);
+        else if (this.num === 4) colorVec = arrayPad(colorVec, 4, 1);
+      }
+
+      this.cachedColorVec = colorVec;
+      return ("vec" + this.cachedColorVec.length) as SpecTypeSimple;
+      // TODO tests for #fff and #ffff color hexes
     }, scope);
   }
 
@@ -2541,7 +2565,10 @@ is the same as "${toColorKey(this.str)}")`
   }
 
   translate(): string {
-    return "COLOR" + stub;
+    if (this.cachedColorVec === undefined) {
+      throw new Error("cached color vec was undefined");
+    }
+    return `vec${this.cachedColorVec.length}(${this.cachedColorVec})`;
   }
 
   getToken(): Token {

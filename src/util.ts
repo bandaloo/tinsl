@@ -1,4 +1,4 @@
-import { TinslLineError } from "./err";
+import { TinslError, TinslLineError } from "./err";
 
 export function strHasRepeats(str: string) {
   return /(.).*\1/.test(str);
@@ -29,13 +29,18 @@ export function tinslNearleyError(e: Error) {
   return new TinslLineError(simple.substr(index, simple.length), { line, col });
 }
 
-// TODO test this
 export function hexColorToVector(str: string) {
-  str = str.slice(1) + "ff"; // get rid of first char
-  const vals = str.match(/..?/g); // split into groups of two
+  if (str[0] !== "#") return;
+  str = str.slice(1); // get rid of the # at the beginning
+  if (![3, 4, 6, 8].includes(str.length)) {
+    throw new TinslError("invalid length for hex color");
+  }
+  const num = str.length === 3 || str.length === 4 ? 1 : 2;
+  const vals = num === 2 ? str.match(/../g) : str.match(/./g);
+  console.log(vals);
   if (vals === null) throw new Error("no match in color");
-  const vec = vals.map((n) => parseInt(n, 16) / 255);
-  if (vec.includes(NaN)) throw new Error("not a valid color");
+  const vec = vals.map((n) => parseInt(n, 16) / (num === 1 ? 7 : 255));
+  if (vec.includes(NaN)) throw new TinslError("not a valid color");
   return vec;
 }
 
