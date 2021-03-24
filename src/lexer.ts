@@ -3,7 +3,7 @@ import * as moo from "moo";
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf p18
 // "The maximum length of an identifier is 1024 characters." p20
 
-const types = [
+export const types = [
   "mat2",
   "mat3",
   "mat4",
@@ -32,12 +32,12 @@ const types = [
   "float",
   "int",
   "bool",
-];
+] as const;
 
-const precision = ["lowp", "mediump", "highp"];
+export const precision = ["lowp", "mediump", "highp"] as const;
 
 // currently unused
-const generics = [
+export const generics = [
   "genType",
   "genBType",
   "genIType",
@@ -47,9 +47,9 @@ const generics = [
   "bvec",
   "ivec",
   "uvec",
-];
+] as const;
 
-const overlap = [
+export const overlap = [
   "const",
   "uniform",
   "continue", // TODO
@@ -60,9 +60,9 @@ const overlap = [
   "true",
   "false",
   "return",
-];
+] as const;
 
-const tinsl = [
+export const tinsl = [
   "fn",
   "pr",
   "final",
@@ -74,9 +74,9 @@ const tinsl = [
   "res",
   "pos",
   "time",
-];
+] as const;
 
-const glsl = [
+export const glsl = [
   "layout",
   "centroid",
   "flat",
@@ -109,9 +109,9 @@ const glsl = [
   "usamplerCube",
   "usampler2DArray",
   "struct",
-];
+] as const;
 
-const future = [
+export const future = [
   "attribute",
   "varying",
   "coherent",
@@ -210,7 +210,18 @@ const future = [
   "cast",
   "namespace",
   "using",
-];
+] as const;
+
+export const regexes = {
+  float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
+  uint: /[0-9]+u/,
+  int: /[0-9]+/,
+  string: /(?:".*?"|'.*?')/,
+  comment: /\/\/.*?$/,
+  multilineComment: /\/\*[^]*?\*\//,
+  ident: /[_a-zA-Z][_a-zA-Z0-9]*/,
+  frag: /frag[0-9]*/,
+};
 
 // TODO add fragColor
 export const keywords = [...tinsl, ...overlap, ...types] as const;
@@ -226,12 +237,12 @@ export const lexer = moo.compile({
   },
   ws: { match: /[ \t\n]+/, lineBreaks: true },
   //lb: { match: /\n/, lineBreaks: true },
-  comment: /\/\/.*?$/,
-  string: /(?:".*?"|'.*?')/,
-  multiline_comment: /\/\*[^]*?\*\//,
-  float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
-  uint: /[0-9]+u/,
-  int: /[0-9]+/,
+  comment: regexes.comment,
+  string: regexes.string,
+  multiline_comment: regexes.multilineComment,
+  float: regexes.float,
+  uint: regexes.uint,
+  int: regexes.int,
   assign_add: "+=",
   assign_sub: "-=",
   assign_mult: "*=",
@@ -280,11 +291,9 @@ export const lexer = moo.compile({
   semicolon: ";", // TODO remove this
   period: ".",
   at: "@",
-  frag: {
-    match: /frag[0-9]*/,
-  },
+  frag: { match: regexes.frag },
   ident: {
-    match: /[_a-zA-Z][_a-zA-Z0-9]*/,
+    match: regexes.ident,
     type: moo.keywords(Object.fromEntries(keywords.map((k) => ["kw_" + k, k]))),
   },
 });

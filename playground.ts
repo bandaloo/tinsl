@@ -1,30 +1,77 @@
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-import { tinslMonarchTokens } from "./src/runner/editorlang";
+import { overlap, regexes, tinsl, types } from "./src/lexer";
 import { Runner } from "./src/runner/runner";
+import { builtIns } from "./src/typeinfo";
 
 ///////////////////////////////////////////////////////////////////////////////
 // constants
 
 const STARTING_CODE = "{ 'magenta'4 * frag; }";
 
+const enum Highlight {
+  BuiltIn = "#FFCB1C",
+  Number = "#FA076B",
+  Comment = "#777777",
+  String = "#FF853F",
+  Ident = "#5ed1ff",
+  Type = "#ADFF22",
+  Keyword = "#CE29FF",
+  Frag = "#FF72CD",
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // monaco setup
 
+const builtInFuncNames = Object.entries(builtIns).map((b) => b[0]);
+
+const typeRegExp = new RegExp(types.join("|"));
+const kwRegExp = new RegExp([...tinsl, ...overlap].join("|"));
+const builtInRegExp = new RegExp(builtInFuncNames.join("|"));
+
 monaco.languages.register({ id: "tinsl-lang" });
+
+/*
+  float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
+  uint: /[0-9]+u/,
+  int: /[0-9]+/,
+*/
 
 monaco.languages.setMonarchTokensProvider("tinsl-lang", {
   tokenizer: {
-    root: [[/(fn|pr)/, "tinsl-keyword"]],
+    root: [
+      [typeRegExp, "tinsl-type"],
+      [kwRegExp, "tinsl-kw"],
+      [builtInRegExp, "tinsl-builtin"],
+      [regexes.float, "tinsl-float"],
+      [regexes.uint, "tinsl-uint"],
+      [regexes.int, "tinsl-int"],
+      [regexes.string, "tinsl-string"],
+      [regexes.comment, "tinsl-comment"],
+      [regexes.multilineComment, "tinsl-multilinecomment"],
+      [regexes.frag, "tinsl-frag"],
+      [regexes.ident, "tinsl-ident"],
+    ],
   },
 });
 
 monaco.editor.defineTheme("tinsl-theme", {
   base: "vs-dark",
   inherit: true,
-  rules: [{ token: "tinsl-keyword", foreground: "#00ff00" }],
+  rules: [
+    { token: "tinsl-type", foreground: Highlight.Type }, // 29
+    { token: "tinsl-kw", foreground: Highlight.Keyword }, // 27
+    { token: "tinsl-builtin", foreground: Highlight.BuiltIn }, // 22
+    { token: "tinsl-uint", foreground: Highlight.Number }, // 24
+    { token: "tinsl-float", foreground: Highlight.Number }, // 24
+    { token: "tinsl-int", foreground: Highlight.Number }, // 24
+    { token: "tinsl-string", foreground: Highlight.String }, // 28
+    { token: "tinsl-comment", foreground: Highlight.Comment }, // 23
+    { token: "tinsl-multilinecomment", foreground: Highlight.Comment }, // 23
+    { token: "tinsl-frag", foreground: Highlight.Frag }, // 25
+    { token: "tinsl-ident", foreground: Highlight.Ident }, // 26
+  ],
   colors: {
-    //"editor.foreground": "#00000000",
-    "editor.background": "#EDF9FA00",
+    "editor.background": "#00000000",
     //"editorCursor.foreground": "#8B0000",
     //"editor.lineHighlightBackground": "#0000FF20",
     //"editorLineNumber.foreground": "#008800",
