@@ -14,7 +14,7 @@ const U_TIME = "uTime";
 
 const U_RES = "uResolution";
 
-const verbosity = 2;
+const verbosity = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // types

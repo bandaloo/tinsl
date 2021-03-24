@@ -2,8 +2,16 @@
 <html lang="en">
   <style>
     canvas {
-      width: 100%;
+      height: 100%;
       display: block;
+      overflow: hidden;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      right: 0;
+      bottom: 0;
+      z-index: -1;
     }
 
     html,
@@ -18,11 +26,9 @@
   </head>
   <body>
     <h1>playground</h1>
-    <div id="editor" style="height: 300px"></div>
     <h2>output</h2>
-    <canvas id="gl" width="960" height="540"></canvas>
-    <h2>input</h2>
-    <canvas id="source" width="960" height="540"></canvas>
+    <div id="editor" style="height: 100vh"></div>
+    <canvas id="gl" width="640" height="480"></canvas>
   </body>
   <script src="playground-bundle/bundle.js"></script>
 </html>
