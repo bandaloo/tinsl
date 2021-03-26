@@ -189,7 +189,49 @@ fn outline (int channel = -1) {
 `,
 ].join("\n");
 
-const code = fullTest;
+const mysteriousBlur = `def threshold 0.2
+uniform float u_size;
+
+fn luma(vec4 color) {
+  return dot(color.rgb, vec3(0.299, 0.587, 0.114));
+}
+
+fn blur13(vec2 dir, int channel = -1) {
+  uv := pos / res;
+  mut col := vec4(0.);
+  off1 := vec2(1.411764705882353) * dir;
+  off2 := vec2(3.2941176470588234) * dir;
+  off3 := vec2(5.176470588235294) * dir;
+  col += frag(channel, uv) * 0.1964825501511404;
+  col += frag(channel, uv + (off1 / res)) * 0.2969069646728344;
+  col += frag(channel, uv - (off1 / res)) * 0.2969069646728344;
+  col += frag(channel, uv + (off2 / res)) * 0.09447039785044732;
+  col += frag(channel, uv - (off2 / res)) * 0.09447039785044732;
+  col += frag(channel, uv + (off3 / res)) * 0.010381362401148057;
+  col += frag(channel, uv - (off3 / res)) * 0.010381362401148057;
+  return col;
+}
+
+pr two_pass_blur(float size, int reps, int channel = -1) {
+  loop reps {
+    blur13(vec2(size, 0.), channel); refresh;
+    blur13(vec2(0., size), channel); refresh;
+  }
+}
+
+{ vec4(frag.rgb * (step(1. - luma(frag0), 1. - threshold)), frag.a); } -> 999
+
+999 -> { @two_pass_blur(42., 1, 999); } -> 999
+
+{frag999.grba;} -> 1001
+
+999 -> { @two_pass_blur(1., 1, 999); } -> 999
+
+{frag999.gbra;} -> 1002
+
+{frag1002;}`;
+
+const code = mysteriousBlur;
 
 console.log(code);
 
@@ -206,6 +248,7 @@ let drawingFunc = higherOrderSpiral([255, 0, 0], [0, 0, 0]);
 
 let frame = 0;
 
+/*
 const animate = (time: number) => {
   runner.draw();
   drawingFunc(time / 1000, frame, source, sourceCanvas);
@@ -214,6 +257,7 @@ const animate = (time: number) => {
 };
 
 animate(0);
+*/
 
-//drawingFunc(0, frame, source, sourceCanvas);
-//runner.draw();
+drawingFunc(0, frame, source, sourceCanvas);
+runner.draw();
