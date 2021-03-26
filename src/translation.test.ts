@@ -196,12 +196,18 @@ loop 3 {
     // it should look be shaped like: [[[] []] [] []]
 
     // outer render blocks
-    expect(expandedBlock.body.length).to.equal(3);
+    expect(expandedBlock.scopedBody.length).to.equal(3);
 
     // inner render blocks
-    expect((expandedBlock.body[0] as RenderBlock).body.length).to.equal(2);
-    expect((expandedBlock.body[1] as RenderBlock).body.length).to.equal(1);
-    expect((expandedBlock.body[2] as RenderBlock).body.length).to.equal(1);
+    expect(
+      (expandedBlock.scopedBody[0].inmost() as RenderBlock).scopedBody.length
+    ).to.equal(2);
+    expect(
+      (expandedBlock.scopedBody[1].inmost() as RenderBlock).scopedBody.length
+    ).to.equal(1);
+    expect(
+      (expandedBlock.scopedBody[2].inmost() as RenderBlock).scopedBody.length
+    ).to.equal(1);
   });
 
   it("doesn't create redundant render block wrapping", () => {
@@ -238,7 +244,7 @@ fn bar () { return "blue"4; }
 
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
-    const funcSet = getAllUsedFuncs(ir.exprs);
+    const funcSet = getAllUsedFuncs(ir.exprs.map((e) => e.inmost()));
     expect(funcSet.size).to.equal(2);
   });
 
@@ -261,7 +267,7 @@ fn foo () { return bar(); }
 
     if (!(ir instanceof IRLeaf)) throw new Error("ir not a leaf");
 
-    const funcSet = getAllUsedFuncs(ir.exprs);
+    const funcSet = getAllUsedFuncs(ir.exprs.map((e) => e.inmost()));
     expect(funcSet.size).to.equal(6);
   });
 

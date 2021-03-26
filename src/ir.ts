@@ -4,7 +4,10 @@ import {
   FuncDef,
   isOnlyExpr,
   isOnlyRenderBlock,
+  isOnlyScopedExpr,
+  isOnlyScopedRenderBlock,
   Param,
+  ParamScoped,
   RenderBlock,
   TopDef,
 } from "./nodes";
@@ -52,12 +55,12 @@ export class IRTree extends IRNode {
 }
 
 export class IRLeaf extends IRNode {
-  source = "";
+  source = ""; // TODO get rid of this?
 
   constructor(
     loopInfo: LoopInfo,
     paramMappings: Map<Param, Expr>,
-    public exprs: Expr[],
+    public exprs: ParamScoped<Expr>[],
     public oneMult: boolean,
     public texNums: Set<number>
   ) {
@@ -98,6 +101,7 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
     typeof block.outNum !== "number" ||
     block.loopNum instanceof Expr
   ) {
+    console.log("innum", block.inNum, "outnum", block.outNum);
     throw new Error("a render block num was not a normal number");
   }
 
@@ -108,23 +112,26 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
     once: block.once,
   };
 
-  if (isOnlyExpr(block.body)) {
+  if (isOnlyScopedExpr(block.scopedBody)) {
     return new IRLeaf(
       loopInfo,
       block.paramMappings,
-      block.body,
+      //block.body,
+      block.scopedBody,
       block.needsOneMult,
       block.requiredTexNums
     );
   }
 
-  if (isOnlyRenderBlock(block.body)) {
+  if (isOnlyScopedRenderBlock(block.scopedBody)) {
     return new IRTree(
       loopInfo,
       block.paramMappings,
-      block.body.map(renderBlockToIR)
+      block.scopedBody.map((s) => s.inmost()).map(renderBlockToIR)
     );
   }
+
+  console.log(block.scopedBody);
 
   throw new Error("render block contained mix of types");
 }

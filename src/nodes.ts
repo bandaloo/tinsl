@@ -35,7 +35,42 @@ import {
   toColorKey,
 } from "./util";
 
-const stub = "__STUB";
+/** a way to wrap a set of statements with their proc params/args */
+export class ParamScoped<T> {
+  constructor(public inner: ParamScoped<T> | T, public mapping: ParamScope) {}
+
+  inmost(): T {
+    if (!(this.inner instanceof ParamScoped)) return this.inner;
+    return this.inner.inmost();
+  }
+
+  translate(sl: SourceLeaf) {
+    const t = this.inmost();
+    if (t instanceof Expr || t instanceof Stmt) {
+      return t.translate({ leaf: sl, map: this.mapping });
+    }
+    throw new Error("inmost not expr or stmt");
+  }
+}
+
+/** scope for expansion of procedures */
+export class ParamScope {
+  constructor(
+    private mapping: Map<Param, Expr>,
+    private outer: ParamScope | null
+  ) {}
+
+  get(param: Param): Expr | null {
+    const res = this.mapping.get(param);
+    if (res !== undefined) return res;
+    if (this.outer === null) return null;
+    return this.outer.get(param);
+  }
+
+  set(param: Param, expr: Expr) {
+    this.mapping.set(param, expr);
+  }
+}
 
 // classes for output in final translation step
 
@@ -158,7 +193,7 @@ export class SourceLeaf {
 }
 
 export interface MappedLeaf {
-  map: Map<Param, Expr>;
+  map: ParamScope | null;
   leaf: SourceLeaf;
 }
 
@@ -527,6 +562,19 @@ export function isOnlyRenderBlock(args: any[]): args is RenderBlock[] {
   );
 }
 
+// TODO could these be generic?
+export function isOnlyScopedExpr(
+  args: ParamScoped<any>[]
+): args is ParamScoped<Expr>[] {
+  return args.every((a) => a.inmost() instanceof Expr);
+}
+
+export function isOnlyScopedRenderBlock(
+  args: ParamScoped<any>[]
+): args is ParamScoped<RenderBlock>[] {
+  return args.every((a) => a.inmost() instanceof RenderBlock);
+}
+
 abstract class DefLike extends Stmt {
   params: Param[];
 
@@ -738,9 +786,11 @@ export class RenderBlock extends Stmt implements Encompassing {
   requiredTexNums: Set<number> = new Set();
   needsOneMult = false;
 
+  scopedBody: ParamScoped<ExSt>[] = [];
+
   constructor(
     public once: boolean,
-    public body: ExSt[],
+    readonly body: ExSt[],
     public inNum: number | Expr | null,
     public outNum: number | Expr | null,
     public loopNum: number | Expr | null,
@@ -755,11 +805,11 @@ export class RenderBlock extends Stmt implements Encompassing {
   }
 
   /** creates a copy but sets the loop num to 1 */
-  innerCopy(body: ExSt[]): RenderBlock {
+  innerCopy(scopedBody: ParamScoped<ExSt>[]): RenderBlock {
     // it's okay for it to be a shallow copy
     const rb = new RenderBlock(
       this.once,
-      body,
+      [],
       this.inNum,
       this.outNum,
       1,
@@ -768,6 +818,7 @@ export class RenderBlock extends Stmt implements Encompassing {
     rb.cachedRefresh = this.cachedRefresh;
     rb.paramMappings = this.paramMappings;
     rb.requiredTexNums = this.requiredTexNums;
+    rb.scopedBody = scopedBody;
     return rb;
   }
 
@@ -1132,10 +1183,16 @@ export class IdentExpr extends AtomExpr {
       return this.cachedResolve.translate(sl);
     } else if (
       this.cachedResolve instanceof Param &&
-      sl.map.get(this.cachedResolve) // TODO! take a look at this
+      sl.map !== null
+      //sl.map.get(this.cachedResolve) // TODO! take a look at this
     ) {
+      /*
+      if (sl.map === null) {
+        throw new Error("map was null");
+      }
+      */
       const mapping = sl.map.get(this.cachedResolve);
-      if (mapping === undefined) throw new Error("param mapping undefined");
+      if (mapping === null) throw new Error("param mapping null");
       if (this.cachedResolve.usage === "sampler") {
         const ret = convertToSampler(mapping, sl);
         return typeof ret === "string" ? ret : ret.translate(sl);

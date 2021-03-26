@@ -7,6 +7,8 @@ import {
   ExSt,
   IdentExpr,
   Param,
+  ParamScope,
+  ParamScoped,
   ProcCall,
   Refresh,
   RenderBlock,
@@ -51,7 +53,12 @@ export function parseAndCheck(str: string) {
 // expand procs -> fill in default in/out nums -> regroup by refresh
 
 export function expandProcsInBlock(block: RenderBlock) {
-  block.body = expandBody(block.body, [], [], block);
+  block.scopedBody = expandBody(
+    block.body,
+    [],
+    [],
+    new ParamScope(new Map(), null)
+  );
   return block;
 }
 
@@ -60,8 +67,8 @@ function expandBody(
   body: ExSt[],
   args: Expr[],
   params: Param[],
-  outerBlock: RenderBlock
-): ExSt[] {
+  paramScope: ParamScope
+): ParamScoped<ExSt>[] {
   const fillAtomicNum = (renderNum: null | Expr | number) => {
     if (renderNum instanceof Expr) {
       if (!(renderNum instanceof IdentExpr)) {
@@ -105,16 +112,19 @@ function expandBody(
     );
   }
 
-  const result: ExSt[] = [];
+  const result: ParamScoped<ExSt>[] = [];
 
   for (const b of body) {
     if (b instanceof RenderBlock) {
       b.inNum = fillAtomicNum(b.inNum);
       b.outNum = fillAtomicNum(b.outNum);
       b.loopNum = fillAtomicNum(b.loopNum);
-      b.body = expandBody(b.body, args, params, b);
-      result.push(b);
+      //b.body = expandBody(b.body, args, params, paramScope);
+      b.scopedBody = expandBody(b.body, args, params, paramScope);
+      result.push(new ParamScoped(b, paramScope));
     } else if (b instanceof ProcCall) {
+      // TODO delete logging
+      console.log("proc call!");
       // fill in any arg that is an ident before passing on
       const newArgs: Expr[] = [];
 
@@ -158,16 +168,40 @@ function expandBody(
       // TODO might be more convenient to have these be the params/args that get
       // set in the map
       const newParams = b.cachedProcDef.params;
-      result.push(...expandBody(newBody, newArgs, newParams, outerBlock));
+      const innerParamScope = new ParamScope(new Map(), paramScope);
+      newParams.forEach((newParam, i) => {
+        const newArg = newArgs[i];
+        innerParamScope.set(newParam, newArg);
+      });
+
+      // TODO for some reason this doesn't expand
+      const expandedProcBody = expandBody(
+        newBody,
+        newArgs,
+        newParams,
+        innerParamScope
+      );
+
+      // TODO delete logging
+      console.log("expanded proc body", expandedProcBody);
+
+      /*
+      const wrappedProcBody = expandedProcBody.map(
+        (e) => new ParamScoped(e, innerParamScope)
+      );
+      */
+
+      result.push(...expandedProcBody);
     } else {
-      result.push(b);
+      result.push(new ParamScoped(b, paramScope));
     }
   }
 
   // TODO elements might be added redundantly but that's okay for now
   // TODO create this map earlier? then won't have the need for indexOf
   for (let i = 0; i < args.length; i++) {
-    outerBlock.paramMappings.set(params[i], args[i]);
+    // TODO this is the issue. make sure mapping is not overwritten
+    //outerBlock.paramMappings.set(params[i], args[i]);
   }
 
   return result;
@@ -196,9 +230,16 @@ export function fillInDefaults(
 
   block.inNum = defaultNum(block.inNum, outer?.inNum ?? null);
   block.outNum = defaultNum(block.outNum, outer?.outNum ?? null);
+  // TODO delete this logging
+  console.log("fill in defaults", "in", block.inNum, "out", block.outNum);
 
-  for (const b of block.body) {
-    if (b instanceof RenderBlock) fillInDefaults(b, block);
+  for (const b of block.scopedBody) {
+    const inmost = b.inmost();
+    if (inmost instanceof RenderBlock) {
+      // TODO delete this logging
+      console.log("nested fill in defaults");
+      fillInDefaults(inmost, block);
+    }
   }
 
   return block;
@@ -206,29 +247,47 @@ export function fillInDefaults(
 
 export function regroupByRefresh(block: RenderBlock): RenderBlock {
   // will get replaced with new empty array once refresh
-  let previous: ExSt[] = [];
+  //let previous: ExSt[] = [];
+  let previous: ParamScoped<ExSt>[] = [];
+
+  console.log(
+    "body length",
+    block.body.length,
+    "scoped length",
+    block.scopedBody.length
+  );
+
+  console.log("body", block.body);
+  console.log("scopedBody", block.scopedBody);
 
   // new render block gets added to this on refresh
   // rest of body gets tacked on when it hits the end
-  const regrouped: RenderBlock[] = [];
+  const regrouped: ParamScoped<RenderBlock>[] = [];
 
   let breaks = 0;
 
   const breakOff = () => {
-    if (previous.length > 0) regrouped.push(block.innerCopy(previous));
+    if (previous.length > 0)
+      regrouped.push(
+        new ParamScoped(block.innerCopy(previous), previous[0].mapping)
+      );
     previous = [];
     breaks++;
   };
 
-  for (const b of block.body) {
-    if (b instanceof Refresh) {
+  for (const b of block.scopedBody) {
+    const inmost = b.inmost();
+    if (inmost instanceof Refresh) {
       // break off, ignore refresh
       breakOff();
-    } else if (b instanceof RenderBlock) {
+    } else if (inmost instanceof RenderBlock) {
       // break off and push on this block separately
       // this avoids redundant regrouping
       breakOff();
-      regrouped.push(regroupByRefresh(b));
+
+      const regroupedMapping = regroupByRefresh(inmost);
+      const mapping = regroupedMapping.scopedBody[0].mapping;
+      regrouped.push(new ParamScoped(regroupByRefresh(inmost), mapping));
     } else {
       previous.push(b);
     }
@@ -239,7 +298,7 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
 
   breakOff();
 
-  block.body = regrouped;
+  block.scopedBody = regrouped;
   return block;
 }
 
@@ -250,17 +309,16 @@ export function processBlocks(block: RenderBlock): IRTree | IRLeaf {
 }
 
 export function irToSourceLeaf(ir: IRLeaf): SourceLeaf {
-  const funcs = getAllUsedFuncs(ir.exprs);
+  const funcs = getAllUsedFuncs(ir.exprs.map((e) => e.inmost()));
 
   // wrap a leaf together with a map to pass down into translate
-  const sl = {
-    leaf: new SourceLeaf(ir.loopInfo.outNum, ir.loopInfo.inNum),
-    map: ir.paramMappings,
-  };
+  const sl = new SourceLeaf(ir.loopInfo.outNum, ir.loopInfo.inNum);
 
   // generate the code for the function calls
   const funcsList = Array.from(funcs).reverse();
-  const funcDefsSource = funcsList.map((f) => f.translate(sl)).join("\n");
+  const funcDefsSource = funcsList
+    .map((f) => f.translate({ leaf: sl, map: null }))
+    .join("\n");
 
   let needsOneMult = ir.oneMult;
 
@@ -296,17 +354,17 @@ void main(){\n`;
 
   // generate built-in uniforms
   let uniformsSource = "";
-  if (sl.leaf.requires.time) uniformsSource += "uniform float uTime;\n";
-  if (sl.leaf.requires.res) uniformsSource += "uniform vec2 uResolution;\n";
+  if (sl.requires.time) uniformsSource += "uniform float uTime;\n";
+  if (sl.requires.res) uniformsSource += "uniform vec2 uResolution;\n";
 
   // generate user-defined uniforms
-  for (const u of sl.leaf.requires.uniforms) {
+  for (const u of sl.requires.uniforms) {
     uniformsSource += u.translate();
   }
 
   // generate required samplers
   let samplersSource = "";
-  for (const s of sl.leaf.requires.samplers) {
+  for (const s of sl.requires.samplers) {
     samplersSource += `uniform sampler2D uSampler${s};\n`;
   }
 
@@ -315,7 +373,7 @@ void main(){\n`;
 precision mediump float;
 #endif\n`;
 
-  sl.leaf.source =
+  sl.source =
     defaultPrecisionSource +
     fragColorSource +
     nonConstIdDeclSource +
@@ -324,7 +382,7 @@ precision mediump float;
     funcDefsSource +
     mainSource;
 
-  return sl.leaf;
+  return sl;
 }
 
 export function genSource(ir: IRTree | IRLeaf): SourceTree | SourceLeaf {
