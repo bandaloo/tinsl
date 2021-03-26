@@ -302,12 +302,14 @@ fn foo () { return bar(); }
   });
 });
 
+/*
 describe("logging source", () => {
   it("gets all the function definitions", () => {
     const comp = gen(bloom);
     for (const c of comp) c.log();
   });
 });
+*/
 // TODO don't let loop num be -1
 
 const fullLog = (input: any) => {

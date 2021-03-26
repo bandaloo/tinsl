@@ -30,15 +30,6 @@ export function parse(str: string) {
   }
 
   if (parser.results.length > 1) {
-    /*
-    console.log(
-      util.inspect(parser.results, {
-        showHidden: false,
-        depth: null,
-        colors: true,
-      })
-    );
-    */
     throw new Error("ambiguous grammar! length: " + parser.results.length);
   }
   return parser.results[0];
@@ -123,8 +114,6 @@ function expandBody(
       b.scopedBody = expandBody(b.body, args, params, paramScope);
       result.push(new ParamScoped(b, paramScope));
     } else if (b instanceof ProcCall) {
-      // TODO delete logging
-      console.log("proc call!");
       // fill in any arg that is an ident before passing on
       const newArgs: Expr[] = [];
 
@@ -174,22 +163,12 @@ function expandBody(
         innerParamScope.set(newParam, newArg);
       });
 
-      // TODO for some reason this doesn't expand
       const expandedProcBody = expandBody(
         newBody,
         newArgs,
         newParams,
         innerParamScope
       );
-
-      // TODO delete logging
-      console.log("expanded proc body", expandedProcBody);
-
-      /*
-      const wrappedProcBody = expandedProcBody.map(
-        (e) => new ParamScoped(e, innerParamScope)
-      );
-      */
 
       result.push(...expandedProcBody);
     } else {
@@ -230,14 +209,9 @@ export function fillInDefaults(
 
   block.inNum = defaultNum(block.inNum, outer?.inNum ?? null);
   block.outNum = defaultNum(block.outNum, outer?.outNum ?? null);
-  // TODO delete this logging
-  console.log("fill in defaults", "in", block.inNum, "out", block.outNum);
-
   for (const b of block.scopedBody) {
     const inmost = b.inmost();
     if (inmost instanceof RenderBlock) {
-      // TODO delete this logging
-      console.log("nested fill in defaults");
       fillInDefaults(inmost, block);
     }
   }
@@ -249,16 +223,6 @@ export function regroupByRefresh(block: RenderBlock): RenderBlock {
   // will get replaced with new empty array once refresh
   //let previous: ExSt[] = [];
   let previous: ParamScoped<ExSt>[] = [];
-
-  console.log(
-    "body length",
-    block.body.length,
-    "scoped length",
-    block.scopedBody.length
-  );
-
-  console.log("body", block.body);
-  console.log("scopedBody", block.scopedBody);
 
   // new render block gets added to this on refresh
   // rest of body gets tacked on when it hits the end

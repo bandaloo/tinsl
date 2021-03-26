@@ -66,13 +66,6 @@ export class IRLeaf extends IRNode {
   ) {
     super(loopInfo, paramMappings);
   }
-
-  /*
-  print(): void {
-    console.log("#" + JSON.stringify(this.loopInfo));
-    console.log(this.source);
-  }
-  */
 }
 
 export function getAllUsedFuncs(
@@ -101,7 +94,6 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
     typeof block.outNum !== "number" ||
     block.loopNum instanceof Expr
   ) {
-    console.log("innum", block.inNum, "outnum", block.outNum);
     throw new Error("a render block num was not a normal number");
   }
 
@@ -130,8 +122,6 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
       block.scopedBody.map((s) => s.inmost()).map(renderBlockToIR)
     );
   }
-
-  console.log(block.scopedBody);
 
   throw new Error("render block contained mix of types");
 }

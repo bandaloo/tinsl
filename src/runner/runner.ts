@@ -275,7 +275,7 @@ export class Runner {
 
     // make textures
     const scratch = { name: "scratch", tex: makeTex(this.gl, this.options) };
-    const samplers = Array.from(getAllSamplers(tree)).sort();
+    const samplers = Array.from(getAllSamplers(tree)).sort((a, b) => a - b);
 
     const mapping = new Map();
 

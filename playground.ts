@@ -119,7 +119,6 @@ const video = getVideo();
 
 document.addEventListener("keypress", (e) => {
   if (e.shiftKey && e.key === "Enter") {
-    console.log("shift enter!");
     const code = monaco.editor.getModels()[0].getValue();
     startup(code);
   }

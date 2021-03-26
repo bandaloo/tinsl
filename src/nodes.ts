@@ -174,7 +174,7 @@ export class SourceLeaf {
       requires: {
         time: this.requires.time,
         resolution: this.requires.res,
-        samplers: Array.from(this.requires.samplers).sort(),
+        samplers: Array.from(this.requires.samplers).sort((a, b) => a - b),
         uniforms: Array.from(this.requires.uniforms).map((u) => {
           return {
             name: u.getToken().text,
@@ -724,7 +724,6 @@ but needs to be ${paramTypes[i]} for ${kind} call "${name}"`
       }
 
       if (this.params[i].pureInt) {
-        console.log("arg was pure param");
         // input must be compile time
         const int = compileTimeInt(exprArgs[i], scope);
         const paramExpr = compileTimeParam(exprArgs[i], scope);
@@ -1249,18 +1248,11 @@ export class CallExpr extends Expr {
 
     let argString = "";
     if (this.userDefinedFuncDef !== undefined) {
-      console.log(
-        "user defined func name " + this.userDefinedFuncDef.getToken().text
-      );
-      //const name = this.userDefinedFuncDef.getToken().text;
       const filledArgs = this.userDefinedFuncDef.fillInNamedAndDefaults(
         this.args
       );
-      //this.userDefinedFuncDef.addInDefaults(filledArgs);
       // convert -1 calls to outer num
       const params = this.userDefinedFuncDef.params;
-      console.log("params", params);
-      console.log("args", filledArgs);
       const convertedToSamplers = filledArgs.map((a, i) =>
         params[i].usage === "sampler"
           ? (() => {
@@ -1356,7 +1348,6 @@ export class CallExpr extends Expr {
             fragExpr.sampler = intExpr;
           } else {
             fragExpr.sampler = int;
-            console.log("adding tex num in CallExpr");
             scope.addTexNum(int);
           }
         }
