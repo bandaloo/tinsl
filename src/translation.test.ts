@@ -86,6 +86,7 @@ describe("fill in defaults of render block", () => {
     expect(defaultedBlock.outNum).to.equal(3);
   });
 
+  // FIXME
   it("changes defaults for nested blocks", () => {
     const defaultedBlock = fillInDefaults(
       extractTopLevel<RenderBlock>("2 -> { { 'blue'4; } } -> 3")

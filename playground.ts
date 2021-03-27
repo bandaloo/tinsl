@@ -22,34 +22,44 @@ const enum Highlight {
 ///////////////////////////////////////////////////////////////////////////////
 // monaco setup
 
-const builtInFuncNames = Object.entries(builtIns).map((b) => b[0]);
+//const typeRegExp = new RegExp(types.join("|"));
+//const kwRegExp = new RegExp([...tinsl, ...overlap].join("|"));
+//const builtInRegExp = new RegExp(builtInFuncNames.join("|"));
 
-const typeRegExp = new RegExp(types.join("|"));
-const kwRegExp = new RegExp([...tinsl, ...overlap].join("|"));
-const builtInRegExp = new RegExp(builtInFuncNames.join("|"));
+const keywords = [...tinsl, ...overlap];
+const typeKeywords = types;
+const builtInKeywords = Object.entries(builtIns).map((b) => b[0]);
 
 monaco.languages.register({ id: "tinsl-lang" });
 
-/*
-  float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
-  uint: /[0-9]+u/,
-  int: /[0-9]+/,
-*/
-
 monaco.languages.setMonarchTokensProvider("tinsl-lang", {
+  keywords: keywords,
+  typeKeywords: typeKeywords,
+  builtInKeywords: builtInKeywords,
+
   tokenizer: {
     root: [
-      [typeRegExp, "tinsl-type"],
-      [kwRegExp, "tinsl-kw"],
-      [builtInRegExp, "tinsl-builtin"],
+      //[typeRegExp, "tinsl-type"],
+      //[builtInRegExp, "tinsl-builtin"],
+      [regexes.frag, "tinsl-frag"],
+      [
+        regexes.ident,
+        {
+          cases: {
+            "@keywords": "tinsl-kw",
+            "@typeKeywords": "tinsl-type",
+            "@builtInKeywords": "tinsl-builtin",
+            "@default": "tinsl-ident",
+          },
+        },
+      ],
       [regexes.float, "tinsl-float"],
       [regexes.uint, "tinsl-uint"],
       [regexes.int, "tinsl-int"],
       [regexes.string, "tinsl-string"],
       [regexes.comment, "tinsl-comment"],
       [regexes.multilineComment, "tinsl-multilinecomment"],
-      [regexes.frag, "tinsl-frag"],
-      [regexes.ident, "tinsl-ident"],
+      //[kwRegExp, "tinsl-kw"],
     ],
   },
 });
@@ -118,7 +128,8 @@ function getVideo() {
 const video = getVideo();
 
 document.addEventListener("keypress", (e) => {
-  if (e.shiftKey && e.key === "Enter") {
+  if (e.ctrlKey && e.key === "Enter") {
+    e.preventDefault();
     const code = monaco.editor.getModels()[0].getValue();
     startup(code);
   }
