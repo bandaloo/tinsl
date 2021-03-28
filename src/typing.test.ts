@@ -1753,6 +1753,21 @@ describe("invalid ident", () => {
   it("throws for overly long ident for procedure", () => {
     expect(() => parseAndCheck(prTestSource(tooLongIdent))).to.throw("length");
   });
+
+  // param tests
+  it("throw 2 errors for 2 invalid param names in procedure", () => {
+    expect(() =>
+      parseAndCheck(`
+pr foo (int gl_param, float invariant) { 'blue'4; }`)
+    ).to.throw("2 errors");
+  });
+
+  it("throw 2 errors for 2 invalid param names in function", () => {
+    expect(() =>
+      parseAndCheck(`
+fn foo (int gl_param, float invariant) { return 1; }`)
+    ).to.throw("2 errors");
+  });
 });
 
 // TODO test that __undecided passed into builtins returns __undecided

@@ -214,12 +214,12 @@ export const future = [
 ] as const;
 
 const reserved = new Set([
-  ...types,
   ...precision,
-  ...overlap,
-  ...tinsl,
   ...glsl,
   ...future,
+  "fragColor",
+  "int_non_const_identity",
+  "uint_non_const_identity",
 ] as string[]);
 
 export const regexes = {

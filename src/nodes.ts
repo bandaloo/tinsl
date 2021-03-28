@@ -1892,6 +1892,10 @@ export class FuncDef extends DefLike implements Encompassing {
 
     aggregateIdentError(errors, this.id.text, scope, this);
 
+    for (const p of this.params) {
+      aggregateIdentError(errors, p.getToken().text, scope, this);
+    }
+
     // this is done in a separate step so it adds the symbol even when there is
     // no branch, avoiding unwarranted "undefined identifier" errors
     try {
@@ -2334,6 +2338,10 @@ export class ProcDef extends DefLike {
     const errors: (TinslLineError | TinslAggregateError)[] = [];
 
     aggregateIdentError(errors, this.id.text, scope, this);
+
+    for (const p of this.params) {
+      aggregateIdentError(errors, p.getToken().text, scope, this);
+    }
 
     try {
       this.wrapError(
