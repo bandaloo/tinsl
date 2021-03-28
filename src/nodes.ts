@@ -8,6 +8,7 @@ import {
   TinslLineError,
   wrapErrorHelper,
 } from "./err";
+import { validIdent } from "./lexer";
 import { builtIns, constructors } from "./typeinfo";
 import { SpecType, SpecTypeSimple } from "./typetypes";
 import {
@@ -34,6 +35,62 @@ import {
   strHasRepeats,
   toColorKey,
 } from "./util";
+
+function aggregateIdentError(
+  errors: (TinslLineError | TinslAggregateError)[],
+  str: string,
+  scope: LexicalScope,
+  stmt: Stmt
+) {
+  try {
+    stmt.wrapError((scope: LexicalScope) => {
+      validIdent(str);
+    }, scope);
+  } catch (err) {
+    if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+      errors.push(err);
+    } else {
+      throw err;
+    }
+  }
+}
+
+function aggregateWrapped(
+  errors: (TinslLineError | TinslAggregateError)[],
+  callback: (scope: LexicalScope) => void,
+  scope: LexicalScope,
+  stmt: Stmt
+) {
+  try {
+    stmt.wrapError(callback, scope);
+  } catch (err) {
+    if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+      errors.push(err);
+    } else {
+      throw err;
+    }
+  }
+}
+
+function aggregateFromErrors(errors: (TinslLineError | TinslAggregateError)[]) {
+  if (errors.length > 0) {
+    throw new TinslAggregateError(
+      errors.map((e) => (e instanceof TinslLineError ? e : e.errors)).flat()
+    );
+    /*
+    const allLineErrors: TinslLineError[] = [];
+    for (const e of errors) {
+      if (e instanceof TinslLineError) {
+        allLineErrors.push(e);
+      } else {
+        allLineErrors.push(...e.errors);
+      }
+    }
+    */
+
+    //throw new TinslAggregateError(allLineErrors);
+  }
+}
 
 /** a way to wrap a set of statements with their proc params/args */
 export class ParamScoped<T> {
@@ -1601,26 +1658,37 @@ export class VarDecl extends Stmt {
   }
 
   typeCheck(scope: LexicalScope): void {
-    this.wrapError((scope: LexicalScope) => {
-      scope.addToScope(this.id.text, this, "redefinition of");
-      if (this.access === "const" && !this.expr.isConst(scope)) {
-        // TODO throw the invalid l-value error helper instead
-        throw new TinslError(
-          "right side of assignment is not a constant expression"
-        );
-      }
-      const typ = this.expr.getType(scope); // just to set up attributes in expr
-      if (this.typ === null) return;
-      if (!this.typ.equals(typ)) {
-        throw new TinslError(
-          `left side type, ${typeToString(
-            this.typ.toSpecType()
-          )} of declaration does not match right side type, ${typeToString(
-            this.expr.getType(scope)
-          )}`
-        );
-      }
-    }, scope);
+    const errors: (TinslLineError | TinslAggregateError)[] = [];
+
+    aggregateIdentError(errors, this.id.text, scope, this);
+
+    aggregateWrapped(
+      errors,
+      (scope: LexicalScope) => {
+        scope.addToScope(this.id.text, this, "redefinition of");
+        if (this.access === "const" && !this.expr.isConst(scope)) {
+          // TODO throw the invalid l-value error helper instead
+          throw new TinslError(
+            "right side of assignment is not a constant expression"
+          );
+        }
+        const typ = this.expr.getType(scope); // just to set up attributes in expr
+        if (this.typ === null) return;
+        if (!this.typ.equals(typ)) {
+          throw new TinslError(
+            `left side type, ${typeToString(
+              this.typ.toSpecType()
+            )} of declaration does not match right side type, ${typeToString(
+              this.expr.getType(scope)
+            )}`
+          );
+        }
+      },
+      scope,
+      this
+    );
+
+    aggregateFromErrors(errors);
   }
 
   getRightType(scope?: LexicalScope) {

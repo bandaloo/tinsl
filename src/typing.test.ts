@@ -1674,8 +1674,36 @@ fn foo() {
   });
 });
 
-// TODO check += (etc) ops with the corresponding binary op
+describe("invalid ident", () => {
+  const fnTestSource = (ident: string) => `fn foo() {
+  ${ident} := 1;
+  return ${ident};
+}`;
 
-// TODO swizzles with repeated fields are not l values!
+  const glIdent = "gl_ident";
+  const dunderIdent = "dunder__ident";
+  const reservedIdent = "invariant";
+  const tooLongIdent = new Array(1025).fill("a").join("");
+
+  it("throws for gl_ for variable declaration", () => {
+    expect(() => parseAndCheck(fnTestSource(glIdent))).to.throw("gl_");
+  });
+
+  it("throws for __ for variable declaration", () => {
+    expect(() => parseAndCheck(fnTestSource(dunderIdent))).to.throw(
+      "double underscore"
+    );
+  });
+
+  it("throws for reserved keyword for variable declaration", () => {
+    expect(() => parseAndCheck(fnTestSource(reservedIdent))).to.throw(
+      "reserved"
+    );
+  });
+
+  it("throws for overly long ident for variable declaration", () => {
+    expect(() => parseAndCheck(fnTestSource(tooLongIdent))).to.throw("length");
+  });
+});
 
 // TODO test that __undecided passed into builtins returns __undecided

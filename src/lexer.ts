@@ -1,4 +1,5 @@
 import * as moo from "moo";
+import { TinslError } from "./err";
 
 // https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf p18
 // "The maximum length of an identifier is 1024 characters." p20
@@ -212,6 +213,15 @@ export const future = [
   "using",
 ] as const;
 
+const reserved = new Set([
+  ...types,
+  ...precision,
+  ...overlap,
+  ...tinsl,
+  ...glsl,
+  ...future,
+] as string[]);
+
 export const regexes = {
   float: /(?:[0-9]*\.[0-9]+|[0-9]+\.)/,
   uint: /[0-9]+u/,
@@ -222,6 +232,25 @@ export const regexes = {
   ident: /[_a-zA-Z][_a-zA-Z0-9]*/,
   frag: /frag[0-9]*/,
 };
+
+/** throws when the string is an invalid identifier */
+export function validIdent(str: string) {
+  if (/^gl_*/.test(str)) {
+    throw new TinslError("identifier cannot start with `gl_`");
+  }
+
+  if (/__/.test(str)) {
+    throw new TinslError("identifier cannot contain a double underscore");
+  }
+
+  if (reserved.has(str)) {
+    throw new TinslError(`\`${str}\` is a reserved keyword`);
+  }
+
+  if (str.length > 1024) {
+    throw new TinslError("identifier cannot be over 1024 characters in length");
+  }
+}
 
 // TODO add fragColor
 export const keywords = [...tinsl, ...overlap, ...types] as const;
@@ -247,14 +276,14 @@ export const lexer = moo.compile({
   assign_sub: "-=",
   assign_mult: "*=",
   assign_div: "/=",
-  assign_modulo: "%=", // TODO reserved
-  assign_band: "&=", // TODO reserved
-  assign_bxor: "^=", // TODO reserved
-  assign_bor: "|=", // TODO reserved
+  assign_modulo: "%=",
+  assign_band: "&=",
+  assign_bxor: "^=",
+  assign_bor: "|=",
   incr: "++",
   decr: "--",
-  assign_blshift: "<<=", // TODO reserved
-  assign_brshift: ">>=", // TODO reserved
+  assign_blshift: "<<=",
+  assign_brshift: ">>=",
   blshift: "<<",
   brshift: ">>",
   arrow: "->",

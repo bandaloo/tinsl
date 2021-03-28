@@ -1,6 +1,8 @@
 import { Token } from "moo";
 import { ExSt, LexicalScope, typeCheckExprStmts } from "./nodes";
 
+// TODO doesn't requiring lexical scope create a circular dependency?
+
 export class TinslError extends Error {
   constructor(message: string) {
     super(message);
