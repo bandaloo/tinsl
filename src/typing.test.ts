@@ -1682,6 +1682,8 @@ describe("invalid ident", () => {
 
   const prTestSource = (ident: string) => `pr ${ident}() { 'blue'4; }`;
 
+  const fnTestSource = (ident: string) => `fn ${ident}() { return 1; }`;
+
   const glIdent = "gl_ident";
   const dunderIdent = "dunder__ident";
   const reservedIdent = "invariant";
@@ -1723,6 +1725,27 @@ describe("invalid ident", () => {
 
   it("throws for reserved keyword for procedure", () => {
     expect(() => parseAndCheck(prTestSource(reservedIdent))).to.throw(
+      "reserved"
+    );
+  });
+
+  it("throws for overly long ident for procedure", () => {
+    expect(() => parseAndCheck(fnTestSource(tooLongIdent))).to.throw("length");
+  });
+
+  // fn tests
+  it("throws for gl_ for procedure", () => {
+    expect(() => parseAndCheck(fnTestSource(glIdent))).to.throw("gl_");
+  });
+
+  it("throws for __ for procedure", () => {
+    expect(() => parseAndCheck(fnTestSource(dunderIdent))).to.throw(
+      "double underscore"
+    );
+  });
+
+  it("throws for reserved keyword for procedure", () => {
+    expect(() => parseAndCheck(fnTestSource(reservedIdent))).to.throw(
       "reserved"
     );
   });

@@ -1888,8 +1888,37 @@ export class FuncDef extends DefLike implements Encompassing {
     innerScope.returnType = retType;
     innerScope.funcDef = this;
 
-    const wrap = () =>
+    const errors: (TinslLineError | TinslAggregateError)[] = [];
+
+    aggregateIdentError(errors, this.id.text, scope, this);
+
+    // this is done in a separate step so it adds the symbol even when there is
+    // no branch, avoiding unwarranted "undefined identifier" errors
+    try {
       this.wrapError(
+        () => {
+          if (!branchContainsReturn(this.body)) {
+            throw new TinslError(
+              `function "${
+                this.getToken().text
+              }" does not definitely return a value. this may be because it does \
+not contain a return statement in all conditional branches`
+            );
+          }
+        },
+        scope,
+        false
+      );
+    } catch (err) {
+      if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+        errors.push(err);
+      } else {
+        throw err;
+      }
+    }
+
+    const wrap = () => {
+      return this.wrapError(
         (scope: LexicalScope) => {
           // add to scope even if type is possibly not able to be inferred
           scope.addToScope(this.getToken().text, this);
@@ -1915,31 +1944,21 @@ a defined size in the return type specifier`);
         this.body,
         innerScope
       );
-
-    // this is done in a separate step so it adds the symbol even when there is
-    // no branch, avoiding unwarranted "undefined identifier" errors
-    this.wrapError(
-      () => {
-        if (!branchContainsReturn(this.body)) {
-          throw new TinslError(
-            `function "${
-              this.getToken().text
-            }" does not definitely return a value. this may be because it does \
-not contain a return statement in all conditional branches`
-          );
-        }
-      },
-      scope,
-      false
-    );
+    };
 
     try {
       wrap();
     } catch (err) {
-      throw err;
+      if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+        errors.push(err);
+      } else {
+        throw err;
+      }
     } finally {
       this.inferredType = innerScope.returnType ?? "__undecided";
     }
+
+    aggregateFromErrors(errors);
   }
 
   getReturnType(): SpecType {
