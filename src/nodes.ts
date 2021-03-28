@@ -55,40 +55,11 @@ function aggregateIdentError(
   }
 }
 
-function aggregateWrapped(
-  errors: (TinslLineError | TinslAggregateError)[],
-  callback: (scope: LexicalScope) => void,
-  scope: LexicalScope,
-  stmt: Stmt
-) {
-  try {
-    stmt.wrapError(callback, scope);
-  } catch (err) {
-    if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
-      errors.push(err);
-    } else {
-      throw err;
-    }
-  }
-}
-
 function aggregateFromErrors(errors: (TinslLineError | TinslAggregateError)[]) {
   if (errors.length > 0) {
     throw new TinslAggregateError(
       errors.map((e) => (e instanceof TinslLineError ? e : e.errors)).flat()
     );
-    /*
-    const allLineErrors: TinslLineError[] = [];
-    for (const e of errors) {
-      if (e instanceof TinslLineError) {
-        allLineErrors.push(e);
-      } else {
-        allLineErrors.push(...e.errors);
-      }
-    }
-    */
-
-    //throw new TinslAggregateError(allLineErrors);
   }
 }
 
@@ -1662,9 +1633,8 @@ export class VarDecl extends Stmt {
 
     aggregateIdentError(errors, this.id.text, scope, this);
 
-    aggregateWrapped(
-      errors,
-      (scope: LexicalScope) => {
+    try {
+      this.wrapError((scope: LexicalScope) => {
         scope.addToScope(this.id.text, this, "redefinition of");
         if (this.access === "const" && !this.expr.isConst(scope)) {
           // TODO throw the invalid l-value error helper instead
@@ -1683,10 +1653,14 @@ export class VarDecl extends Stmt {
             )}`
           );
         }
-      },
-      scope,
-      this
-    );
+      }, scope);
+    } catch (err) {
+      if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+        errors.push(err);
+      } else {
+        throw err;
+      }
+    }
 
     aggregateFromErrors(errors);
   }
@@ -2338,20 +2312,33 @@ export class ProcDef extends DefLike {
 
   typeCheck(scope: LexicalScope): void {
     const innerScope = new LexicalScope(scope);
+    const errors: (TinslLineError | TinslAggregateError)[] = [];
 
-    this.wrapError(
-      (scope: LexicalScope) => {
-        scope.addToScope(this.getToken().text, this);
-        for (const p of this.params) {
-          innerScope.addToScope(p.getToken().text, p);
-        }
-        this.validateDefaultParams(scope);
-      },
-      scope,
-      true,
-      this.body,
-      innerScope
-    );
+    aggregateIdentError(errors, this.id.text, scope, this);
+
+    try {
+      this.wrapError(
+        (scope: LexicalScope) => {
+          scope.addToScope(this.getToken().text, this);
+          for (const p of this.params) {
+            innerScope.addToScope(p.getToken().text, p);
+          }
+          this.validateDefaultParams(scope);
+        },
+        scope,
+        true,
+        this.body,
+        innerScope
+      );
+    } catch (err) {
+      if (err instanceof TinslLineError || err instanceof TinslAggregateError) {
+        errors.push(err);
+      } else {
+        throw err;
+      }
+    }
+
+    aggregateFromErrors(errors);
   }
 }
 
