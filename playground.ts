@@ -22,10 +22,6 @@ const enum Highlight {
 ///////////////////////////////////////////////////////////////////////////////
 // monaco setup
 
-//const typeRegExp = new RegExp(types.join("|"));
-//const kwRegExp = new RegExp([...tinsl, ...overlap].join("|"));
-//const builtInRegExp = new RegExp(builtInFuncNames.join("|"));
-
 const keywords = [...tinsl, ...overlap];
 const typeKeywords = types;
 const builtInKeywords = Object.entries(builtIns).map((b) => b[0]);
@@ -39,8 +35,6 @@ monaco.languages.setMonarchTokensProvider("tinsl-lang", {
 
   tokenizer: {
     root: [
-      //[typeRegExp, "tinsl-type"],
-      //[builtInRegExp, "tinsl-builtin"],
       [regexes.frag, "tinsl-frag"],
       [
         regexes.ident,
@@ -59,7 +53,6 @@ monaco.languages.setMonarchTokensProvider("tinsl-lang", {
       [regexes.string, "tinsl-string"],
       [regexes.comment, "tinsl-comment"],
       [regexes.multilineComment, "tinsl-multilinecomment"],
-      //[kwRegExp, "tinsl-kw"],
     ],
   },
 });
@@ -82,24 +75,59 @@ monaco.editor.defineTheme("tinsl-theme", {
   ],
   colors: {
     "editor.background": "#00000000",
-    //"editorCursor.foreground": "#8B0000",
-    //"editor.lineHighlightBackground": "#0000FF20",
-    //"editorLineNumber.foreground": "#008800",
-    //"editor.selectionBackground": "#88000030",
-    //"editor.inactiveSelectionBackground": "#00000066",
-    //contrastBorder: "#ff0000",
-    //"textCodeBlock.background": "#ff0000",
   },
 });
 
-monaco.editor.create(document.getElementById("editor") as HTMLElement, {
-  value: STARTING_CODE,
-  language: "tinsl-lang",
-  minimap: {
-    enabled: false,
-  },
-  theme: "tinsl-theme",
-});
+const editor = monaco.editor.create(
+  document.getElementById("editor") as HTMLElement,
+  {
+    value: STARTING_CODE,
+    language: "tinsl-lang",
+    minimap: {
+      enabled: false,
+    },
+    theme: "tinsl-theme",
+  }
+);
+
+///////////////////////////////////////////////////////////////////////////////
+// helpers
+
+let oldDecorations: string[] = [];
+
+function parseErrorMessage(message: string): [number, number][] {
+  const arr = message.split("\n").slice(1);
+  return arr.map((a) => {
+    const m = a.match(/line ([0-9]+) column ([0-9]+)/);
+    if (m === null) throw Error("no match for lines and columns");
+    return [parseInt(m[1]), parseInt(m[2])];
+  });
+}
+
+function clearErrors() {
+  oldDecorations = editor.deltaDecorations(oldDecorations, [
+    { range: new monaco.Range(1, 1, 1, 1), options: {} },
+  ]);
+}
+
+function highlightErrors(linesAndColumns: [number, number][]) {
+  const decorations: monaco.editor.IModelDeltaDecoration[] = linesAndColumns
+    .map((lc) => {
+      return [
+        {
+          range: new monaco.Range(lc[0], lc[1], lc[0], lc[1] + 1),
+          options: { inlineClassName: "error-char", isWholeLine: false },
+        },
+        {
+          range: new monaco.Range(lc[0], lc[1], lc[0], lc[1] + 1),
+          options: { inlineClassName: "error-line", isWholeLine: true },
+        },
+      ];
+    })
+    .flat();
+
+  oldDecorations = editor.deltaDecorations(oldDecorations, decorations);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // canvas setup
@@ -152,9 +180,11 @@ const startTinsl = (code: string) => {
 
 const startup = (code: string) => {
   try {
+    clearErrors();
     startTinsl(code);
   } catch (err) {
     console.log(err.message);
+    highlightErrors(parseErrorMessage(err.message));
     throw "look at the logged error message";
   }
 };

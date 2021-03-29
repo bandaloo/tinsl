@@ -57,7 +57,7 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
   }
 }
 
-{ frag0 * step(luma(frag0), int(threshold)); } -> 1
+{ frag0 * step(luma(frag0), int(threshold)); } -> 1 // err!
 
 { @two_pass_blur(size: 1., reps: 3); } -> 1 + 2 // err!
 
