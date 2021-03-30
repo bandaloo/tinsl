@@ -36,6 +36,7 @@ monaco.languages.setMonarchTokensProvider("tinsl-lang", {
 
   tokenizer: {
     root: [
+      { include: "@whitespace" },
       [regexes.frag, "tinsl-frag"],
       [
         regexes.ident,
@@ -52,8 +53,21 @@ monaco.languages.setMonarchTokensProvider("tinsl-lang", {
       [regexes.uint, "tinsl-uint"],
       [regexes.int, "tinsl-int"],
       [regexes.string, "tinsl-string"],
-      [regexes.comment, "tinsl-comment"],
-      [regexes.multilineComment, "tinsl-multilinecomment"],
+      //[regexes.comment, "tinsl-comment"],
+      //[regexes.multilineComment, "tinsl-multilinecomment"],
+    ],
+
+    comment: [
+      [/[^\/*]+/, "comment"],
+      [/\/\*/, "comment", "@push"], // nested comment
+      ["\\*/", "comment", "@pop"],
+      [/[\/*]/, "comment"],
+    ],
+
+    whitespace: [
+      [/[ \t\r\n]+/, "white"],
+      [/\/\*/, "comment", "@comment"],
+      [/\/\/.*$/, "comment"],
     ],
   },
 });
@@ -69,8 +83,8 @@ monaco.editor.defineTheme("tinsl-theme", {
     { token: "tinsl-float", foreground: Highlight.Number }, // 24
     { token: "tinsl-int", foreground: Highlight.Number }, // 24
     { token: "tinsl-string", foreground: Highlight.String }, // 28
-    { token: "tinsl-comment", foreground: Highlight.Comment }, // 23
-    { token: "tinsl-multilinecomment", foreground: Highlight.Comment }, // 23
+    { token: "comment", foreground: Highlight.Comment }, // 23
+    //{ token: "comment", foreground: Highlight.Comment }, // 23
     { token: "tinsl-frag", foreground: Highlight.Frag }, // 25
     { token: "tinsl-ident", foreground: Highlight.Ident }, // 26
   ],
@@ -91,7 +105,6 @@ const editor = monaco.editor.create(
   }
 );
 
-// TODO be able to turn this off
 const vimMode = initVimMode(editor, document.getElementById("statusbar"));
 VimMode.Vim.map("jk", "<Esc>", "insert");
 

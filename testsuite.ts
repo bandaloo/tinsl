@@ -58,6 +58,7 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 { frag0 + frag1; } -> 0
 `;
 
+// FIXME
 const blur13Func = `fn blur13(vec2 dir, int channel = -1) {
   uv := pos / res;
   mut col := vec4(0.);

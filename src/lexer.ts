@@ -268,7 +268,7 @@ export const lexer = moo.compile({
   //lb: { match: /\n/, lineBreaks: true },
   comment: regexes.comment,
   string: regexes.string,
-  multiline_comment: regexes.multilineComment,
+  multiline_comment: { match: regexes.multilineComment, lineBreaks: true },
   float: regexes.float,
   uint: regexes.uint,
   int: regexes.int,

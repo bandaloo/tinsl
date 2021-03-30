@@ -2637,9 +2637,6 @@ export class ColorString extends Expr {
         );
       }
 
-      const numType = (def: number) =>
-        ("vec" + (this.num ?? def)) as SpecTypeSimple;
-
       const getColorVec = (): number[] => {
         const hexColor = hexColorToVector(this.str);
         if (hexColor !== undefined) return hexColor;
