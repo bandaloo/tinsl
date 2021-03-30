@@ -85,7 +85,12 @@ class WebGLProgramTree {
     this.body = tree.body.map(f);
   }
 
-  run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
+  run(
+    texInfo: TexInfo,
+    framebuffer: WebGLFramebuffer,
+    last: boolean,
+    time: number
+  ) {
     for (let i = 0; i < this.loop; i++) {
       if (verbosity > 1) {
         console.log("loop iteration", i);
@@ -93,7 +98,7 @@ class WebGLProgramTree {
       this.body.forEach((b, j) => {
         const lastInBody = j === this.body.length - 1;
         const lastInLoop = i === this.loop - 1;
-        b.run(texInfo, framebuffer, last && lastInBody && lastInLoop);
+        b.run(texInfo, framebuffer, last && lastInBody && lastInLoop, time);
       });
     }
   }
@@ -142,7 +147,12 @@ class WebGLProgramLeaf {
     );
   }
 
-  run(texInfo: TexInfo, framebuffer: WebGLFramebuffer, last: boolean) {
+  run(
+    texInfo: TexInfo,
+    framebuffer: WebGLFramebuffer,
+    last: boolean,
+    time: number
+  ) {
     const swap = () => {
       if (verbosity > 1) {
         console.log("swapping " + this.target + " with scratch");
@@ -176,9 +186,9 @@ class WebGLProgramLeaf {
 
     const uTime = this.locs[U_TIME];
 
-    // TODO to stub this out it always sets time to 0. change!
     // we want to update all uniforms in the same way
-    if (uTime !== undefined) this.gl.uniform1f(uTime, 0);
+    console.log("loc", uTime?.loc);
+    if (uTime !== undefined) this.gl.uniform1f(uTime.loc, time);
 
     if (last && this.last) {
       // draw to the screen by setting to default framebuffer (null)
@@ -328,7 +338,7 @@ export class Runner {
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.channels[0].tex);
     // TODO send to every texture that needs it
     sendTexture(this.gl, this.sources[0]);
-    this.programs.run(this.texInfo, this.framebuffer, true);
+    this.programs.run(this.texInfo, this.framebuffer, true, time);
     // TODO see if we should unbind this
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
     //this.gl.activeTexture(this.gl.TEXTURE0 + offset);

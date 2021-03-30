@@ -189,7 +189,7 @@ const startTinsl = (code: string) => {
   runner = new Runner(gl, code, [video], { edgeMode: "wrap" });
 
   const animate = (time: number) => {
-    runner.draw();
+    runner.draw(time);
     request = requestAnimationFrame(animate);
   };
 
