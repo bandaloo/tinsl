@@ -22,7 +22,7 @@
 
     .container {
       max-width: fit-content;
-      max-height: fit-content;
+      max-height: 100vh;
 
       position: absolute;
       top: 50%;
@@ -31,8 +31,17 @@
       overflow: hidden;
     }
 
+    .statusbar {
+      position: absolute;
+      bottom: 0px;
+      font-family: Menlo, Monaco, "Courier New";
+      font-size: 12px;
+      color: white;
+      background-color: #0007;
+    }
+
     .video {
-      border: 2px solid white;
+      background: white;
     }
 
     .error-char {
@@ -73,6 +82,7 @@
       <div class="video">
         <div id="editor" class="editor"></div>
         <canvas id="gl" width="640" height="480"></canvas>
+        <div id="statusbar" class="statusbar"></div>
       </div>
     </div>
   </body>

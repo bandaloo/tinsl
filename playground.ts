@@ -2,6 +2,7 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import { overlap, regexes, tinsl, types } from "./src/lexer";
 import { Runner } from "./src/runner/runner";
 import { builtIns } from "./src/typeinfo";
+import { initVimMode, VimMode } from "monaco-vim";
 
 ///////////////////////////////////////////////////////////////////////////////
 // constants
@@ -90,6 +91,10 @@ const editor = monaco.editor.create(
   }
 );
 
+// TODO be able to turn this off
+const vimMode = initVimMode(editor, document.getElementById("statusbar"));
+VimMode.Vim.map("jk", "<Esc>", "insert");
+
 ///////////////////////////////////////////////////////////////////////////////
 // helpers
 
@@ -168,7 +173,7 @@ let request: number | undefined = undefined;
 const startTinsl = (code: string) => {
   if (request !== undefined) cancelAnimationFrame(request);
   let runner: Runner;
-  runner = new Runner(gl, code, [video], {});
+  runner = new Runner(gl, code, [video], { edgeMode: "wrap" });
 
   const animate = (time: number) => {
     runner.draw();
