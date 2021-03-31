@@ -58,16 +58,16 @@ monaco.languages.setMonarchTokensProvider("tinsl-lang", {
     ],
 
     comment: [
-      [/[^\/*]+/, "comment"],
-      [/\/\*/, "comment", "@push"], // nested comment
-      ["\\*/", "comment", "@pop"],
-      [/[\/*]/, "comment"],
+      [/[^\/*]+/, "tinsl-comment"],
+      [/\/\*/, "tinsl-comment", "@push"], // nested comment
+      ["\\*/", "tinsl-comment", "@pop"],
+      [/[\/*]/, "tinsl-comment"],
     ],
 
     whitespace: [
       [/[ \t\r\n]+/, "white"],
-      [/\/\*/, "comment", "@comment"],
-      [/\/\/.*$/, "comment"],
+      [/\/\*/, "tinsl-comment", "@comment"],
+      [/\/\/.*$/, "tinsl-comment"],
     ],
   },
 });
@@ -83,7 +83,7 @@ monaco.editor.defineTheme("tinsl-theme", {
     { token: "tinsl-float", foreground: Highlight.Number }, // 24
     { token: "tinsl-int", foreground: Highlight.Number }, // 24
     { token: "tinsl-string", foreground: Highlight.String }, // 28
-    { token: "comment", foreground: Highlight.Comment }, // 23
+    { token: "tinsl-comment", foreground: Highlight.Comment }, // 23
     //{ token: "comment", foreground: Highlight.Comment }, // 23
     { token: "tinsl-frag", foreground: Highlight.Frag }, // 25
     { token: "tinsl-ident", foreground: Highlight.Ident }, // 26
@@ -102,6 +102,7 @@ const editor = monaco.editor.create(
       enabled: false,
     },
     theme: "tinsl-theme",
+    contextmenu: false,
   }
 );
 
@@ -172,6 +173,7 @@ function getVideo() {
 }
 
 const video = getVideo();
+const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
 document.addEventListener("keypress", (e) => {
   if (e.ctrlKey && e.key === "Enter") {
@@ -197,13 +199,15 @@ const startTinsl = (code: string) => {
 };
 
 const startup = (code: string) => {
+  consoleWindow.innerText = "";
   try {
     clearErrors();
     startTinsl(code);
   } catch (err) {
     console.log(err.message);
+    consoleWindow.innerText = err.message;
     highlightErrors(parseErrorMessage(err.message));
-    throw "look at the logged error message";
+    //throw "look at the logged error message";
   }
 };
 

@@ -855,19 +855,19 @@ float foo () {
   it("cannot parse when condition expression is declaration", () => {
     expect(() =>
       parse("float foo () {for(int i = 0; int k = 0; i++) {}}")
-    ).to.throw("Unexpected");
+    ).to.throw("unexpected");
   });
 
   it("cannot parse when condition expression is assignment", () => {
     expect(() =>
       parse("float foo () {for(int i = 0; k = 0; i++) {}}")
-    ).to.throw("Unexpected");
+    ).to.throw("unexpected");
   });
 
   it("cannot parse when final expression is declaration", () => {
     expect(() =>
       parse("float foo () {for(int i = 0; i < 3; int k = 1) {}}")
-    ).to.throw("Unexpected");
+    ).to.throw("unexpected");
   });
 });
 

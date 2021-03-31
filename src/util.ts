@@ -1,4 +1,4 @@
-import { TinslError, TinslLineError } from "./err";
+import { TinslAggregateError, TinslError, TinslLineError } from "./err";
 
 export function strHasRepeats(str: string) {
   return /(.).*\1/.test(str);
@@ -26,7 +26,11 @@ export function tinslNearleyError(e: Error) {
   if (matches === null) throw new Error("no matches in nearley error");
   const line = parseInt(matches[1]);
   const col = parseInt(matches[2]);
-  return new TinslLineError(simple.substr(index, simple.length), { line, col });
+  // strip out the arrow pointing to character
+  let simpler = simple.substr(index, simple.length).split("\n")[4];
+  // lowercase u and remove period
+  simpler = "u" + simpler.substr(0, simpler.length - 1).slice(1);
+  return new TinslAggregateError([new TinslLineError(simpler, { line, col })]);
 }
 
 export function hexColorToVector(str: string) {

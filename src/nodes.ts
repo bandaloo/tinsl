@@ -1534,7 +1534,7 @@ export class SubscriptExpr extends Expr {
           NON_CONST_ID +
           "*"
         : ""
-    }${this.index.translate(sl)}]`;
+    }(${this.index.translate(sl)})]`;
   }
 
   toJson(): object {
@@ -1561,10 +1561,10 @@ export class SubscriptExpr extends Expr {
         if (!isInIndexableRange(callType, intResult)) {
           throw new TinslError(`index ${intResult} out of range`);
         }
-      } else if (this.call.isConst(scope)) {
+      } else if (this.index.isConst(scope)) {
         // if it's a const expr, then we can't fully evaluate; we multiply by
         // non-const 1 when generating code
-        console.log("scope", scope);
+        console.log("needs one mult index", this.index);
         scope.addNeedsOneMult();
         this.multsByOne = true;
       }
@@ -2506,6 +2506,10 @@ abstract class Basic extends Expr {
 
   getToken(): Token {
     return this.token;
+  }
+
+  isConst() {
+    return false;
   }
 }
 
