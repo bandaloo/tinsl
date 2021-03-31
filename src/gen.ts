@@ -1,4 +1,5 @@
 import nearley from "nearley";
+import { TinslError } from "./err";
 import grammar from "./grammar";
 import { getAllUsedFuncs, IRLeaf, IRTree, renderBlockToIR } from "./ir";
 import {
@@ -369,6 +370,9 @@ export function gen(source: string) {
   );
 
   const processed = blocks.map(processBlocks).map(genSource);
+  // TODO better place to throw this
+  if (processed.length === 0)
+    throw new TinslError("error: no render blocks defined");
   return processed;
 }
 

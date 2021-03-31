@@ -229,6 +229,9 @@ In fact, when you leave off the "in number" and "out number" on a render block
 at the top level, it defaults to zero, so we could have left the outer numbers
 off too.
 
+Look at the 'club' example in the playground to see many of these techniques
+in action.
+
 ### some notes about types, operators and built-ins
 
 For completion's sake, tinsl includes `bvec`s, `ivec`s, `uvec`s and `uint`s, on

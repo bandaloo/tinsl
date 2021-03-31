@@ -103,6 +103,7 @@ const editor = monaco.editor.create(
     },
     theme: "tinsl-theme",
     contextmenu: false,
+    tabSize: 2,
   }
 );
 
