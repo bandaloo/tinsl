@@ -1160,6 +1160,9 @@ export class IdentExpr extends AtomExpr {
     }
     return this.wrapError(
       () => {
+        // invalid until set otherwise
+        this.validLVal = "invalid";
+
         const name = this.getToken().text;
         const res = scope.resolve(name);
         if (res === undefined)
@@ -1188,7 +1191,7 @@ export class IdentExpr extends AtomExpr {
             );
           }
           res.usage = requiredMatch;
-          this.validLVal = "invalid"; // parameters are immutable by default
+          // parameters are immutable by default
         }
 
         this.cachedResolve = res;
