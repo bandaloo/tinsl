@@ -107,8 +107,34 @@ const editor = monaco.editor.create(
   }
 );
 
-const vimMode = initVimMode(editor, document.getElementById("statusbar"));
+///////////////////////////////////////////////////////////////////////////////
+// vim mode
+
 VimMode.Vim.map("jk", "<Esc>", "insert");
+let vimMode: any;
+
+const statusBar = document.getElementById("statusbar") as HTMLElement;
+
+const startVimMode = () => {
+  vimMode = initVimMode(editor, statusBar);
+};
+
+const endVimMode = () => {
+  /*
+  while (statusBar.firstChild !== null) {
+    console.log("removing child");
+    statusBar.removeChild(statusBar.firstChild);
+  }
+  */
+
+  vimMode?.dispose();
+};
+
+const checkBox = document.getElementById("vim-mode") as HTMLInputElement;
+
+checkBox.addEventListener("change", (e) => {
+  checkBox.checked ? startVimMode() : endVimMode();
+});
 
 ///////////////////////////////////////////////////////////////////////////////
 // helpers
