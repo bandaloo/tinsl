@@ -2538,6 +2538,15 @@ export class Time extends Basic {
   }
 }
 
+export class Prev extends Basic {
+  typ: SpecTypeSimple = "vec4";
+  name: string = "prev";
+
+  translate(sl: MappedLeaf): string {
+    return "fragColor";
+  }
+}
+
 export class Refresh extends Stmt {
   id: Token;
 

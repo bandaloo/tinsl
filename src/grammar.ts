@@ -84,15 +84,6 @@ declare var kw_mat3x4: any;
 declare var kw_mat4x2: any;
 declare var kw_mat4x3: any;
 declare var kw_mat4x4: any;
-declare var kw_genType: any;
-declare var kw_genBType: any;
-declare var kw_genIType: any;
-declare var kw_genUType: any;
-declare var kw_mat: any;
-declare var kw_vec: any;
-declare var kw_bvec: any;
-declare var kw_ivec: any;
-declare var kw_uvec: any;
 declare var comma: any;
 declare var float: any;
 declare var uint: any;
@@ -101,6 +92,7 @@ declare var kw_false: any;
 declare var kw_time: any;
 declare var kw_pos: any;
 declare var kw_res: any;
+declare var kw_prev: any;
 declare var frag: any;
 declare var string: any;
 declare var assign_add: any;
@@ -148,6 +140,7 @@ import {
   Time,
   Pos,
   Res,
+  Prev,
   ColorString,
 } from "./nodes";
 import { lexer } from "./lexer";
@@ -447,15 +440,6 @@ const grammar: Grammar = {
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x2") ? {type: "kw_mat4x2"} : kw_mat4x2)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x3") ? {type: "kw_mat4x3"} : kw_mat4x3)], "postprocess": id},
     {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat4x4") ? {type: "kw_mat4x4"} : kw_mat4x4)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genType") ? {type: "kw_genType"} : kw_genType)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genBType") ? {type: "kw_genBType"} : kw_genBType)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genIType") ? {type: "kw_genIType"} : kw_genIType)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_genUType") ? {type: "kw_genUType"} : kw_genUType)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_mat") ? {type: "kw_mat"} : kw_mat)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_vec") ? {type: "kw_vec"} : kw_vec)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_bvec") ? {type: "kw_bvec"} : kw_bvec)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_ivec") ? {type: "kw_ivec"} : kw_ivec)], "postprocess": id},
-    {"name": "TypeWord", "symbols": [(nearleyLexer.has("kw_uvec") ? {type: "kw_uvec"} : kw_uvec)], "postprocess": id},
     {"name": "Arg$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("ident") ? {type: "ident"} : ident), "_", (nearleyLexer.has("colon") ? {type: "colon"} : colon), "_"]},
     {"name": "Arg$ebnf$1", "symbols": ["Arg$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "Arg$ebnf$1", "symbols": [], "postprocess": () => null},
@@ -481,6 +465,7 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_time") ? {type: "kw_time"} : kw_time)], "postprocess": d => new Time(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_pos") ? {type: "kw_pos"} : kw_pos)], "postprocess": d => new Pos(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_res") ? {type: "kw_res"} : kw_res)], "postprocess": d => new Res(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_prev") ? {type: "kw_prev"} : kw_prev)], "postprocess": d => new Prev(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("frag") ? {type: "frag"} : frag)], "postprocess": d => new Frag(d[0])},
     {"name": "Atom$ebnf$1$subexpression$1", "symbols": [(nearleyLexer.has("int") ? {type: "int"} : int)]},
     {"name": "Atom$ebnf$1", "symbols": ["Atom$ebnf$1$subexpression$1"], "postprocess": id},

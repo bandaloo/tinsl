@@ -75,6 +75,7 @@ export const tinsl = [
   "res",
   "pos",
   "time",
+  "prev",
 ] as const;
 
 export const glsl = [

@@ -32,6 +32,7 @@ import {
   Time,
   Pos,
   Res,
+  Prev,
   ColorString,
 } from "./nodes";
 import { lexer } from "./lexer";
@@ -320,15 +321,15 @@ TypeWord ->
   | %kw_mat4x4 {% id %}
   # generics
   # TODO get rid of these for now
-  | %kw_genType  {% id %}
-  | %kw_genBType {% id %}
-  | %kw_genIType {% id %}
-  | %kw_genUType {% id %}
-  | %kw_mat      {% id %}
-  | %kw_vec      {% id %}
-  | %kw_bvec     {% id %}
-  | %kw_ivec     {% id %}
-  | %kw_uvec     {% id %}
+  #| %kw_genType  {% id %}
+  #| %kw_genBType {% id %}
+  #| %kw_genIType {% id %}
+  #| %kw_genUType {% id %}
+  #| %kw_mat      {% id %}
+  #| %kw_vec      {% id %}
+  #| %kw_bvec     {% id %}
+  #| %kw_ivec     {% id %}
+  #| %kw_uvec     {% id %}
 
 Arg ->
     (%ident _ %colon _):? Expr
@@ -354,6 +355,7 @@ Atom ->
   | %kw_time         {% d => new Time(d[0]) %}
   | %kw_pos          {% d => new Pos(d[0]) %}
   | %kw_res          {% d => new Res(d[0]) %}
+  | %kw_prev         {% d => new Prev(d[0]) %}
   | %frag            {% d => new Frag(d[0]) %}
   | %string (%int):? {% d => new ColorString(d[0], d[1] === null ? null : parseInt(d[1][0].text)) %}
   | TypeName _ %lparen _ Args:? _ %rparen
