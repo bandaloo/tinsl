@@ -231,8 +231,13 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
 {frag999.gbra;} -> 1002
 
 {frag1002;}`;
+const onceTest = `once { once { 'blue'4; }}`;
 
-const code = mysteriousBlur;
+const blueWrapped = `loop 9 { { frag0 + 'blue'4 / 9.; } }`;
+
+const blueUnwrapped = `loop 9 { frag0 + 'blue'4 / 9.; }`;
+
+const code = blueUnwrapped;
 
 console.log(code);
 

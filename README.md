@@ -14,7 +14,7 @@ that.)
 tinsl can infer function return types and variable declaration types.
 
 ```c
-// the GLSL way with no type inference (also valid tinsl) 
+// the GLSL way with no type inference (also valid tinsl)
 vec2 glsl_style_rotate2d(vec2 v, float angle) {
   mat2 m = mat2(cos(angle), -sin(angle),
             sin(angle), cos(angle));
@@ -43,11 +43,12 @@ Variable declarations have a few differences from GLSL:
 - Variable declarations must be inside function bodies. Because of this
   restriction, all functions are naturally "pure" functions; they cannot have
   side effects. This means that a `void` return type is meaningless, so it's not
-  in tinsl. 
+  in tinsl.
 - Variables declared with `:=` are "final" by default. If you want the variable
   to be mutable, you must write `mut x := 42;`. If you want a variable declared
   with the GLSL-style syntax to be "final", you can write `final x = 42;`. (GLSL
   lacks this; `const` can only be used for compile time constants.)
+- Precision qualifiers are not in tinsl.
 
 ### default arguments and named arguments
 
@@ -91,7 +92,7 @@ There are a few things to note about named and default arguments:
 - For now, you need an explicit parameter type even if you provide a default
   value. (The plan is to get rid of the need for this.)
 - You cannot have `in`, `out` or `inout` parameters like in GLSL.
-- Function parameters are immutable. 
+- Function parameters are immutable.
 
 ### color strings
 
@@ -219,7 +220,7 @@ number" of the outer render block, which are both zero.
 
 ```c
 0 -> loop 3 {
-  { blur(vec2(1., 0.)); } // implicit 0 -> { ... } -> 0 
+  { blur(vec2(1., 0.)); } // implicit 0 -> { ... } -> 0
   { blur(vec2(0., 1.)); } // implicit 0 -> { ... } -> 0
 } -> 0
 ```
@@ -233,7 +234,7 @@ off too.
 For completion's sake, tinsl includes `bvec`s, `ivec`s, `uvec`s and `uint`s, on
 top of the more familiar `vec` and `mat` types. You can make arrays of all the
 included types. The way you call constructors is the same as GLSL, although it
-has *just* come to my attention that you can construct a `mat2x3` with
+has _just_ come to my attention that you can construct a `mat2x3` with
 `mat2x3(vec2, float, vec2, float)`. (This just seems confusing in my opinion.)
 As it stands in tinsl, you have to choose all floats or all column vectors.
 Additionally, the constructors for `vec`s and `mat`s do not accept `int` types
@@ -278,4 +279,3 @@ tinsl syntax and compiler errors will show up directly in the playground editor.
 The line that the error is on is underlined in red, and the character at the
 reported column will have a dark red background. The exact column the error is
 on might be slightly inaccurate.
-

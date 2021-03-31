@@ -105,7 +105,7 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
   };
 
   if (isOnlyScopedExpr(block.scopedBody)) {
-    return new IRLeaf(
+    const leaf = new IRLeaf(
       loopInfo,
       block.paramMappings,
       //block.body,
@@ -113,6 +113,12 @@ export function renderBlockToIR(block: RenderBlock): IRTree | IRLeaf {
       block.needsOneMult,
       block.requiredTexNums
     );
+
+    if (block.loopNum !== null || block.once) {
+      return new IRTree(loopInfo, block.paramMappings, [leaf]);
+    }
+
+    return leaf;
   }
 
   if (isOnlyScopedRenderBlock(block.scopedBody)) {

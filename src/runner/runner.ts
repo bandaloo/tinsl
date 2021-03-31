@@ -64,6 +64,8 @@ class WebGLProgramTree {
   readonly once: boolean;
   readonly body: (WebGLProgramTree | WebGLProgramLeaf)[];
 
+  private ranOnce = false;
+
   constructor(
     gl: WebGL2RenderingContext,
     tree: TinslTree,
@@ -91,6 +93,7 @@ class WebGLProgramTree {
     last: boolean,
     time: number
   ) {
+    if (this.once && this.ranOnce) return;
     for (let i = 0; i < this.loop; i++) {
       if (verbosity > 1) {
         console.log("loop iteration", i);
@@ -101,6 +104,7 @@ class WebGLProgramTree {
         b.run(texInfo, framebuffer, last && lastInBody && lastInLoop, time);
       });
     }
+    this.ranOnce = true;
   }
 }
 
@@ -187,7 +191,6 @@ class WebGLProgramLeaf {
     const uTime = this.locs[U_TIME];
 
     // we want to update all uniforms in the same way
-    console.log("loc", uTime?.loc);
     if (uTime !== undefined) this.gl.uniform1f(uTime.loc, time);
 
     if (last && this.last) {
