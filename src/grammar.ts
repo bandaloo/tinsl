@@ -91,6 +91,7 @@ declare var kw_true: any;
 declare var kw_false: any;
 declare var kw_time: any;
 declare var kw_pos: any;
+declare var kw_npos: any;
 declare var kw_res: any;
 declare var kw_prev: any;
 declare var frag: any;
@@ -139,6 +140,7 @@ import {
   ProcCall,
   Time,
   Pos,
+  NPos,
   Res,
   Prev,
   ColorString,
@@ -464,6 +466,7 @@ const grammar: Grammar = {
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_false") ? {type: "kw_false"} : kw_false)], "postprocess": d => new BoolExpr(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_time") ? {type: "kw_time"} : kw_time)], "postprocess": d => new Time(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_pos") ? {type: "kw_pos"} : kw_pos)], "postprocess": d => new Pos(d[0])},
+    {"name": "Atom", "symbols": [(nearleyLexer.has("kw_npos") ? {type: "kw_npos"} : kw_npos)], "postprocess": d => new NPos(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_res") ? {type: "kw_res"} : kw_res)], "postprocess": d => new Res(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("kw_prev") ? {type: "kw_prev"} : kw_prev)], "postprocess": d => new Prev(d[0])},
     {"name": "Atom", "symbols": [(nearleyLexer.has("frag") ? {type: "frag"} : frag)], "postprocess": d => new Frag(d[0])},

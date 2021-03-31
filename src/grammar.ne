@@ -31,6 +31,7 @@ import {
   ProcCall,
   Time,
   Pos,
+  NPos,
   Res,
   Prev,
   ColorString,
@@ -355,6 +356,7 @@ Atom ->
   | %kw_false        {% d => new BoolExpr(d[0]) %}
   | %kw_time         {% d => new Time(d[0]) %}
   | %kw_pos          {% d => new Pos(d[0]) %}
+  | %kw_npos         {% d => new NPos(d[0]) %}
   | %kw_res          {% d => new Res(d[0]) %}
   | %kw_prev         {% d => new Prev(d[0]) %}
   | %frag            {% d => new Frag(d[0]) %}

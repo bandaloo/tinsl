@@ -74,6 +74,7 @@ export const tinsl = [
   "refresh",
   "res",
   "pos",
+  "npos",
   "time",
   "prev",
 ] as const;

@@ -3,6 +3,7 @@ import { overlap, regexes, tinsl, types } from "./src/lexer";
 import { Runner } from "./src/runner/runner";
 import { builtIns } from "./src/typeinfo";
 import { initVimMode, VimMode } from "monaco-vim";
+import { demos } from "./demos";
 
 ///////////////////////////////////////////////////////////////////////////////
 // constants
@@ -84,7 +85,6 @@ monaco.editor.defineTheme("tinsl-theme", {
     { token: "tinsl-int", foreground: Highlight.Number }, // 24
     { token: "tinsl-string", foreground: Highlight.String }, // 28
     { token: "tinsl-comment", foreground: Highlight.Comment }, // 23
-    //{ token: "comment", foreground: Highlight.Comment }, // 23
     { token: "tinsl-frag", foreground: Highlight.Frag }, // 25
     { token: "tinsl-ident", foreground: Highlight.Ident }, // 26
   ],
@@ -96,7 +96,7 @@ monaco.editor.defineTheme("tinsl-theme", {
 const editor = monaco.editor.create(
   document.getElementById("editor") as HTMLElement,
   {
-    value: STARTING_CODE,
+    value: stripFirstLine(demos["club"]),
     language: "tinsl-lang",
     minimap: {
       enabled: false,
@@ -148,8 +148,36 @@ function highlightErrors(linesAndColumns: [number, number][]) {
   oldDecorations = editor.deltaDecorations(oldDecorations, decorations);
 }
 
+function stripFirstLine(code: string) {
+  return code.split("\n").slice(1).join("\n");
+}
+
+function addDemos() {
+  const entries = Object.entries(demos);
+  const select = document.getElementById("demos") as HTMLSelectElement;
+
+  select.addEventListener("change", (e) => {
+    console.log("event", e);
+    const code = demos[select.options[select.selectedIndex].value];
+    const stripped = stripFirstLine(code);
+    editor.setValue(stripped);
+    runTinslProgram();
+  });
+
+  console.log("select", select);
+  for (const e of entries) {
+    const option = document.createElement("option");
+    option.value = e[0];
+    option.innerText = e[0];
+    console.log(option);
+    select.appendChild(option);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // canvas setup
+
+addDemos();
 
 const glCanvas = document.getElementById("gl") as HTMLCanvasElement;
 const glTemp = glCanvas.getContext("webgl2");
@@ -175,11 +203,15 @@ function getVideo() {
 const video = getVideo();
 const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
+const runTinslProgram = () => {
+  const code = monaco.editor.getModels()[0].getValue();
+  startup(code);
+};
+
 document.addEventListener("keypress", (e) => {
   if (e.ctrlKey && e.key === "Enter") {
     e.preventDefault();
-    const code = monaco.editor.getModels()[0].getValue();
-    startup(code);
+    runTinslProgram();
   }
 });
 
@@ -211,4 +243,4 @@ const startup = (code: string) => {
   }
 };
 
-video.addEventListener("playing", () => startup(STARTING_CODE));
+video.addEventListener("playing", runTinslProgram);

@@ -2055,8 +2055,10 @@ export class TernaryExpr extends Expr {
     };
   }
 
-  translate(): string {
-    throw new Error("Method not implemented.");
+  translate(sl: MappedLeaf): string {
+    return `(${this.bool.translate(sl)}?${this.expr1.translate(
+      sl
+    )}:${this.expr2.translate(sl)})`;
   }
 
   getToken(): Token {
@@ -2517,11 +2519,20 @@ abstract class Basic extends Expr {
 // seems like the most common use case
 export class Pos extends Basic {
   typ: SpecTypeSimple = "vec2";
-  name: string = "coord";
+  name: string = "pos";
+
+  translate(sl: MappedLeaf): string {
+    return "gl_FragCoord.xy";
+  }
+}
+
+export class NPos extends Basic {
+  typ: SpecTypeSimple = "vec2";
+  name: string = "npos";
 
   translate(sl: MappedLeaf): string {
     sl.leaf.requires.res = true;
-    return "gl_FragCoord.xy";
+    return "(gl_FragCoord.xy / uResolution)";
   }
 }
 

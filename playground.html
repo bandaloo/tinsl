@@ -31,7 +31,7 @@
       overflow: hidden;
     }
 
-    .statusbar {
+    .console-bar {
       position: absolute;
       bottom: 0px;
       font-family: Menlo, Monaco, "Courier New";
@@ -67,6 +67,11 @@
       overflow: scroll;
     }
 
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+    }
+
     /** background color for monaco is broken since 2016! this is a workaround */
     .mtk1,
     .mtk22,
@@ -89,8 +94,12 @@
       <div class="video">
         <div id="editor" class="editor"></div>
         <canvas id="gl" width="640" height="480"></canvas>
-        <div id="statusbar" class="statusbar">
+        <div class="console-bar">
           <div class="console-window" id="console-window"></div>
+          <div class="bottom-bar" id="bottom-bar">
+            <div id="statusbar"></div>
+            <select name="demos" id="demos"></select>
+          </div>
         </div>
       </div>
     </div>
