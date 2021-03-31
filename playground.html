@@ -44,6 +44,7 @@
 
     .video {
       background: white;
+      display: block;
     }
 
     .error-char {
@@ -91,9 +92,8 @@
   </head>
   <body>
     <div class="container">
-      <div class="video">
+      <div class="video" id="video">
         <div id="editor" class="editor"></div>
-        <canvas id="gl" width="640" height="480"></canvas>
         <div class="console-bar">
           <div class="console-window" id="console-window"></div>
           <div class="bottom-bar" id="bottom-bar">
@@ -106,6 +106,7 @@
           <div id="statusbar"></div>
         </div>
       </div>
+      <canvas id="gl" width="640" height="480"></canvas>
     </div>
   </body>
   <script src="playground-bundle/bundle.js"></script>

@@ -236,9 +236,15 @@ const runTinslProgram = () => {
 };
 
 document.addEventListener("keypress", (e) => {
-  if (e.ctrlKey && e.key === "Enter") {
-    e.preventDefault();
-    runTinslProgram();
+  if (e.ctrlKey) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      runTinslProgram();
+    } else if (e.key === "H") {
+      e.preventDefault();
+      const div = document.getElementById("video") as HTMLElement;
+      div.style.display = div.style.display !== "none" ? "none" : "block";
+    }
   }
 });
 

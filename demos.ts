@@ -4,6 +4,21 @@ interface Demos {
 
 export const demos: Demos = {
   club: `
+/*
+welcome to the tinsl playground! right now you're looking at a comprehensive
+code example that shows off many features of the language. if you want
+something less overwhelming, try "one liners" (select that option from the
+bottom right menu). the controls are:
+
+run the code: control + enter
+
+hide/show the ui: control + shift + enter
+
+everything you see is a work in progress so feedback and github issues are
+welcome. check out the readme on the github page for more details about the
+language: https://github.com/bandaloo/tinsl
+*/
+
 // some colors for our blinking lights
 def colors vec4[](
   'magenta'4,
