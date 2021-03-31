@@ -1549,6 +1549,8 @@ export class SubscriptExpr extends Expr {
     return this.wrapError(() => {
       const callType = this.call.getType(scope);
 
+      if (callType === "__undecided") return "__undecided";
+
       const indexType = this.index.getType(scope);
       if (!(indexType === "int" || indexType === "uint")) {
         throw new TinslError("index must be an integer");
@@ -2470,7 +2472,7 @@ export class TopDef extends Stmt {
     // TODO test type errors for top defs
     this.wrapError(() => {
       scope.addToScope(this.getToken().text, this);
-      this.getRightType(scope);
+      this.expr.getType(scope);
     }, scope);
   }
 
@@ -2478,7 +2480,7 @@ export class TopDef extends Stmt {
     // TODO this is the same as in vardecl
     try {
       return this.expr.getType(scope);
-    } catch {
+    } catch (err) {
       return "__undecided";
     }
   }
