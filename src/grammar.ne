@@ -208,8 +208,9 @@ Paren ->
   | Atom                     {% id %}
 
 MiscPost ->
-    MiscPost _ %lbracket _ Paren _ %rbracket {% (d: any) => new SubscriptExpr(d[2], d[0], d[4]) %}
+    MiscPost _ %lbracket _ Expr _ %rbracket {% (d: any) => new SubscriptExpr(d[2], d[0], d[4]) %}
   | MiscPost _ %lparen _ Args:? _ %rparen    {% (d: any) => new CallExpr(d[2], d[0], d[4] !== null ? d[4] : []) %}
+  # TODO is Paren correct here?
   | MiscPost _ %period _ Paren               {% bin %}
   | MiscPost _ %incr                         {% post %}
   | MiscPost _ %decr                         {% post %}

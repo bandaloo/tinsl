@@ -356,7 +356,7 @@ const grammar: Grammar = {
     {"name": "BlockBody", "symbols": [(nearleyLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "BlockBody$ebnf$1", "_", "BlockBody$ebnf$2", (nearleyLexer.has("rbrace") ? {type: "rbrace"} : rbrace), "BlockBody$ebnf$3", "_"], "postprocess": d => d[3].map((e: any) => e[0])},
     {"name": "Paren", "symbols": [(nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "Expr", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": d => d[2]},
     {"name": "Paren", "symbols": ["Atom"], "postprocess": id},
-    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Paren", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
+    {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lbracket") ? {type: "lbracket"} : lbracket), "_", "Expr", "_", (nearleyLexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": (d: any) => new SubscriptExpr(d[2], d[0], d[4])},
     {"name": "MiscPost$ebnf$1", "symbols": ["Args"], "postprocess": id},
     {"name": "MiscPost$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "MiscPost", "symbols": ["MiscPost", "_", (nearleyLexer.has("lparen") ? {type: "lparen"} : lparen), "_", "MiscPost$ebnf$1", "_", (nearleyLexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (d: any) => new CallExpr(d[2], d[0], d[4] !== null ? d[4] : [])},
