@@ -9,6 +9,7 @@
     "build": "npx tsc --project tsconfig.notests.json --outDir dist",
     "bundle": "npx webpack --env development --env testsuite --config webpack.config.js",
     "playground": "npx webpack --env development --env playground --config webpack.config.js",
+    "playground:prod": "npx webpack --env production --env playground --config webpack.config.js",
     "buildwatch": "npx tsc -w --outDir dist",
     "bundlewatch": "npm run bundle -- --watch",
     "playgroundwatch": "npm run playground -- --watch",

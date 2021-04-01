@@ -235,6 +235,8 @@ const runTinslProgram = () => {
   startup(code);
 };
 
+document.getElementById("run")?.addEventListener("click", runTinslProgram);
+
 document.addEventListener("keypress", (e) => {
   if (e.ctrlKey) {
     if (e.key === "Enter") {
