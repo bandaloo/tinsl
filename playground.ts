@@ -212,22 +212,38 @@ const glTemp = glCanvas.getContext("webgl2");
 if (glTemp === null) throw new Error("problem getting the gl context");
 const gl = glTemp;
 
-function getVideo() {
+function getMedia() {
   const video = document.createElement("video");
+  const audio = new AudioContext();
+  const analyzer = audio.createAnalyser();
 
   navigator.mediaDevices
     .getUserMedia({
+      audio: true,
       video: true,
     })
     .then((stream) => {
       video.srcObject = stream;
+      video.muted = true;
       video.play();
+
+      const source = audio.createMediaStreamSource(stream);
+      source.connect(analyzer);
+
+      analyzer.fftSize = 32;
     });
 
-  return video;
+  return { video, analyzer };
 }
 
-const video = getVideo();
+const { video, analyzer } = getMedia();
+
+function analyze() {
+  const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+  analyzer.getByteTimeDomainData(dataArray);
+  return dataArray;
+}
+
 const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
 const runTinslProgram = () => {
@@ -259,6 +275,7 @@ const startTinsl = (code: string) => {
 
   const animate = (time: number) => {
     runner.draw(time);
+    console.log(analyze());
     request = requestAnimationFrame(animate);
   };
 
