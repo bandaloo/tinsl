@@ -8,8 +8,6 @@ import { demos } from "./demos";
 ///////////////////////////////////////////////////////////////////////////////
 // constants
 
-const STARTING_CODE = "{ 'magenta'4 * frag; }";
-
 const enum Highlight {
   BuiltIn = "#FFCB1C",
   Number = "#FA076B",
@@ -230,7 +228,7 @@ function getMedia() {
       const source = audio.createMediaStreamSource(stream);
       source.connect(analyzer);
 
-      analyzer.fftSize = 32;
+      analyzer.fftSize = 256;
     });
 
   return { video, analyzer };
@@ -238,9 +236,26 @@ function getMedia() {
 
 const { video, analyzer } = getMedia();
 
+const analyzerCanvas = document.getElementById("fft") as HTMLCanvasElement;
+const analyzerTemp = analyzerCanvas.getContext("2d");
+
+if (analyzerTemp === null) throw new Error("problem getting fft graph context");
+const analyzerContext = analyzerTemp;
+
+const FFT_W = analyzerCanvas.width;
+const FFT_H = analyzerCanvas.height;
+
 function analyze() {
   const dataArray = new Uint8Array(analyzer.frequencyBinCount);
   analyzer.getByteTimeDomainData(dataArray);
+  analyzerContext.fillStyle = "black";
+  analyzerContext.fillRect(0, 0, FFT_W, FFT_H);
+  analyzerContext.fillStyle = "lime";
+  const width = FFT_W / dataArray.length;
+  dataArray.forEach((d, i) => {
+    const height = Math.round(FFT_H * ((d - 128) / 128));
+    analyzerContext.fillRect(i * width, FFT_H - height, width, height);
+  });
   return dataArray;
 }
 
@@ -275,7 +290,7 @@ const startTinsl = (code: string) => {
 
   const animate = (time: number) => {
     runner.draw(time);
-    console.log(analyze());
+    analyze();
     request = requestAnimationFrame(animate);
   };
 

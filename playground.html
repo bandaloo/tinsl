@@ -8,7 +8,7 @@
       letter-spacing: 1px;
     }
 
-    canvas {
+    .vidcanvas {
       height: 100vh;
       display: block;
     }
@@ -102,12 +102,13 @@
               <label>vim mode</label>
             </div>
             <button id="run">run</button>
+            <canvas id="fft" width="128" height="16"></canvas>
             <select name="demos" id="demos"></select>
           </div>
           <div id="statusbar"></div>
         </div>
       </div>
-      <canvas id="gl" width="640" height="480"></canvas>
+      <canvas id="gl" class="vidcanvas" width="640" height="480"></canvas>
     </div>
   </body>
   <script src="playground-bundle/bundle.js"></script>
