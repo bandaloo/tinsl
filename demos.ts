@@ -4,7 +4,7 @@ interface Demos {
 
 export const demos: Demos = {
   club: `
-/*
+/******************************************************************************
 welcome to the tinsl playground! right now you're looking at a comprehensive
 code example that shows off many features of the language. if you want
 something less overwhelming, try "one liners" (select that option from the
@@ -12,12 +12,17 @@ bottom right menu). the controls are:
 
 run the code: control + enter
 
-hide/show the ui: control + shift + enter
+hide/show the ui: control + shift + h
 
 everything you see is a work in progress so feedback and github issues are
 welcome. check out the readme on the github page for more details about the
 language: https://github.com/bandaloo/tinsl
-*/
+******************************************************************************/
+
+// uniforms (in playground only!) that match the pattern ^fft[0-9]+$ will
+// automatically be updated with the FFT frequency data from your mic.
+// fft0 is the lowest and fft127 is the highest
+uniform float fft0;
 
 // some colors for our blinking lights
 def colors vec4[](
@@ -36,6 +41,7 @@ def seconds time / 1000.
 def chosen_color colors[int(seconds) % 6]
 
 // fast gaussian blur 
+// from https://github.com/Jam3/glsl-fast-gaussian-blur/blob/master/9.glsl
 fn blur(vec2 direction, int channel = -1) {
   uv := npos;
   mut color := vec4(0.0);
@@ -68,8 +74,15 @@ pr two_pass_blur(float size, int reps, int channel = -1) {
   prev * .1 + frag1 * .97; // blend with the accumulation buffer; oversaturate a bit
 } -> 1
 
-// vignette effect: darken and blur the edges
-1 -> { mix(frag, 'black'4, 1.5 * length(npos - 0.5)); } -> 0
+1 -> {
+  // darken the edges
+  mix(frag, 'black'4, 1.5 * length(npos - 0.5));
+  // blend with black based on fft analysis
+  // we do some simple filtering to drop to zero if below 0.1 and scale by 0.7
+  mix(prev, 'black'4, fft0 < 0.1 ? 0.: fft0 * 0.7);
+} -> 0
+
+// blur the edges
 0 -> { @two_pass_blur(2. * length(npos - 0.5), 3); } -> 0
 `,
   thermalish: `
@@ -130,6 +143,25 @@ fn luma(vec4 color) {
 
 // sierpinski
 //{ frag * vec4(vec3((float(int(pos.x) & int(pos.y + time / 9.)) > 1. ? 1. : 0.)), 1.); }
+`,
+  fft: `
+// make some noise!!!
+// pound your desk or play some music with a lot of bass
+
+// 0 is the lowest frequency; can instead go all the way up to fft127
+uniform float fft0;
+
+// offset the colors by the fft; do some simple filtering for values below 0.1
+def epsilon 0.01 * (fft0 < 0.1 ? 0. : fft0)
+
+// helper function to get the luma
+fn luma(vec4 color) {
+  return dot(color.rgb, vec3(0.299, 0.587, 0.114));
+}
+
+0 -> { vec4(vec3(1. - step(0.2, luma(frag))), 1.); } -> 0
+
+0 -> { frag * 'lime'4 + frag(npos + epsilon) * 'red'4 + frag(npos - epsilon) * 'blue'4; }
 `,
   noop: `
 { frag; }

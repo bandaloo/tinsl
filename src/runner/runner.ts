@@ -56,7 +56,11 @@ interface NameToLoc {
 }
 
 interface NameToVal {
-  [name: string]: { type: string; val: number; changed: boolean };
+  [name: string]: {
+    type: string;
+    val: number;
+    needsUpdate: boolean;
+  };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -213,14 +217,14 @@ class WebGLProgramLeaf {
     this.gl.useProgram(this.program);
 
     // apply all the uniforms
+    // TODO iterate on the other map instead
     for (const [k, v] of Object.entries(uniformVals)) {
-      if (v.changed) {
+      if (v.needsUpdate) {
         const loc = this.locs[k];
         if (loc === undefined) continue;
         // TODO make this work for all types
         this.gl.uniform1f(loc.loc, v.val);
         // TODO figure out how change will work
-        //v.changed = false;
       }
     }
 
@@ -392,6 +396,10 @@ export class Runner {
     // TODO see if we should unbind this
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
     //this.gl.activeTexture(this.gl.TEXTURE0 + offset);
+
+    for (const v of Object.values(this.uniformVals)) {
+      v.needsUpdate = false;
+    }
   }
 
   getUnifsByPattern(regex: RegExp) {
@@ -404,6 +412,7 @@ export class Runner {
       throw new Error(`uniform ${str} doesn't exist`);
     }
     this.uniformVals[str].val = val;
+    this.uniformVals[str].needsUpdate = true;
   }
 }
 
@@ -516,7 +525,11 @@ function compileProgram(
   for (const unif of leaf.requires.uniforms) {
     const location = getLocation(unif.name);
     uniformLocs[unif.name] = { type: unif.type, loc: location };
-    uniformVals[unif.name] = { type: unif.type, val: 0, changed: true };
+    uniformVals[unif.name] = {
+      type: unif.type,
+      val: 0,
+      needsUpdate: false,
+    };
   }
 
   if (leaf.requires.resolution) {

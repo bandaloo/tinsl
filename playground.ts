@@ -295,12 +295,13 @@ const startTinsl = (code: string) => {
   const nums = unifs.map((u) => {
     const m = u.match(/^fft([0-9]+)$/);
     if (m === null) throw new Error("fft match was null");
-    const num = parseInt(m[0]);
-    if (num === null)
+    const num = parseInt(m[1]);
+    if (num >= FFT_LENGTH)
       throw new Error(
         "fft number was not in range " +
-          `(needs to be positive integer less than ${FFT_LENGTH})`
+          `(needs to be non-negative integer less than ${FFT_LENGTH})`
       );
+    return num;
   });
 
   const animate = (time: number) => {
@@ -309,7 +310,7 @@ const startTinsl = (code: string) => {
     // parse uniform names and get fft data
     const data = analyze();
     unifs.forEach((u, i) => {
-      const num = (data[i] - 128) / 128;
+      const num = (data[nums[i]] - 128) / 128;
       runner.setUnif(u, num);
     });
 
