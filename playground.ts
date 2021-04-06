@@ -234,10 +234,10 @@ function getMedia() {
       analyzer.fftSize = FFT_SIZE;
     });
 
-  return { video, analyzer };
+  return { video, audio, analyzer };
 }
 
-const { video, analyzer } = getMedia();
+const { video, audio, analyzer } = getMedia();
 
 const analyzerCanvas = document.getElementById("fft") as HTMLCanvasElement;
 const analyzerTemp = analyzerCanvas.getContext("2d");
@@ -265,6 +265,10 @@ function analyze() {
 const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
 const runTinslProgram = () => {
+  if (audio.state !== "running") {
+    console.log("resuming audio");
+    audio.resume();
+  }
   const code = monaco.editor.getModels()[0].getValue();
   startup(code);
 };
