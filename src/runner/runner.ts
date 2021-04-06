@@ -52,8 +52,11 @@ interface TexWrapper {
 }
 
 interface NameToLoc {
-  // the counter is what enables expressions to exist across multiple programs
   [name: string]: { type: string; loc: WebGLUniformLocation } | undefined;
+}
+
+interface NameToVal {
+  [name: string]: { type: string; val: number; changed: boolean };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,7 +74,8 @@ class WebGLProgramTree {
     tree: TinslTree,
     vShader: WebGLShader,
     rightMost: boolean,
-    texInfo: TexInfo
+    texInfo: TexInfo,
+    uniformVals: NameToVal
   ) {
     this.loop = tree.loop;
     this.once = tree.once;
@@ -79,9 +83,23 @@ class WebGLProgramTree {
     const f = (node: TinslTree | TinslLeaf, i: number) => {
       const innerRightMost = rightMost && i === tree.body.length - 1;
       if (isTinslLeaf(node)) {
-        return new WebGLProgramLeaf(gl, node, vShader, innerRightMost, texInfo);
+        return new WebGLProgramLeaf(
+          gl,
+          node,
+          vShader,
+          innerRightMost,
+          texInfo,
+          uniformVals
+        );
       }
-      return new WebGLProgramTree(gl, node, vShader, innerRightMost, texInfo);
+      return new WebGLProgramTree(
+        gl,
+        node,
+        vShader,
+        innerRightMost,
+        texInfo,
+        uniformVals
+      );
     };
 
     this.body = tree.body.map(f);
@@ -91,7 +109,8 @@ class WebGLProgramTree {
     texInfo: TexInfo,
     framebuffer: WebGLFramebuffer,
     last: boolean,
-    time: number
+    time: number,
+    uniformVals: NameToVal
   ) {
     if (this.once && this.ranOnce) return;
     for (let i = 0; i < this.loop; i++) {
@@ -101,7 +120,13 @@ class WebGLProgramTree {
       this.body.forEach((b, j) => {
         const lastInBody = j === this.body.length - 1;
         const lastInLoop = i === this.loop - 1;
-        b.run(texInfo, framebuffer, last && lastInBody && lastInLoop, time);
+        b.run(
+          texInfo,
+          framebuffer,
+          last && lastInBody && lastInLoop,
+          time,
+          uniformVals
+        );
       });
     }
     this.ranOnce = true;
@@ -121,7 +146,8 @@ class WebGLProgramLeaf {
     leaf: TinslLeaf,
     vShader: WebGLShader,
     rightMost: boolean,
-    texInfo: TexInfo
+    texInfo: TexInfo,
+    uniformVals: NameToVal
   ) {
     const channelTarget = texInfo.definedNumToChannelNum.get(leaf.target);
     if (channelTarget === undefined) {
@@ -147,7 +173,8 @@ class WebGLProgramLeaf {
       this.gl,
       leaf,
       vShader,
-      definedNumToTexNum
+      definedNumToTexNum,
+      uniformVals
     );
   }
 
@@ -155,7 +182,8 @@ class WebGLProgramLeaf {
     texInfo: TexInfo,
     framebuffer: WebGLFramebuffer,
     last: boolean,
-    time: number
+    time: number,
+    uniformVals: NameToVal
   ) {
     const swap = () => {
       if (verbosity > 1) {
@@ -176,7 +204,6 @@ class WebGLProgramLeaf {
         throw new Error("sampler offset undefined");
       }
       if (verbosity > 1) {
-        //console.log("binding texture " + s + " to unit " + i);
         console.log("defined num", s, "channel num", channelNum, "tex num", i);
       }
       this.gl.bindTexture(this.gl.TEXTURE_2D, texInfo.channels[channelNum].tex);
@@ -186,11 +213,18 @@ class WebGLProgramLeaf {
     this.gl.useProgram(this.program);
 
     // apply all the uniforms
-    // TODO
+    for (const [k, v] of Object.entries(uniformVals)) {
+      if (v.changed) {
+        const loc = this.locs[k];
+        if (loc === undefined) continue;
+        // TODO make this work for all types
+        this.gl.uniform1f(loc.loc, v.val);
+        // TODO figure out how change will work
+        //v.changed = false;
+      }
+    }
 
     const uTime = this.locs[U_TIME];
-
-    // we want to update all uniforms in the same way
     if (uTime !== undefined) this.gl.uniform1f(uTime.loc, time);
 
     if (last && this.last) {
@@ -239,6 +273,9 @@ export class Runner {
   private readonly programs: WebGLProgramTree;
   private readonly sources: (TexImageSource | WebGLTexture | undefined)[];
 
+  // TODO update this to be able to work for more than just floats
+  private readonly uniformVals: NameToVal = {};
+
   constructor(
     gl: WebGL2RenderingContext,
     code: TinslTree | string,
@@ -249,7 +286,9 @@ export class Runner {
 
     this.sources = sources;
 
-    console.log("program tree", tree);
+    if (verbosity > 1) {
+      console.log("program tree", tree);
+    }
 
     this.gl = gl;
     this.options = options;
@@ -296,14 +335,9 @@ export class Runner {
       mapping.set(samplers[i], i);
     }
 
-    console.log("samplers", samplers);
-
-    /*
-    if (!increasesByOneFromZero(samplers)) {
-      // TODO throw this earlier
-      throw new Error("all sampler numbers must start from 0 without skipping");
+    if (verbosity > 0) {
+      console.log("samplers", samplers);
     }
-    */
 
     const channels = samplers.map((s, i) => {
       // over-indexing is fine because it will be undefined, meaning empty
@@ -332,7 +366,14 @@ export class Runner {
 
     this.framebuffer = framebuffer;
 
-    this.programs = new WebGLProgramTree(gl, tree, vShader, true, this.texInfo);
+    this.programs = new WebGLProgramTree(
+      gl,
+      tree,
+      vShader,
+      true,
+      this.texInfo,
+      this.uniformVals
+    );
   }
 
   draw(time = 0) {
@@ -341,11 +382,28 @@ export class Runner {
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texInfo.channels[0].tex);
     // TODO send to every texture that needs it
     sendTexture(this.gl, this.sources[0]);
-    this.programs.run(this.texInfo, this.framebuffer, true, time);
+    this.programs.run(
+      this.texInfo,
+      this.framebuffer,
+      true,
+      time,
+      this.uniformVals
+    );
     // TODO see if we should unbind this
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
     //this.gl.activeTexture(this.gl.TEXTURE0 + offset);
-    // TODO implement this
+  }
+
+  getUnifsByPattern(regex: RegExp) {
+    return Object.keys(this.uniformVals).filter((s) => regex.test(s));
+  }
+
+  // TODO make this work for more types
+  setUnif(str: string, val: number) {
+    if (this.uniformVals[str] === undefined) {
+      throw new Error(`uniform ${str} doesn't exist`);
+    }
+    this.uniformVals[str].val = val;
   }
 }
 
@@ -417,7 +475,8 @@ function compileProgram(
   gl: WebGL2RenderingContext,
   leaf: TinslLeaf,
   vShader: WebGLShader,
-  definedNumToTexNum: Map<number, number>
+  definedNumToTexNum: Map<number, number>,
+  uniformVals: NameToVal
 ): [WebGLProgram, NameToLoc] {
   const uniformLocs: NameToLoc = {};
 
@@ -457,6 +516,7 @@ function compileProgram(
   for (const unif of leaf.requires.uniforms) {
     const location = getLocation(unif.name);
     uniformLocs[unif.name] = { type: unif.type, loc: location };
+    uniformVals[unif.name] = { type: unif.type, val: 0, changed: true };
   }
 
   if (leaf.requires.resolution) {

@@ -19,6 +19,9 @@ const enum Highlight {
   Frag = "#FF72CD",
 }
 
+const FFT_SIZE = 256;
+const FFT_LENGTH = FFT_SIZE / 2;
+
 ///////////////////////////////////////////////////////////////////////////////
 // monaco setup
 
@@ -228,7 +231,7 @@ function getMedia() {
       const source = audio.createMediaStreamSource(stream);
       source.connect(analyzer);
 
-      analyzer.fftSize = 256;
+      analyzer.fftSize = FFT_SIZE;
     });
 
   return { video, analyzer };
@@ -247,7 +250,7 @@ const FFT_H = analyzerCanvas.height;
 
 function analyze() {
   const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-  analyzer.getByteTimeDomainData(dataArray);
+  analyzer.getByteFrequencyData(dataArray);
   analyzerContext.fillStyle = "black";
   analyzerContext.fillRect(0, 0, FFT_W, FFT_H);
   analyzerContext.fillStyle = "lime";
@@ -288,9 +291,28 @@ const startTinsl = (code: string) => {
   let runner: Runner;
   runner = new Runner(gl, code, [video], { edgeMode: "wrap" });
 
+  const unifs = runner.getUnifsByPattern(/^fft[0-9]+$/);
+  const nums = unifs.map((u) => {
+    const m = u.match(/^fft([0-9]+)$/);
+    if (m === null) throw new Error("fft match was null");
+    const num = parseInt(m[0]);
+    if (num === null)
+      throw new Error(
+        "fft number was not in range " +
+          `(needs to be positive integer less than ${FFT_LENGTH})`
+      );
+  });
+
   const animate = (time: number) => {
     runner.draw(time);
-    analyze();
+
+    // parse uniform names and get fft data
+    const data = analyze();
+    unifs.forEach((u, i) => {
+      const num = (data[i] - 128) / 128;
+      runner.setUnif(u, num);
+    });
+
     request = requestAnimationFrame(animate);
   };
 
