@@ -213,6 +213,58 @@ const glTemp = glCanvas.getContext("webgl2");
 if (glTemp === null) throw new Error("problem getting the gl context");
 const gl = glTemp;
 
+function getVideo() {
+  const video = document.createElement("video");
+  let ret: HTMLVideoElement | null = null;
+
+  console.log("trying to get video");
+  navigator.mediaDevices
+    .getUserMedia({
+      video: true,
+    })
+    .then((stream) => {
+      video.srcObject = stream;
+      video.muted = true;
+      video.play();
+      ret = video;
+    })
+    .catch(() => {
+      ret = null;
+    });
+  return ret;
+}
+
+function getPlaceholder() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 480;
+  return canvas;
+}
+
+function getAudio() {
+  const audio = new AudioContext();
+  const analyzer = audio.createAnalyser();
+
+  try {
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: true,
+      })
+      .then((stream) => {
+        const source = audio.createMediaStreamSource(stream);
+        source.connect(analyzer);
+
+        analyzer.fftSize = FFT_SIZE;
+      });
+  } catch (e) {
+    console.log("could not get audio");
+    return { audio: null, analyzer: null };
+  }
+
+  return { audio, analyzer };
+}
+
+/*
 function getMedia() {
   const video = document.createElement("video");
   const audio = new AudioContext();
@@ -236,8 +288,14 @@ function getMedia() {
 
   return { video, audio, analyzer };
 }
+*/
 
-const { video, audio, analyzer } = getMedia();
+//const { video, audio, analyzer } = getMedia();
+const video = getVideo() ?? getPlaceholder();
+const context =
+  video instanceof HTMLCanvasElement ? video.getContext("2d") : null;
+
+const { audio, analyzer } = getAudio();
 
 const analyzerCanvas = document.getElementById("fft") as HTMLCanvasElement;
 const analyzerTemp = analyzerCanvas.getContext("2d");
@@ -249,6 +307,7 @@ const FFT_W = analyzerCanvas.width;
 const FFT_H = analyzerCanvas.height;
 
 function analyze() {
+  if (analyzer === null) return;
   const dataArray = new Uint8Array(analyzer.frequencyBinCount);
   analyzer.getByteFrequencyData(dataArray);
   analyzerContext.fillStyle = "black";
@@ -265,6 +324,7 @@ function analyze() {
 const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
 const runTinslProgram = () => {
+  if (audio === null) return;
   if (audio.state !== "running") {
     console.log("resuming audio");
     audio.resume();
@@ -309,10 +369,15 @@ const startTinsl = (code: string) => {
   });
 
   const animate = (time: number) => {
+    if (context !== null) {
+      context.fillStyle = "red";
+      context.fillRect(100 + 20 * Math.sin(time / 1000), 100, 50, 50);
+    }
     runner.draw(time);
 
     // parse uniform names and get fft data
     const data = analyze();
+    if (data === undefined) return;
     unifs.forEach((u, i) => {
       const num = (data[nums[i]] - 128) / 128;
       runner.setUnif(u, num);
@@ -337,4 +402,6 @@ const startup = (code: string) => {
   }
 };
 
-video.addEventListener("playing", runTinslProgram);
+if (video instanceof HTMLVideoElement) {
+  video.addEventListener("playing", runTinslProgram);
+}
