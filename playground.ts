@@ -213,18 +213,15 @@ const glTemp = glCanvas.getContext("webgl2");
 if (glTemp === null) throw new Error("problem getting the gl context");
 const gl = glTemp;
 
-let errTest = "foo";
-
 async function getVideo() {
   const video = document.createElement("video");
-  console.log("trying to get video");
-  let stream = null;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
     video.muted = true;
     video.play();
   } catch {
+    console.log("could not get video; using default animation");
     return null;
   }
 
@@ -238,11 +235,22 @@ function getPlaceholder() {
   return canvas;
 }
 
-function getAudio() {
+async function getAudio() {
   const audio = new AudioContext();
   const analyzer = audio.createAnalyser();
 
   // TODO fix
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const source = audio.createMediaStreamSource(stream);
+    source.connect(analyzer);
+
+    analyzer.fftSize = FFT_SIZE;
+  } catch {
+    console.log("could not get audio; fft will not work");
+    return { audio: null, analyzer: null };
+  }
+  /*
   try {
     navigator.mediaDevices
       .getUserMedia({
@@ -258,6 +266,7 @@ function getAudio() {
     console.log("could not get audio");
     return { audio: null, analyzer: null };
   }
+  */
 
   return { audio, analyzer };
 }
@@ -290,14 +299,16 @@ function getMedia() {
 
 //const { video, audio, analyzer } = getMedia();
 const video = (await getVideo()) ?? getPlaceholder();
-console.log(errTest);
-setTimeout(() => {
-  console.log(errTest);
-}, 1000);
 const context =
   video instanceof HTMLCanvasElement ? video.getContext("2d") : null;
 
-const { audio, analyzer } = getAudio();
+if (context !== null) {
+  context.font = "bold 85px sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+}
+
+const { audio, analyzer } = await getAudio();
 
 const analyzerCanvas = document.getElementById("fft") as HTMLCanvasElement;
 const analyzerTemp = analyzerCanvas.getContext("2d");
@@ -326,8 +337,7 @@ function analyze() {
 const consoleWindow = document.getElementById("console-window") as HTMLElement;
 
 const runTinslProgram = () => {
-  if (audio === null) return;
-  if (audio.state !== "running") {
+  if (audio !== null && audio.state !== "running") {
     console.log("resuming audio");
     audio.resume();
   }
@@ -372,8 +382,19 @@ const startTinsl = (code: string) => {
 
   const animate = (time: number) => {
     if (context !== null) {
-      context.fillStyle = "red";
-      context.fillRect(100 + 20 * Math.sin(time / 1000), 100, 50, 50);
+      context.fillStyle = "white";
+      context.fillRect(0, 0, 640, 480);
+      //context.fillText("no video", 320 + 50 * Math.sin(time), 240);
+      const f = (color: string, offset: number) => {
+        context.fillStyle = color;
+        const x = 320 + 50 * Math.sin(time / 1000);
+        context.fillText("no video", x, 240 + offset);
+      };
+
+      const spacing = 64;
+      f("red", -spacing);
+      f("lime", 0);
+      f("blue", spacing);
     }
     runner.draw(time);
 
@@ -405,6 +426,7 @@ const startup = (code: string) => {
   }
 };
 
+if (video instanceof HTMLCanvasElement) runTinslProgram();
 if (video instanceof HTMLVideoElement) {
   video.addEventListener("playing", runTinslProgram);
 }
