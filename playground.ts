@@ -213,25 +213,22 @@ const glTemp = glCanvas.getContext("webgl2");
 if (glTemp === null) throw new Error("problem getting the gl context");
 const gl = glTemp;
 
-function getVideo() {
-  const video = document.createElement("video");
-  let ret: HTMLVideoElement | null = null;
+let errTest = "foo";
 
+async function getVideo() {
+  const video = document.createElement("video");
   console.log("trying to get video");
-  navigator.mediaDevices
-    .getUserMedia({
-      video: true,
-    })
-    .then((stream) => {
-      video.srcObject = stream;
-      video.muted = true;
-      video.play();
-      ret = video;
-    })
-    .catch(() => {
-      ret = null;
-    });
-  return ret;
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    video.muted = true;
+    video.play();
+  } catch {
+    return null;
+  }
+
+  return video;
 }
 
 function getPlaceholder() {
@@ -245,6 +242,7 @@ function getAudio() {
   const audio = new AudioContext();
   const analyzer = audio.createAnalyser();
 
+  // TODO fix
   try {
     navigator.mediaDevices
       .getUserMedia({
@@ -291,7 +289,11 @@ function getMedia() {
 */
 
 //const { video, audio, analyzer } = getMedia();
-const video = getVideo() ?? getPlaceholder();
+const video = (await getVideo()) ?? getPlaceholder();
+console.log(errTest);
+setTimeout(() => {
+  console.log(errTest);
+}, 1000);
 const context =
   video instanceof HTMLCanvasElement ? video.getContext("2d") : null;
 
@@ -377,11 +379,12 @@ const startTinsl = (code: string) => {
 
     // parse uniform names and get fft data
     const data = analyze();
-    if (data === undefined) return;
-    unifs.forEach((u, i) => {
-      const num = (data[nums[i]] - 128) / 128;
-      runner.setUnif(u, num);
-    });
+    if (data !== undefined) {
+      unifs.forEach((u, i) => {
+        const num = (data[nums[i]] - 128) / 128;
+        runner.setUnif(u, num);
+      });
+    }
 
     request = requestAnimationFrame(animate);
   };

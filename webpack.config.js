@@ -88,5 +88,8 @@ module.exports = (env, argv) => {
       rules: rules,
     },
     plugins: plugins,
+    experiments: {
+      topLevelAwait: true,
+    },
   };
 };
