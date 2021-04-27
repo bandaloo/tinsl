@@ -8,11 +8,7 @@ export const demos: Demos = {
 welcome to the tinsl playground! right now you're looking at a comprehensive
 code example that shows off many features of the language. if you want
 something less overwhelming, try "one liners" (select that option from the
-bottom right menu). the controls are:
-
-run the code: control + enter
-
-hide/show the ui: control + shift + h
+bottom right menu). click the run button at the bottom to run the program.
 
 everything you see is a work in progress so feedback and github issues are
 welcome. check out the readme on the github page for more details about the

@@ -1,4 +1,10 @@
-# getting started with tinsl 
+# getting started with tinsl
+
+If you intend to fill out the survey by the end of the tutorial, visit the
+[survey link](https://github.com/bandaloo/tinsl/blob/main/docs/getting-started.md)
+now in order to read and agree to the informed consent form before
+proceeding. Keep the survey open and return to it by the end of the tutorial.
+Thank you for your participation!
 
 tinsl is a language for creating post-processing effects that can run in real
 time. It would be helpful to know a little bit about fragment shaders for this
@@ -24,7 +30,7 @@ complicated as it sounds. Let's see how that works:
 ```c
 { vec4(1., 0., 0., 1.); } -> 0 // render to texture 0 (red)
 { vec4(0., 0., 1., 1.); } -> 1 // render to texture 1 (blue)
-{ frag0 + frag1; } // add texture 0 and texture 1, render to screen (magenta) 
+{ frag0 + frag1; } // add texture 0 and texture 1, render to screen (magenta)
 ```
 
 What you see in the previous code example is a series of three "render blocks".
@@ -159,7 +165,7 @@ now right side up. The issue here is that we want the color of the previous
 operation; we don't want to sample from the original image again, like
 `black_and_white` does with `frag`. The `prev` keyword lets us do this. To fix
 our issue, let's make `black_and_white` take in an argument. Update the function
-definition, and while we're at it let's just inline the luma part: 
+definition, and while we're at it let's just inline the luma part:
 
 ```c
 fn black_and_white(vec4 color) {
@@ -202,19 +208,19 @@ the `refresh` keyword:
   frag(vec2(0., 1.) - npos);
   refresh; // now `frag` has access to the updated fragments
   black_and_white(frag);
-} 
+}
 ```
 
-## survey code 
+## survey code
 
 Take a look at the following block of code. It may contain syntax you are
 unfamiliar with, so you are not expected to accurately predict what it will do.
 Even so, please try to guess at the effect it will produce. Once you have made
 your guess, run the following code. Take a note of whether your intuition was
-correct; it will be asked on the survey. 
+correct; it will be asked on the survey.
 
 ```c
-// the same luma function in the tutorial previously 
+// the same luma function in the tutorial previously
 fn luma(vec4 color) {
   return dot(color.rgb, vec3(0.299, 0.587, 0.114));
 }
@@ -222,5 +228,7 @@ fn luma(vec4 color) {
 { mix('red'4, 'blue'4, luma(frag)); }
 ```
 
-Thank you for going through the tutorial! Please fill out this short survey at
-the following link: [click here](https://forms.gle/uusT8cGXhjZNupC1A).
+Thank you for going through the tutorial! Return to the survey (you should
+have the link open already; if not,
+[here it is](https://github.com/bandaloo/tinsl/blob/main/docs/getting-started.md))
+and complete the survey. Thanks again!
