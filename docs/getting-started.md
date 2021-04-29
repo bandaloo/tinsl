@@ -1,7 +1,7 @@
 # getting started with tinsl
 
 If you intend to fill out the survey by the end of the tutorial, visit the
-[survey link](https://github.com/bandaloo/tinsl/blob/main/docs/getting-started.md)
+[survey link](https://docs.google.com/forms/d/e/1FAIpQLSclVAb-okgpAFoR3XdrZJ8xagOtWVW5eVBxr8ij5oY09yCoIA/viewform?usp=sf_link)
 now in order to read and agree to the informed consent form before
 proceeding. Keep the survey open and return to it by the end of the tutorial.
 Thank you for your participation!
@@ -230,5 +230,5 @@ fn luma(vec4 color) {
 
 Thank you for going through the tutorial! Return to the survey (you should
 have the link open already; if not,
-[here it is](https://github.com/bandaloo/tinsl/blob/main/docs/getting-started.md))
+[here it is](https://docs.google.com/forms/d/e/1FAIpQLSclVAb-okgpAFoR3XdrZJ8xagOtWVW5eVBxr8ij5oY09yCoIA/viewform?usp=sf_link))
 and complete the survey. Thanks again!
