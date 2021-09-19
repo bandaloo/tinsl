@@ -162,4 +162,39 @@ fn luma(vec4 color) {
   noop: `
 { frag; }
 `,
+  life: `
+float rand(vec2 n) {
+  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+
+once { rand(pos) > .5 ? vec4(1.) : vec4(0.); } -> 1
+
+float get(float x, float y) {
+  return frag(1, npos + vec2(x, y) / res).r;
+}
+
+fn process() {
+  vec4 out_ = vec4(0.);
+
+  float sum = get(-1., -1.) + get(-1.,  0.) + get(-1.,  1.) + get( 0., -1.)
+            + get( 0.,  1.) + get( 1., -1.) + get( 1.,  0.) + get( 1.,  1.);
+
+  if (sum == 3.) {
+    out_ = vec4( 1. );
+  } else if (sum == 2.) {
+    float current = get(0., 0.);
+    out_ = vec4(vec3(current), 1.);
+  } else {
+    out_ = vec4(0., 0., 0., 1.);
+  }
+
+  return out_;
+}
+
+1 -> { process(); } -> 0 // simulate
+
+0 -> { frag; } -> 1 // swap
+
+{ frag1; } // render to screen
+`,
 };
