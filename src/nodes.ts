@@ -2206,17 +2206,38 @@ export class If extends Stmt {
 
   typeCheck(scope: LexicalScope): void {
     const innerScope = new LexicalScope(scope);
-    this.wrapError(
-      (scope: LexicalScope) => {
-        if (this.cond.getType(scope) !== "bool") {
-          throw new TinslError("if condition must be a boolean expression");
-        }
-      },
-      scope,
-      false,
-      this.body,
-      innerScope
-    );
+    const errors: TinslAggregateError[] = [];
+
+    try {
+      this.wrapError(
+        (scope: LexicalScope) => {
+          if (this.cond.getType(scope) !== "bool") {
+            throw new TinslError("if condition must be a boolean expression");
+          }
+        },
+        scope,
+        false,
+        this.body,
+        innerScope
+      );
+    } catch (err) {
+      if (err instanceof TinslAggregateError) errors.push(err);
+      else throw err;
+    }
+
+    try {
+      const contScope = new LexicalScope(scope);
+      this.wrapError(() => {
+        this.cont?.typeCheck(contScope);
+      }, contScope);
+    } catch (err) {
+      if (err instanceof TinslAggregateError) errors.push(err);
+      else throw err;
+    }
+
+    if (errors.length > 0) {
+      throw new TinslAggregateError(errors.map((e) => e.errors).flat());
+    }
   }
 
   returnsInBoth(): boolean {
@@ -2659,7 +2680,7 @@ export class ColorString extends Expr {
   }
 
   getType(scope: LexicalScope): SpecType {
-    return this.wrapError((scope: LexicalScope) => {
+    return this.wrapError(() => {
       if (this.num !== null && this.num !== 3 && this.num !== 4) {
         throw new TinslError(
           "can only specify suffix number of 3 or 4 for color strings"
