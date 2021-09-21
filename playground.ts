@@ -6,6 +6,19 @@ import { initVimMode, VimMode } from "monaco-vim";
 import { demos } from "./demos";
 
 ///////////////////////////////////////////////////////////////////////////////
+// utils
+
+function getQuery(variable: string, query: string) {
+  const vars = query.split("&");
+  for (let i = 0; i < vars.length; i++) {
+    let pair = vars[i].split("=");
+    if (pair[0] == variable) {
+      return pair[1];
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // constants
 
 const enum Highlight {
@@ -97,7 +110,15 @@ monaco.editor.defineTheme("tinsl-theme", {
 const editor = monaco.editor.create(
   document.getElementById("editor") as HTMLElement,
   {
-    value: stripFirstLine(demos["club"]),
+    value: stripFirstLine(
+      demos[
+        "" +
+          getQuery("demo", window.location.search.substring(1))?.replace(
+            "_",
+            " "
+          )
+      ] ?? demos["club"]
+    ),
     language: "tinsl-lang",
     minimap: {
       enabled: false,
