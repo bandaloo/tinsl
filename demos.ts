@@ -163,38 +163,25 @@ fn luma(vec4 color) {
 { frag; }
 `,
   life: `
-float rand(vec2 n) {
-  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-}
+fn rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
 
-once { rand(pos) > .5 ? vec4(1.) : vec4(0.); } -> 1
+once { vec4(vec3(rand(npos) > .5 ? 1. : 0.), 1.); } -> 2
 
-float get(float x, float y) {
-  return frag(1, npos + vec2(x, y) / res).r;
-}
+fn get(float x, float y) { return frag(2, npos + vec2(x, y) / res).r; }
 
 fn process() {
-  vec4 out_ = vec4(0.);
-
-  float sum = get(-1., -1.) + get(-1.,  0.) + get(-1.,  1.) + get( 0., -1.)
-            + get( 0.,  1.) + get( 1., -1.) + get( 1.,  0.) + get( 1.,  1.);
-
+  sum := get(-1., -1.) + get(-1.,  0.) + get(-1.,  1.) + get(0., -1.)
+       + get(0.,  1.) + get(1., -1.) + get(1.,  0.) + get(1.,  1.);
   if (sum == 3.) {
-    out_ = vec4( 1. );
+    return vec4(1.);
   } else if (sum == 2.) {
-    float current = get(0., 0.);
-    out_ = vec4(vec3(current), 1.);
-  } else {
-    out_ = vec4(0., 0., 0., 1.);
+    return vec4(vec3(get(0., 0.)), 1.);
   }
-
-  return out_;
+  return vec4(0., 0., 0., 1.);
 }
 
-1 -> { process(); } -> 0 // simulate
-
-0 -> { frag; } -> 1 // swap
-
-{ frag1; } // render to screen
+2 -> { process(); } -> 1 // simulate
+1 -> { frag; } -> 2 // swap
+{ frag0 * frag2; } // render to screen
 `,
 };
