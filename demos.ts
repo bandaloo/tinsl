@@ -184,4 +184,32 @@ fn process() {
 1 -> { frag; } -> 2 // swap
 { frag0 * frag2; } // render to screen
 `,
+  "reaction diffusion": `
+fn get(float x, float y) { return frag(2, npos + vec2(x, y) / res); }
+
+def f .046 def k .064 def dA 1.1 def dB 0.39 // tweak these very slightly!
+
+fn luma(vec4 color) { return dot(color.rgb, vec3(0.299, 0.587, 0.114)); }
+
+once { luma(frag) > 0.3 ? vec4(0., 0.5, 0., 1.) : vec4(1., 0., 0., 1.); } -> 2
+
+vec4 process() {
+  mut state := get(0., 0.);
+  a := state.r;
+  b := state.g;
+  mut sumA := a * -1.;
+  mut sumB := b * -1.;
+  sums := vec4[](get(-1.,0.) * .2, get(-1.,-1.) * .05, get(0.,-1.) * .2, get(1.,-1.) * .05,
+                 get(1.,0.) * .2, get(1.,1.) * .05, get(0.,1.) * .2, get(-1.,1.) * .05);
+  for (int i = 0; i < 8; i++) { sumA += sums[i].r; }
+  for (int i = 0; i < 8; i++) { sumB += sums[i].g; }
+  state.r = a + dA * sumA - a * b * b + f * (1. - a);
+  state.g = b + dB * sumB + a * b * b - ((k+f) * b);
+  return state;
+}
+
+2 -> { process(); } -> 1 // simulate
+1 -> { frag; } -> 2 // swap
+{ frag0 * vec4(vec3(frag2.g), 1.); } // render to screen
+`,
 };
