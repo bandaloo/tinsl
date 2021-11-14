@@ -2,6 +2,8 @@
 
 language for multi-pass texture-to-texture effects
 
+## [live coding environment!](https://bandaloo.fun/playground)
+
 ## overview of the language
 
 If you know GLSL, you know a lot of tinsl already. We'll go over some of the
